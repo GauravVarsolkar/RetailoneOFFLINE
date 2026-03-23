@@ -1,0 +1,30 @@
+package com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel
+
+data class StoreIncharge(
+    val active_status: String,
+    val address: Any,
+    val allow_login: Int,
+    val alt_contact_no: Any,
+    val business_id: String,
+    val cluster_id: Any,
+    val contact_no: String,
+    val created_at: Any,
+    val current_address: Any,
+    val deleted_at: Any,
+    val dob: String,
+    val email: String,
+    val email_verified_at: Any,
+    val first_name: String,
+    val gender: Any,
+    val id: Int,
+    val last_name: Any,
+    val password: String,
+    val password_changed_at: String,
+    val permanent_address: Any,
+    val role_id: String,
+    val status: Int,
+    val surname: Any,
+    val updated_at: String,
+    val user_type: Any,
+    val username: Any
+)

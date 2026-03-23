@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="55dp"
+    android:layout_gravity="center"
+    android:background="#FFC107"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="50dp"
+        android:layout_height="fill_parent"
+        android:layout_alignParentLeft="true"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/logo" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center|center_vertical"
+        android:gravity="center"
+        android:text="Kookwell Dispenser Control"
+        android:textColor="#0E0E0E"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/tv_version"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="right|center_vertical"
+        android:gravity="center"
+        android:text="20230112"
+        android:textColor="#005533"
+        android:textSize="18sp"
+        android:visibility="gone" />
+
+</RelativeLayout>

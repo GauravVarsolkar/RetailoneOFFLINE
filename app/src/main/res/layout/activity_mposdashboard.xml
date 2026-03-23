@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+    android:id="@+id/drawer"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ✅ MAIN CONTENT WRAPPER -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context=".ui.Activity.MPOSDashboardActivity">
+
+            <com.google.android.material.appbar.AppBarLayout
+                android:id="@+id/appbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:elevation="1dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <com.google.android.material.appbar.MaterialToolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@color/primary"
+                    android:minHeight="?attr/actionBarSize"
+                    android:theme="?attr/actionBarTheme">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:weightSum="1"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/tool_image"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginVertical="5dp"
+                            android:backgroundTint="#fff"
+                            android:adjustViewBounds="true"
+                            android:src="@drawable/mlogo"
+                            android:layout_gravity="center"
+                            android:layout_weight="1"
+                            android:padding="4dp"/>
+
+                        <ImageView
+                            android:id="@+id/logout"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginVertical="5dp"
+                            android:layout_marginEnd="16dp"
+                            android:backgroundTint="#fff"
+                            android:adjustViewBounds="true"
+                            android:src="@drawable/svg_off"
+                            android:layout_gravity="center"
+                            android:layout_weight="0"
+                            android:padding="0dp"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.appbar.MaterialToolbar>
+
+            </com.google.android.material.appbar.AppBarLayout>
+
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:fillViewport="true"
+                android:isScrollContainer="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/appbar">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:id="@+id/linear"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingBottom="80dp"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <!-- POS Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/poscard"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="8dp"
+                            app:strokeColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:paddingVertical="16dp"
+                                android:background="@color/card1">
+
+                                <ImageView
+                                    android:id="@+id/img1"
+                                    android:layout_width="70dp"
+                                    android:layout_height="70dp"
+                                    android:layout_marginStart="24dp"
+                                    android:layout_marginTop="8dp"
+                                    android:layout_marginBottom="8dp"
+                                    android:scaleType="fitCenter"
+                                    android:src="@drawable/icon_pos"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:tint="@color/icon_tint1" />
+
+                                <TextView
+                                    android:id="@+id/txt1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/avenirnextltpro_medium"
+                                    android:text="Point Of sale"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/icon_tint1"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toEndOf="@+id/img1"
+                                    app:layout_constraintTop_toTopOf="parent" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Row 2: Stock & Material -->
+                        <LinearLayout
+                            android:id="@+id/row2linear"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/stockcard"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="4dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card2">
+
+                                    <ImageView
+                                        android:id="@+id/img2"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/icon_stock"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint2" />
+
+                                    <TextView
+                                        android:id="@+id/txt2"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Stock Requisition"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint2"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img2" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/materialrcv_card"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginEnd="8dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card3">
+
+                                    <ImageView
+                                        android:id="@+id/img3"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/iconmaterial"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint3" />
+
+                                    <TextView
+                                        android:id="@+id/txt3"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Material Receiving"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint3"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img3" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+
+                        <!-- Product Inventory Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/pdt_inventory_card"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="8dp"
+                            app:strokeColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:paddingVertical="16dp"
+                                android:background="@color/card4">
+
+                                <ImageView
+                                    android:id="@+id/img4"
+                                    android:layout_width="70dp"
+                                    android:layout_height="70dp"
+                                    android:layout_marginStart="24dp"
+                                    android:layout_marginTop="8dp"
+                                    android:layout_marginBottom="8dp"
+                                    android:src="@drawable/icon_inventory"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:tint="@color/icon_tint4" />
+
+                                <TextView
+                                    android:id="@+id/txt4"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/avenirnextltpro_medium"
+                                    android:text="Product Inventory"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/icon_tint4"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toEndOf="@+id/img4"
+                                    app:layout_constraintTop_toTopOf="parent" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Row 4: Cashup & Sales Payment -->
+                        <LinearLayout
+                            android:id="@+id/row4linear"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cashupcard"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="4dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card5">
+
+                                    <ImageView
+                                        android:id="@+id/img5"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/icon_cashup"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint5" />
+
+                                    <TextView
+                                        android:id="@+id/txt5"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Cash up"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint5"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img5" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/sales_payment_card"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginEnd="8dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card6">
+
+                                    <ImageView
+                                        android:id="@+id/img6"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/icon_sale_payment"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint6" />
+
+                                    <TextView
+                                        android:id="@+id/txt6"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Sales &amp; payment"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint6"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img6" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+
+                        <!-- Row 5: Expense & Profile -->
+                        <LinearLayout
+                            android:id="@+id/row5linear"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/expensecard"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="4dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card7">
+
+                                    <ImageView
+                                        android:id="@+id/img7"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/icon_expense_register"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint7" />
+
+                                    <TextView
+                                        android:id="@+id/txt7"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Expense Register"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint7"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img7" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/profile_card"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginEnd="8dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                app:strokeColor="@android:color/transparent"
+                                app:strokeWidth="0dp">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="5dp"
+                                    android:background="@color/card8">
+
+                                    <ImageView
+                                        android:id="@+id/img8"
+                                        android:layout_width="70dp"
+                                        android:layout_height="70dp"
+                                        android:layout_marginTop="8dp"
+                                        android:src="@drawable/iconprofile"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toTopOf="parent"
+                                        app:tint="@color/icon_tint8" />
+
+                                    <TextView
+                                        android:id="@+id/txt8"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_marginBottom="8dp"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:text="Profile &amp; Attendance"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/icon_tint8"
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintEnd_toEndOf="parent"
+                                        app:layout_constraintStart_toStartOf="parent"
+                                        app:layout_constraintTop_toBottomOf="@+id/img8" />
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+
+                        <!-- Return Product Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/returncard"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="8dp"
+                            app:strokeColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="120dp"
+                                android:background="@color/card7">
+
+                                <ImageView
+                                    android:id="@+id/img9"
+                                    android:layout_width="120dp"
+                                    android:layout_height="120dp"
+                                    android:layout_marginStart="20dp"
+                                    android:src="@drawable/svg_return"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:tint="@color/icon_tint1" />
+
+                                <TextView
+                                    android:id="@+id/txt9"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/avenirnextltpro_medium"
+                                    android:text="Return Product"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/icon_tint7"
+                                    app:layout_constraintStart_toEndOf="@id/img9"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:layout_constraintBottom_toBottomOf="parent" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Goods Return to Warehouse Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/goodsRWcard"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="8dp"
+                            app:strokeColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:paddingVertical="16dp"
+                                android:background="@color/card6">
+
+                                <TextView
+                                    android:id="@+id/txt10"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/avenirnextltpro_medium"
+                                    android:text="Goods Return to Warehouse"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/icon_tint6"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+
+                    <!-- Progress bar -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/progress"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        app:cardCornerRadius="50dp"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@color/background_color"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ProgressBar
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            style="?android:attr/progressBarStyleLarge"
+                            android:indeterminate="true"
+                            android:indeterminateDrawable="@drawable/custom_progress"
+                            android:indeterminateDuration="800"
+                            android:layout_margin="5dp" />
+
+                    </androidx.cardview.widget.CardView>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- ✅ SYNC BUTTON (INSIDE THE FIRST FRAMELAYOUT) -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/syncButtonContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_sync_button_red"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:minWidth="120dp">
+
+                <TextView
+                    android:id="@+id/tvSyncText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SYNC"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:layout_marginEnd="8dp"/>
+
+                <ImageView
+                    android:id="@+id/ivSyncIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_sync_white"
+                    android:contentDescription="Sync icon"/>
+
+            </LinearLayout>
+
+            <!-- Badge -->
+            <TextView
+                android:id="@+id/tvSyncBadge"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="-10dp"
+                android:layout_marginEnd="-10dp"
+                android:background="@drawable/bg_sync_fab_red"
+                android:gravity="center"
+                android:text="0"
+                android:textColor="@color/red"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+
+
+        </FrameLayout>
+
+    </FrameLayout>
+
+    <!-- Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/headerlayout"
+        app:itemTextAppearance="@style/NewFontStyle"
+        app:menu="@menu/navigationmenu"/>
+
+</androidx.drawerlayout.widget.DrawerLayout>

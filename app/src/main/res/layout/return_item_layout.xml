@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/light_white"
+    android:padding="0dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cartLayout">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="@color/white">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                app:layout_constraintBottom_toBottomOf="@+id/productimg"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/productimg"
+                app:layout_constraintTop_toTopOf="@+id/productimg">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/productimg"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginVertical="8dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:adjustViewBounds="true"
+                    android:src="@drawable/temp"
+                    android:visibility="invisible"
+                    app:layout_constraintBottom_toTopOf="@id/quantity_container"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize" />
+
+
+                <TextView
+                    android:id="@+id/item_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:singleLine="true"
+                    android:text="mm gold premium"
+                    android:textColor="@color/colorgreytwo"
+                    android:textSize="18dp"
+                    android:textStyle="bold"
+                    android:typeface="sans"
+                    app:layout_constraintEnd_toStartOf="@+id/productimg"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/item_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginStart="8dp"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:text="description"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="15dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/item_name" />
+
+
+                <TextView
+                    android:id="@+id/item_unit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:text=""
+                    android:visibility="gone"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="13dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/item_desc" />
+
+                <TextView
+                    android:id="@+id/item_price"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:text=""
+                    android:visibility="gone"
+                    android:textColor="@color/colorgreytwo"
+                    android:textSize="13dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/item_unit" />
+
+                <TextView
+                    android:id="@+id/refund_price"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:text=""
+                    android:visibility="gone"
+                    android:textColor="@color/colorgreytwo"
+                    android:textSize="13dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/item_price" />
+
+
+                <LinearLayout
+                    android:id="@+id/quantity_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/productimg">
+
+                    <LinearLayout
+                        android:id="@+id/plus_minus_layout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/cart_minus_img"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center_vertical|center_horizontal"
+                            android:background="@drawable/shape_round_lite"
+                            android:backgroundTint="@color/primary"
+                            android:padding="4dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_remove"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/cart_product_quantity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginStart="10dp"
+                            android:fontFamily="@font/poppins_semibold"
+                            android:gravity="center"
+                            android:text="0"
+                            android:textColor="@color/primary"
+                            android:textSize="16dp" />
+
+                        <ImageView
+                            android:id="@+id/cart_plus_img"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center_vertical|center_horizontal"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/shape_round_lite"
+                            android:padding="4dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_add"
+                            app:tint="@color/white" />
+
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/quant_layout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <EditText
+                            android:id="@+id/quant_edit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:hint="Quantity"
+                            android:textStyle="bold"
+                            android:maxLength="8"
+                            android:textSize="18dp"
+                            android:paddingVertical="5dp"
+                            android:paddingHorizontal="6dp"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:minWidth="80dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:background="@drawable/rounded_edittext_background"
+                            android:textColor="@color/primary" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/addlayout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:clickable="true"
+                        android:orientation="vertical"
+                        android:visibility="visible">
+
+                        <TextView
+                            android:id="@+id/addcart"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/shape_curve_grey_small"
+                            android:backgroundTint="@color/primary"
+                            android:clickable="true"
+                            android:drawableStart="@drawable/svg_add_cart"
+                            android:drawablePadding="6dp"
+                            android:drawableTint="@color/white"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:inputType="number"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp"
+                            android:text="Return"
+                            android:textColor="@color/white" />
+
+                    </LinearLayout>
+
+
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <LinearLayout
+                android:id="@+id/batch_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                android:weightSum="4"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/batch_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:text="Batch"
+                    android:textSize="13dp" />
+                <TextView
+                    android:id="@+id/batch_dispatch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Price"
+                    android:textSize="13dp" />
+                <TextView
+                    android:id="@+id/quantity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Sold"
+                    android:textSize="13dp" />
+
+                <TextView
+                    android:id="@+id/batch_quantity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Return"
+                    android:textSize="13dp" />
+
+
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/batch_layouts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                android:weightSum="5"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/batch_names"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="0.8"
+                    android:textStyle="bold"
+                    android:layout_marginStart="5dp"
+                    android:text="Batch"
+                    android:textSize="13dp" />
+                <TextView
+                    android:id="@+id/batch_dispatchs"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="0.8"
+                    android:textStyle="bold"
+android:layout_marginStart="5dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Price"
+                    android:textSize="13dp" />
+                <TextView
+                    android:id="@+id/quantitys"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_marginStart="3dp"
+                    android:layout_weight="1.3"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Sold"
+                    android:textSize="13dp" />
+
+                <TextView
+                    android:id="@+id/batch_quantitys"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Return"
+                    android:textSize="13dp" />
+                <TextView
+                    android:id="@+id/batch_reasons"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center_horizontal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Reason"
+                    android:textSize="13dp" />
+
+
+
+            </LinearLayout>
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/batch_rcv"
+                android:paddingBottom="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@+id/quantity_layout" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

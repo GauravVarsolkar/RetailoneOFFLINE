@@ -1,0 +1,110 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottom_sheet_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/shape_curve_top_card"
+    android:backgroundTint="@color/colorgrey"
+    app:behavior_hideable="false"
+    app:behavior_peekHeight="0dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+    <!-- Search bar -->
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/search_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/rounded_search_background"
+        app:iconifiedByDefault="false"
+        app:layout_constraintEnd_toStartOf="@+id/barcodeimage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:queryHint="Enter poduct name or scan" />
+
+    <!-- Barcode icon next to search -->
+    <ImageView
+        android:id="@+id/barcodeimage"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
+        android:src="@drawable/svg_barcodescan"
+        app:layout_constraintBottom_toBottomOf="@id/search_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/search_bar" />
+
+    <!-- RESULT LIST -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/searchstock_rcv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="0dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="16dp"
+    android:paddingHorizontal="0dp"
+    android:visibility="visible"
+    app:layout_constraintBottom_toTopOf="@+id/prefer_confirm"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/search_bar" />
+
+    <!-- No data image -->
+    <ImageView
+        android:id="@+id/no_data_found"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:src="@drawable/nodata_found"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/search_bar" />
+
+    <!-- Center progress loader -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/progress"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:elevation="16dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/background_color"
+        app:cardCornerRadius="50dp"
+        app:cardElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ProgressBar
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/custom_progress"
+            android:indeterminateDuration="800" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Optional bottom button (currently GONE) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/prefer_confirm"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@color/secondary"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="CONFIRM"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:cornerRadius="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

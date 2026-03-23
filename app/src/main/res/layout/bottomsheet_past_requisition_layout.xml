@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="12dp">
+
+    <View
+        android:id="@+id/smallview"
+        android:layout_width="60dp"
+        android:layout_height="5dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/shape_small_view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/close_bottomsheet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/shape_round_round"
+        android:backgroundTint="#1443A047"
+        android:padding="6dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/svg_cross_icon"
+        app:layout_constraintBottom_toTopOf="@+id/bsview"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!--<TextView
+        android:id="@+id/bottomsheet_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Register On Templefood"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/smallview" />-->
+
+    <View
+        android:id="@+id/bsview"
+        android:layout_width="match_parent"
+        android:layout_height="0.8dp"
+        android:layout_marginTop="32dp"
+        android:background="#80707171"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smallview" />
+
+
+    <TextView
+        android:id="@+id/bottomsheet_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:gravity="center"
+        android:text="Choose an image to upload from"
+        android:textSize="16dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bsview" />
+
+    <LinearLayout
+        android:id="@+id/date_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="2dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bottomsheet_text">
+
+        <TextView
+            android:id="@+id/orderdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="8dp"
+            android:paddingVertical="2dp"
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="OrderID"
+            android:textColor="@color/colorgreytwo"
+            android:textSize="14dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/approvedate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:paddingVertical="2dp"
+
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="Status"
+            android:textColor="@color/colorgreytwo"
+            android:textSize="14dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/dispatchdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:paddingVertical="2dp"
+
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="Status"
+            android:textColor="@color/colorgreytwo"
+            android:textSize="14dp"
+            android:visibility="gone" />
+
+
+        <TextView
+            android:id="@+id/receivedate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:paddingVertical="2dp"
+
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="Status"
+            android:textColor="@color/colorgreytwo"
+            android:textSize="14dp"
+            android:visibility="gone" />
+
+
+    </LinearLayout>
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/details_rcv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:paddingBottom="100dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/date_layout" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

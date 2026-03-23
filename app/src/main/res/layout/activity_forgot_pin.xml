@@ -1,0 +1,542 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/secondary"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:isScrollContainer="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/roundimage"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:src="@drawable/mlogo"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize50Percent"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="0dp" />
+
+            <LinearLayout
+                android:id="@+id/title_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="@+id/roundimage"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/roundimage"
+                app:layout_constraintTop_toTopOf="@+id/roundimage">
+
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Mount Meru"
+                    android:textSize="20dp" />
+
+                <TextView
+                    android:id="@+id/textView1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/avenirnextltproregular"
+                    android:text="Kookwell Retail Platform"
+                    android:textSize="17dp" />
+
+
+            </LinearLayout>
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/curvedtop_card"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/roundimage">
+
+                <TextView
+                    android:id="@+id/txt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="32dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Reset Your PIN"
+                    android:textSize="20dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/txt">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/mobile_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/mobilecard"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="30dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="60dp">
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/mobile_layout"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:hint="Enter your mobile no"
+                                    android:paddingTop="8dp"
+                                    android:paddingBottom="14dp"
+                                    app:boxBackgroundMode="none"
+                                    app:endIconMode="clear_text"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent">
+
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/mobileedit"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:background="@color/transparent"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:inputType="number"
+                                        android:maxLength="10"
+                                        android:padding="0dp"
+                                        android:singleLine="true"
+                                        android:textColor="@color/black"
+                                        android:textSize="17dp"
+                                        android:textStyle="normal" />
+
+                                </com.google.android.material.textfield.TextInputLayout>
+
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/sendotp_btn"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginTop="24dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Send OTP"
+                            android:textSize="17dp"
+                            app:cornerRadius="28dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/mobilecard" />
+
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/otp_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/otp_info"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_marginTop="16dp"
+                            android:layout_marginEnd="16dp"
+                            android:text="Enter 6 digit OTP recived on"
+                            android:textSize="18dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/mobileinfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="16dp"
+                            android:text="mobile no"
+                            android:textSize="15dp"
+                            android:textColor="@color/primary"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/otp_info" />
+
+
+                        <LinearLayout
+                            android:id="@+id/otp_input_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="45dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="24dp"
+                            android:layout_marginEnd="8dp"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/mobileinfo">
+
+                            <EditText
+                                android:id="@+id/otp1"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+                            <EditText
+                                android:id="@+id/otp2"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+
+                            <EditText
+                                android:id="@+id/otp3"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+
+                            <EditText
+                                android:id="@+id/otp4"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+                            <EditText
+                                android:id="@+id/otp5"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+                            <EditText
+                                android:id="@+id/otp6"
+                                android:layout_width="45dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginEnd="1dp"
+                                android:background="@drawable/otp_background"
+                                android:gravity="center"
+                                android:inputType="number"
+                                android:maxLength="1"
+                                android:maxLines="1"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:textColor="@color/primary"
+                                android:textSize="20dp"
+                                android:textStyle="bold"/>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/reset_container"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginTop="24dp"
+                            app:layout_constraintEnd_toEndOf="@+id/otp_input_layout"
+                            app:layout_constraintTop_toBottomOf="@+id/otp_input_layout">
+
+                            <TextView
+                                android:id="@+id/resend_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Resend OTP"
+                                android:textSize="16dp"
+                                android:padding="3dp"
+                                android:visibility="visible"
+                                android:textColor="@color/primary"
+
+                                android:fontFamily="avenirnextltpro_medium"
+                                app:layout_constraintEnd_toEndOf="@+id/otp_input_layout"
+                                app:layout_constraintTop_toBottomOf="@+id/otp_input_layout" />
+
+                            <TextView
+                                android:id="@+id/resend_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="avenirnextltpro_medium"
+                                android:text="00:00"
+                                android:textSize="16dp"
+                                android:textColor="@color/primary"
+                                android:padding="3dp"
+                                android:visibility="gone"
+                                />
+
+                        </LinearLayout>
+
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/verify_otp"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="16dp"
+                            android:layout_marginTop="32dp"
+                            android:layout_marginEnd="16dp"
+                            android:fontFamily="avenirnextltpro_medium"
+                            android:text="Verify OTP"
+                            android:textSize="18dp"
+                            app:cornerRadius="28dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/reset_container" />
+
+
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/pin_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/pin_card"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="60dp">
+
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/pin_layout"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:hint="Enter a new 6 digit PIN"
+                                    android:paddingTop="8dp"
+                                    android:paddingBottom="14dp"
+                                    app:boxBackgroundMode="none"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:passwordToggleEnabled="true">
+
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/pinedit"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:background="#00000000"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:inputType="numberPassword"
+                                        android:maxLength="6"
+                                        android:padding="0dp"
+                                        android:singleLine="true"
+                                        android:textColor="@color/black"
+                                        android:textSize="17dp"
+                                        android:textStyle="normal"
+                                        app:passwordToggleTint="@color/primary" />
+
+                                </com.google.android.material.textfield.TextInputLayout>
+
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/confirmpin_card"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="24dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/pin_card">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="60dp">
+
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/confirmpin_layout"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:hint="Re-Enter the new PIN"
+                                    android:paddingTop="8dp"
+                                    android:paddingBottom="14dp"
+                                    app:boxBackgroundMode="none"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent"
+                                    app:passwordToggleEnabled="true">
+
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/confirmpinedit"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:layout_marginHorizontal="4dp"
+                                        android:background="#00000000"
+                                        android:fontFamily="@font/avenirnextltpro_medium"
+                                        android:inputType="numberPassword"
+                                        android:maxLength="6"
+                                        android:padding="0dp"
+                                        android:singleLine="true"
+                                        android:textColor="@color/black"
+                                        android:textSize="17dp"
+                                        android:textStyle="normal"
+                                        app:passwordToggleTint="@color/primary" />
+
+                                </com.google.android.material.textfield.TextInputLayout>
+
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/resetpin_btn"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginTop="24dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Reset PIN"
+                            android:textSize="18dp"
+                            app:cornerRadius="28dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/confirmpin_card" />
+
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                </LinearLayout>
+
+
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </androidx.core.widget.NestedScrollView>
+
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/progress"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        app:cardCornerRadius="50dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/background_color"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" >
+
+        <ProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            style="?android:attr/progressBarStyleLarge"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/custom_progress"
+            android:indeterminateDuration="800"
+            android:layout_margin="5dp"
+            />
+
+        <!--
+                android:indeterminateTint="@color/primery"
+        -->
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_marginTop="10dp"
+    android:paddingBottom="12dp">
+
+    <!-- Small top drag handle -->
+    <View
+        android:id="@+id/smallview"
+        android:layout_width="60dp"
+        android:layout_height="5dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/shape_small_view" />
+
+    <!-- Close button -->
+    <ImageView
+        android:id="@+id/close_bottomsheet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="end"
+        android:background="@drawable/shape_round_round"
+        android:backgroundTint="#1443A047"
+        android:padding="6dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/svg_cross_icon" />
+
+    <!-- Header info -->
+    <LinearLayout
+        android:id="@+id/info_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tvReturnId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Return ID: #"
+            android:textColor="#333"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvRequestedDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Requested Date:"
+            android:textColor="#444"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Status:"
+            android:textColor="#444"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/bsview"
+        android:layout_width="match_parent"
+        android:layout_height="0.8dp"
+        android:layout_marginTop="5dp"
+        android:background="#80707171" />
+
+    <!-- Recycler container fills remaining space -->
+    <LinearLayout
+        android:id="@+id/recy_lay"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_margin="5dp"
+        android:paddingBottom="10dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/details_rcv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp"
+            android:nestedScrollingEnabled="true" />
+    </LinearLayout>
+
+</LinearLayout>

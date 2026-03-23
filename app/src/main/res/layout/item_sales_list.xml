@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="2dp"
+    android:layout_marginHorizontal="12dp"
+    card_view:cardCornerRadius="10dp"
+    card_view:cardElevation="2dp"
+    android:id="@+id/cardContainer"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:clickable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="@android:color/white">
+
+        <!-- Left - Invoice Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvInvoiceId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="000000000014"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
+
+            <TextView
+                android:id="@+id/tvSaleDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10 Jul [01:34PM]"
+                android:textSize="13sp"
+                android:textColor="#888888" />
+        </LinearLayout>
+
+        <!-- Right - Amount & Payment Type -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="end">
+            <!-- ON HOLD Badge -->
+            <TextView
+                android:id="@+id/tvOnHoldBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_on_hold_flag"
+                android:paddingStart="6dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="2dp"
+                android:text="ON HOLD"
+                android:textColor="@android:color/white"
+                android:textSize="11sp"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tvReturnableFlag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Returnable"
+                android:textSize="12sp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_returnable_flag"
+                android:visibility="gone"
+                android:layout_marginBottom="2dp"/>
+            <TextView
+                android:id="@+id/tvGrandTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RWF812.00"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
+
+            <TextView
+                android:id="@+id/tvPaymentType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cash"
+                android:textSize="13sp"
+                android:textColor="#FF4B4B" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

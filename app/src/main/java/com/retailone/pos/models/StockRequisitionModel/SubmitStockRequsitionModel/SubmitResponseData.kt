@@ -1,0 +1,3 @@
+package com.retailone.pos.models.StockRequisitionModel.SubmitStockRequsitionModel
+
+class SubmitResponseData

@@ -1,0 +1,156 @@
+<resources>
+    <string name="app_name">Retailone POS</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
+    <string name="cashup_text">You will not be able to perform any SALE transactions on this date after Cash-Up, do you want to perform EOD Cash-Up?</string>
+
+    <string name="error_response">Failed to fetch data. Please try again.</string>
+    <string name="failed_response">Network error. Please check your internet connection.</string>
+    <string name="resend_timer">Resend in %1$d seconds</string>
+
+    <string name="skip_text">Continue as New Customer</string>
+    <!-- res/values/strings.xml -->
+    <string name="otp_label">OTP: %1$s</string>
+    <string-array name="good_reasons_array">
+        <item>Good - No issues</item>
+        <item>Customer Return</item>
+        <item>Stock Adjustment</item>
+    </string-array>
+    <!-- Print -->
+    <string name="print_test">Print Test</string>
+    <string name="printer_version">Printer Version：</string>
+    <string name="bar_code">Barcode:</string>
+    <string name="print_bar_code">Print Barcode</string>
+    <string name="D_bar_code">Qrcode:</string>
+    <string name="print_2D_barcode">Print Qrcode</string>
+    <string name="walk_paper_lines">Walk Paper Lines:</string>
+    <string name="walk_paper_test">Walk Paper</string>
+    <string name="left_margin">Left Margin:</string>
+    <string name="right_margin">Right Margin</string>
+    <string name="row_space">Row Space:</string>
+    <string name="font_size">Font Size：</string>
+    <string name="gray_level">Gray Level:</string>
+    <string name="print_style_italic_enable">Enable Italic</string>
+    <string name="print_style_italic_disable">Disable Italic</string>
+    <string name="print_style_three_height_enable">Enable three height</string>
+    <string name="print_style_three_height_disable">Disable three height</string>
+    <string name="print_style_two_width_enable">Enable two width</string>
+    <string name="print_style_two_width_disable">Disable two width</string>
+    <string name="print_content">Print Content：</string>
+    <string name="chinese_example">ZH Example</string>
+    <string name="english_example">EN Example</string>
+    <string name="persian_example">Persian Example</string>
+    <string name="french_example">French Example</string>
+    <string name="japanese_example">Japanese Example</string>
+    <string name="korean_example">Korean Example</string>
+    <string name="russian_example">Russian Example</string>
+    <string name="thailand_example">Thai Example</string>
+    <string name="cambodia_example">Khmer Example</string>
+    <string name="laos_example">Laos Example</string>
+    <string name="print_count">Print Count:</string>
+    <string name="print_cut_count">Cut Count:</string>
+    <string name="clear_text">Clear</string>
+    <string name="print_text">Print Text</string>
+    <string name="print_columns">Print Columns</string>
+    <string name="check_status">Check Status</string>
+    <string name="print_georgia_text">Print Georgia</string>
+    <string name="print_foreign_text">Print Special Language</string>
+    <string name="printing_wait">Printing, please wait……</string>
+    <string name="D_barcode_loading">Qrcode loading</string>
+    <string name="generate_barcode_wait">Generating barcode, please wait……</string>
+    <string name="input_print_data">Please input print data</string>
+    <string name="print_paper_width">Paper Width:</string>
+    <string name="printer_paper_80mm">80mm</string>
+    <string name="printer_paper_58mm">58mm</string>
+    <string name="maker_search_distance">Walk Paper For Search Black Block:</string>
+    <string name="maker_walk_distance">Walk Paper After Haved Search:</string>
+    <string name="maker_walk_distance_range">(0-255)</string>
+    <string name="maker">Black Block Detection</string>
+    <string name="maker_error">maker input value not fit</string>
+    <string name="maker_not_find">Cannot Find Black Block</string>
+    <string name="papercut">Paper Cut</string>
+    <string name="inverse">inverse</string>
+    <string name="not_inverse">not inverse</string>
+    <string name="walk_paper_intput_value">walk paper intput value not fit</string>
+    <string name="print_picture">Print Picture</string>
+    <string name="print_long_picture">Print Long Picture</string>
+    <string name="print_long_text">Print Long Text</string>
+    <string name="print_black">Print Black</string>
+    <string name="print_interval">Cricle Print Interval</string>
+    <string name="print_cricle_start">Start Cricle Paint</string>
+    <string name="print_cricle_stop">Stop Cricle Paint</string>
+    <string name="print_cricle_hint">sec/time</string>
+    <string name="sure">sure</string>
+    <string name="not_find_picture">not find picture</string>
+    <string name="input_command">Please Input Command</string>
+    <string name="execute_command">Execute Command</string>
+    <string name="watting">Please wait while checking driver version</string>
+    <string name="openDoor">Printer cover open！</string>
+    <string name="hardwareAlarm">Hardware alarm</string>
+    <string name="printerReset">Reset Printer/Printer alarm Cleared</string>
+    <string name="noPaper">No paper</string>
+    <string name="paperReady">Paper already</string>
+    <string name="paperCutError">Paper cutting error</string>
+    <string name="coverColse">Printer cover Close</string>
+    <string name="noPaperNotice">No paper, please put paper in and retry</string>
+    <string name="LowBattery">Low battery, please connect the charger!</string>
+    <string name="overTemp">over temp !</string>
+    <string name="ptintInit">Printer initialing... Please try again after a few seconds.</string>
+    <string name="outOfLeft">Beyond the left margin！</string>
+    <string name="outOfLine">Beyond the row space！</string>
+    <string name="outOfFont">Beyond the font size！</string>
+    <string name="outOfGray">Beyond the gray level！</string>
+    <string name="outOfCharSpace">Beyond The Char Space！</string>
+    <string name="empty">The content is empty！</string>
+    <string name="lengthNotEnougth">The length is not enough！</string>
+    <string name="index_text">Print Text</string>
+    <string name="index_pic">Picture/Qrcode</string>
+    <string name="index_comm">Print Command</string>
+    <string name="input_content">input content</string>
+    <string name="dialog_comfirm">ConFirm</string>
+    <string name="operation_result">Result</string>
+    <string name="bl_dy">Print</string>
+    <string name="print_waring">Tip: If the SDK provides the function of can not meet your printing needs, you can send the print instruction way for implementation</string>
+    <string name="printer_type_80mm">80mm Printer</string>
+    <string name="printer_type_58mm">58mm Printer</string>
+    <string name="printer_type_select">Select Printer Type</string>
+    <string name="string_offset_range">(0-255)Multiple of 8</string>
+    <string name="short_text_content">Short Text</string>
+    <string name="hint_short_text">Short Text Within A Line</string>
+    <string name="print_short_text">Print Short Text</string>
+    <string name="param_error">Invalid Argument</string>
+    <string name="auto_linefeed">Auto Linefeed</string>
+    <string name="text_bold">Bold Font</string>
+    <string name="text_too_long">Text too long</string>
+    <string name="text_format_error">Text With Wrong Format</string>
+    <string name="interval_format_error">Print Interval With Wrong Format</string>
+    <string name="not_support">Linefeed Is Disabled</string>
+    <string name="checkPrinterType">Detect printer type</string>
+    <string name="check_error">The detection fails, please check whether there is no paper and whether the cover is closed</string>
+    <string name="printContent1">\n             烧烤\n----------------------------\n日期：2015-01-01 16:18:20\n卡号：12378945664\n单号：1001000000000529142\n----------------------------\n  项目    数量   单价  小计\n秘制烤羊腿  1    56    56\n黯然牛排    2    24    48\n烤火鸡      2    50    100\n炭烧鳗鱼    1    40    40\n烤全羊      1    200   200\n荔枝树烧鸡  1    50    50\n冰镇乳鸽    2    23    46\n秘制烤羊腿  1    56    56\n黯然牛排    2    24    48\n烤火鸡      2    50    100\n炭烧鳗鱼    1    40    40\n烤全羊      1    200   200\n荔枝树烧鸡  1    50    50\n冰镇乳鸽    2    23    46\n秘制烤羊腿  1    56    56\n黯然牛排    2    24    48\n烤火鸡      2    50    100\n炭烧鳗鱼    1    40    40\n烤全羊      1    200   200\n荔枝树烧鸡  1    50    50\n冰镇乳鸽    2    23    46\n秘制烤羊腿  1    56    56\n黯然牛排    2    24    48\n烤火鸡      2    50    100\n炭烧鳗鱼    1    40    40\n烤全羊      1    200   200\n荔枝树烧鸡  1    50    50\n冰镇乳鸽    2    23    46\n冰镇乳鸽    2    23    46\n秘制烤羊腿  1    56    56\n黯然牛排    2    24    48\n烤火鸡      2    50    100\n炭烧鳗鱼    1    40    40\n烤全羊      1    200   200\n荔枝树烧鸡  1    50    50\n冰镇乳鸽    2    23    46\n 合计：1000：00元\n----------------------------\n本卡金额：10000.00\n累计消费：1000.00\n本卡结余：9000.00\n----------------------------\n 地址：广东省佛山市南海区桂城街道桂澜南路45号鹏瑞利广场A317.B-18号铺\n欢迎您的再次光临\n</string>
+    <string name="foreignLanguage">აშო, ჩელა, ვიშო ბუსქა,ოუ, ნანა, ოუ ნანა, ნანინა.სი მონობაშ, გეგაფილი,ოუ, ნანა, სკალი ცოდვა, ნანინა.\nმისამღერი:.ოუ, ნანა, ოუ ნანა, ნანინა…სი უჩხონჩხე, სი უგურე,ოუ, ნანა, სკალი ცოდვა, ნანინა.სი კისერი ელაფირი.ოუ, ნანა, სკალი ცოდვა, ნანინა.მისამღერი..</string>
+    <string name="tem_cannt_null">The temperature protection value cannot be empty</string>
+    <string name="tem_set_wrong">The temperature protection value is set incorrectly</string>
+    <string name="tem_set_success">set successfully</string>
+    <string name="str581">\n             烧烤\n----------------------------\n日期：2015-01-01 16:18:20\n卡号：12378945664\n单号：1001000000000529142\n----------------------------\n  项目          数量    单价    小计\n秘制烤羊腿     1       56       56\n黯然牛排        2       24       48\n烤火鸡           2       50       100\n炭烧鳗鱼        1       40       40\n烤全羊           1       200     200\n荔枝树烧鸡     1       50       50\n冰镇乳鸽        2       23       46\n秘制烤羊腿     1       56       56\n黯然牛排        2       24       48\n烤火鸡           2       50       100\n炭烧鳗鱼        1       40       40\n烤全羊           1       200     200\n荔枝树烧鸡     1       50       50\n冰镇乳鸽        2       23       46\n秘制烤羊腿     1       56       56\n黯然牛排        2       24       48\n烤火鸡           2       50       100\n炭烧鳗鱼        1       40       40\n烤全羊           1       200     200\n荔枝树烧鸡     1       50       50\n冰镇乳鸽        2       23       46\n秘制烤羊腿     1       56       56\n黯然牛排        2       24       48\n烤火鸡           2       50       100\n炭烧鳗鱼        1       40       40\n烤全羊           1       200     200\n荔枝树烧鸡     1       50       50\n冰镇乳鸽        2       23       46\n秘制烤羊腿     1       56       56\n黯然牛排        2       24       48\n烤火鸡           2       50       100\n炭烧鳗鱼        1       40       40\n烤全羊           1       200     200\n荔枝树烧鸡     1       50       50\n冰镇乳鸽        2       23       46\n 合计：1000：00元\n----------------------------\n本卡金额：10000.00\n累计消费：1000.00\n本卡结余：9000.00\n----------------------------\n 地址：广东省佛山市南海区桂城街道桂澜南路45号鹏瑞利广场A317.B-18号铺\n欢迎您的再次光临\n</string>
+    <string name="print_check_info">print check info</string>
+    <string name="hal_version">hardware version:</string>
+    <string name="soft_version">software version:</string>
+    <string name="print_addtext_count">text count(len):</string>
+
+
+    <!-- Scan barcode or qrcode -->
+    <string name="qrcode_verify">Qrcode</string>
+    <string name="qrcode_dialog_title">Select decoding type</string>
+    <string name="qrcode_dialog_msg">Please select read head decoding type</string>
+    <string name="qrcode_dialog_soft_decoding">Soft decoding</string>
+    <string name="qrcode_dialog_hard_decoding">Hard decoding</string>
+    <string name="qrcode_scan_success">Scan Success</string>
+
+
+    <string name="identify_fail">API module is not installed, can not be two-dimensional code / ID card identification</string>
+
+
+</resources>

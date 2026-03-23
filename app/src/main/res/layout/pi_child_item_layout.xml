@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    android:backgroundTint="@android:color/white"
+    app:cardCornerRadius="12dp"
+    app:cardUseCompatPadding="true"
+    app:strokeWidth="0.6dp"
+    app:strokeColor="@color/colorgreyfaded"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
+
+        <!-- Colored Status Badge -->
+        <TextView
+            android:id="@+id/view_status"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="G"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_circle_scren"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Batch Info (left block) -->
+        <LinearLayout
+            android:id="@+id/layout_batch_info"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            app:layout_constraintStart_toEndOf="@id/view_status"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/layout_right_info"
+            app:layout_constraintHorizontal_bias="0">
+
+            <TextView
+                android:id="@+id/txt_batch_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1*30"
+                android:textColor="@color/black"
+                android:textSize="14sp"
+                android:fontFamily="@font/avenirnextltpro_medium" />
+
+            <TextView
+                android:id="@+id/txt_expiry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2026-12-31"
+                android:textColor="@color/textlite"
+                android:textSize="12sp"
+                android:fontFamily="@font/avenirnextltpro_medium" />
+        </LinearLayout>
+
+        <!-- Right column: dynamic fields (RecyclerView) -->
+        <LinearLayout
+            android:id="@+id/layout_right_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end"
+            android:layout_marginStart="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvDetails"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never" />
+        </LinearLayout>
+
+        <!-- Optional divider (subtle) -->
+<!--        <View-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="1dp"-->
+<!--            android:layout_marginTop="8dp"-->
+<!--            android:background="@color/light_white"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/layout_batch_info"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent" />-->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

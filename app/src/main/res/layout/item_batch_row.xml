@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="600dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- Main row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="2dp">
+
+        <!-- Stock (70dp) -->
+        <TextView
+            android:id="@+id/tvStock"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="150"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+        <!-- Batch (80dp) -->
+        <TextView
+            android:id="@+id/tvBatchNos"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="1313"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+        <!-- Status (100dp) -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_badge_damaged"
+            android:gravity="center"
+            android:padding="4dp"
+            android:singleLine="true"
+            android:text="Store Stock"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+
+        <!-- Available (80dp) -->
+        <TextView
+            android:id="@+id/tvAvailableQty"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="75"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+        <!-- Unit QTY (70dp) -->
+        <EditText
+            android:id="@+id/etEnterQty"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@android:drawable/editbox_background"
+            android:gravity="center"
+            android:hint=""
+            android:inputType="number"
+            android:textSize="14sp" />
+
+        <!-- Bottles label (90dp) -->
+        <TextView
+            android:id="@+id/tvBottleQty"
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="Btl Qty"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
+
+        <!-- Bottle QTY (70dp) -->
+        <EditText
+            android:id="@+id/etBottleQty"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@android:drawable/editbox_background"
+            android:gravity="center"
+            android:hint=""
+            android:inputType="number"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Extra fields (same as before) -->
+    <LinearLayout
+        android:id="@+id/llExtraFields"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <Spinner
+            android:id="@+id/spReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/good_reasons_array" />
+
+        <EditText
+            android:id="@+id/etRemarks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Enter remarks"
+            android:inputType="text"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

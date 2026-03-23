@@ -1,0 +1,72 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.RetailonePOS" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryVariant">#01a66f</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">#f23951</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <item name="colorAccent">@color/primary</item>
+
+
+    </style>
+
+    <style name="Theme.RetailonePOS" parent="Base.Theme.RetailonePOS" />
+
+    <style name="ShapeAppearanceOverlay.App.CornerSize50Percent" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
+
+
+    <style name="ShapeAppearanceOverlay.App.CornerSize"  parent="">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="custom_choice_chips" parent="@style/Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/background_color_chip_state_list</item>
+        <item name="chipStrokeColor">@color/stroke_color_chip_state_list</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <!--<item name="rippleColor">@color/light_white</item>-->
+        <!--<item name="chipIconTint">@color/orange</item>-->
+        <item name="chipIconVisible">false</item>
+        <item name="checkedIconEnabled">false</item>
+        <!-- <item name="checkedIcon">@drawable/svg_calender_icon</item> -->
+        <item name="checkedIconTint">@color/white</item>
+        <item name="checkedIconVisible">false</item>
+        <!-- <item name="checkedIconSize">8dp</item> -->
+        <item name="android:textColor">@color/color_active_inctive_text</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="chipStartPadding">5dp</item>
+        <item name="chipEndPadding">5dp</item>
+        <item name="chipSpacingHorizontal">5dp</item>
+        <item name="ensureMinTouchTargetSize">false</item>
+        <item name="chipMinHeight">35dp</item>
+        <item name="chipMinTouchTargetSize">20dp</item>
+    </style>
+
+    <!-- Custom style for DatePickerDialog -->
+    <style name="CustomDatePickerDialog" parent="Theme.AppCompat.Light.Dialog">
+        <!-- Customize the background color -->
+        <item name="android:windowBackground">@color/white</item>
+        <!-- Customize the text color -->
+        <item name="android:textColorPrimary">@color/textlite</item>
+        <!-- Customize the color of the calendar header and days -->
+        <item name="colorAccent">@color/primary</item>
+    </style>
+
+    <!--new style is created here-->
+    <style name="NewFontStyle" parent="android:Widget.TextView">
+        <item name="android:fontFamily">@font/avenirnextltpro_medium</item>
+    </style>
+
+
+
+</resources>

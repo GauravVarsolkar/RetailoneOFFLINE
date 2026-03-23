@@ -1,0 +1,453 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:material="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.retailone.pos.ui.Activity.RSSerialActivity">
+
+    <include
+        android:id="@+id/titlebar"
+        layout="@layout/titlebar" />
+
+    <android.widget.ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <LinearLayout
+            android:id="@+id/serial_linearlayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Loose Oil Dispenser Control"
+                    android:textColor="@color/Blue"
+                    android:textSize="20sp" />
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@color/Blue" />
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <!-- Select DU Id -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Select DU Id"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/spinner_du_id"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="1"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="6dp"
+                        android:background="?android:attr/dividerVertical" />
+
+                    <!-- Select Hose No -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Select Hose No"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/spinner_hose_no"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="1"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+
+                        android:background="?android:attr/dividerVertical" />
+
+                    <!-- Order Quantity -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Order Quantity"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/editText_qty"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:inputType="numberDecimal"
+                            android:text=""
+                            android:textAlignment="center" />
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+
+                        android:background="?android:attr/dividerVertical" />
+
+                    <!-- Amount -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Amount"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/productAmt"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:inputType="numberDecimal"
+                            android:text=""
+                            android:textAlignment="center" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:orientation="vertical"
+                    android:padding="13dp">
+
+                    <!-- Select Amount Section -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:orientation="horizontal">
+
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Enter Amount"
+                            android:textSize="18sp" />
+
+                        <EditText
+                            android:id="@+id/selectAmount"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:inputType="numberDecimal"
+                            android:text=""
+                            android:textAlignment="center" />
+
+
+                    </LinearLayout>
+
+                    <!-- Horizontal row of buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_1"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="50 ZK"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/colorAccent"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/card4"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_2"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="100 ZK"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/colorAccent"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/card4"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_3"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="200 ZK"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/colorAccent"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/card4"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+                    </LinearLayout>
+
+                    <!-- Another row of buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_4"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="250 ZK"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/colorAccent"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/card4"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_5"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="400 ZK"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/colorAccent"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/card4"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:orientation="vertical"
+                    android:padding="13dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Enter Liters"
+                            android:textSize="18sp" />
+                        <EditText
+                            android:id="@+id/selectlit"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:inputType="numberDecimal"
+                            android:text=""
+                            android:textAlignment="center" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/qty_1"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="2.5 L"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/card5"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/colorAccent"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/qty_2"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="5 L"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/card5"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/colorAccent"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+
+                    </LinearLayout>
+
+                    <!-- Another row of buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/qty_3"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="50 L"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/card5"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/colorAccent"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/qty_4"
+                            android:layout_width="100dp"
+                            android:layout_height="60dp"
+                            android:layout_margin="3dp"
+                            android:text="100 L"
+                            android:textColor="@android:color/black"
+                            app:backgroundTint="@color/card5"
+                            app:cornerRadius="16dp"
+                            app:iconPadding="10dp"
+                            app:rippleColor="@color/colorAccent"
+                            app:strokeColor="@color/Gray"
+                            app:strokeWidth="2dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_start"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="@color/icon_tint2"
+                android:text="Start Dispensing"
+                app:cornerRadius="16dp" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:layout_marginTop="10dp"
+                android:text="Status" />
+
+        </LinearLayout>
+    </android.widget.ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

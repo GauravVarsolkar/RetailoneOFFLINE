@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/logout_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="8dp"
+        android:elevation="4dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:background="@color/Blue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctendTOT"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="20dp">
+
+            <!-- Instruction TextView -->
+            <TextView
+                android:id="@+id/tvShiftend"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Please click to fetch shift end DU Totalizer value"
+                android:textColor="@android:color/black"
+                android:textSize="20sp"
+                android:padding="6dp"
+                android:gravity="center"
+                android:fontFamily="@font/montserrat_bold"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- EditText for Totalizer Value -->
+            <EditText
+                android:id="@+id/etendTotalizerValue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edittext_background"
+                android:gravity="center"
+                android:hint="Totalizer value"
+                android:inputType="numberDecimal"
+android:visibility="gone"
+                android:padding="10dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- "Please Wait" TextView -->
+
+            <TextView
+                android:id="@+id/tvendPleaseWait"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:gravity="center"
+                android:text="Please wait"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="16sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvShiftend"
+                app:layout_constraintVertical_bias="0.0" />
+
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/prefer_cancel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginEnd="10dp"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:text="Cancel"
+                android:textColor="@color/secondary"
+                app:cornerRadius="24dp"
+                app:layout_constraintBottom_toBottomOf="@+id/prefer_confirm"
+                app:layout_constraintEnd_toStartOf="@+id/prefer_confirm"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvendPleaseWait"
+                app:strokeColor="@color/secondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/prefer_confirm"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="50dp"
+                android:layout_marginEnd="10dp"
+                android:backgroundTint="@color/secondary"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:text="DU TOTALIZER"
+                android:textColor="@color/white"
+                app:cornerRadius="24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/prefer_cancel"
+                app:layout_constraintTop_toBottomOf="@+id/tvendPleaseWait" />
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+    </androidx.cardview.widget.CardView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

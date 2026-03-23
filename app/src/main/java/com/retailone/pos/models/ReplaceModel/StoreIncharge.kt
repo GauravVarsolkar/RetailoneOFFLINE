@@ -1,0 +1,30 @@
+package com.retailone.pos.models.ReplaceModel
+
+data class StoreIncharge(
+    val id: Int,
+    val user_type: String?,
+    val surname: String?,
+    val first_name: String,
+    val last_name: String?,
+    val username: String?,
+    val email: String?,
+    val email_verified_at: String?,
+    val password: String?,
+    val password_changed_at: String?,
+    val role_id: String?,
+    val cluster_id: String?,
+    val contact_no: String?,
+    val alt_contact_no: String?,
+    val address: String?,
+    val permanent_address: String?,
+    val current_address: String?,
+    val business_id: String?,
+    val allow_login: Int?,
+    val active_status: String?,
+    val dob: String?,
+    val gender: String?,
+    val created_at: String?,
+    val updated_at: String?,
+    val deleted_at: String?,
+    val status: Int?
+)

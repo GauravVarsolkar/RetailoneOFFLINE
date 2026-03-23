@@ -1,0 +1,3 @@
+package com.retailone.pos.models.ProductInventoryModel.InventoryUpdateResModel
+
+class Data

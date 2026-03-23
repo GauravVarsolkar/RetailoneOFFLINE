@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/light_white"
+    android:padding="6dp"
+    android:layout_marginTop="6dp">
+
+    <!-- Left side: Batch -->
+    <TextView
+        android:id="@+id/txt_batch_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Batch:"
+        android:textColor="@color/textlite"
+        android:textSize="14sp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true" />
+
+    <!-- Right side: Price -->
+    <TextView
+        android:id="@+id/txt_batch_price"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="₹0.00"
+        android:textColor="@color/textlite"
+        android:textSize="14sp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true" />
+
+</RelativeLayout>

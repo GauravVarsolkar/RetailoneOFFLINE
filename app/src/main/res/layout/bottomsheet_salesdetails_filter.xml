@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="12dp">
+
+    <View
+        android:id="@+id/smallview"
+        android:layout_width="60dp"
+        android:layout_height="5dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/shape_small_view"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/close_bottomsheet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/shape_round_round"
+        android:backgroundTint="#1443A047"
+        android:padding="6dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/svg_cross_icon"
+        app:layout_constraintBottom_toTopOf="@+id/bsview"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <!--<TextView
+        android:id="@+id/bottomsheet_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Register On Templefood"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/smallview" />-->
+
+    <View
+        android:id="@+id/bsview"
+        android:layout_width="match_parent"
+        android:layout_height="0.8dp"
+        android:layout_marginTop="32dp"
+        android:background="#80707171"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smallview" />
+
+
+    <TextView
+        android:id="@+id/fromtext"
+        android:layout_width="50dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="16dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:backgroundTint="@color/light_white"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:gravity="center"
+        android:text="From"
+        app:layout_constraintBottom_toBottomOf="@+id/from_calender_layout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/from_calender_layout" />
+
+
+    <LinearLayout
+        android:id="@+id/from_calender_layout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:backgroundTint="@color/light_white"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/fromtext"
+        app:layout_constraintTop_toBottomOf="@+id/bsview">
+
+        <ImageView
+            android:id="@+id/calender_image"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/svg_calender" />
+
+        <TextView
+            android:id="@+id/calender_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="From Date" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/totext"
+        android:layout_width="50dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="16dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:backgroundTint="@color/light_white"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:gravity="center"
+        android:text="To"
+        app:layout_constraintBottom_toBottomOf="@+id/to_calender_layout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/to_calender_layout" />
+
+
+    <LinearLayout
+        android:id="@+id/to_calender_layout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:backgroundTint="@color/light_white"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/fromtext"
+        app:layout_constraintTop_toBottomOf="@+id/from_calender_layout">
+
+
+        <ImageView
+            android:id="@+id/tocalender_image"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/svg_calender" />
+
+        <TextView
+            android:id="@+id/tocalender_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:text="To Date" />
+    </LinearLayout>
+
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/filter_btn"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="16dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="Apply Filter"
+        android:textSize="16dp"
+        android:textColor="@color/textdark"
+        app:cornerRadius="28dp"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/to_calender_layout" />
+
+
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/clear_btn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="View All"
+
+        android:textAllCaps="false"
+        android:textColor="@color/secondary"
+        android:textSize="16dp"
+        app:cornerRadius="28dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/filter_btn"
+        app:strokeColor="@color/secondary" />
+
+
+
+
+
+
+
+
+   <!-- <TextView
+        android:id="@+id/r1tv1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="Existing Customer?"
+        android:textColor="@color/textlite"
+        android:textSize="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bsview" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/amount_layout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/shape_curve_grey_small"
+
+        android:backgroundTint="@color/white"
+        android:hint="Enter Existing Customer's Mobile No"
+        android:paddingTop="2dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/r1tv1">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/mobile_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@android:color/transparent"
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:inputType="number"
+            android:maxLength="10"
+            android:textSize="15dp" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/save_btn"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="Submit"
+        android:textSize="16dp"
+        android:textColor="@color/textdark"
+        app:cornerRadius="28dp"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/amount_layout" />
+
+    <View
+        android:id="@+id/dot"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/shape_dotted_line"
+        android:backgroundTint="@color/secondary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_btn" />
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/skip_btn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="@font/avenirnextltpro_medium"
+        android:text="@string/skip_text"
+
+        android:textAllCaps="false"
+        android:textColor="@color/secondary"
+        android:textSize="16dp"
+        app:cornerRadius="28dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dot"
+        app:strokeColor="@color/secondary" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/progress"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        app:cardCornerRadius="50dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/background_color"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" >
+
+        <ProgressBar
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            style="?android:attr/progressBarStyleLarge"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/custom_progress"
+            android:indeterminateDuration="800"
+            android:layout_margin="5dp"
+            />
+
+        &lt;!&ndash;
+                android:indeterminateTint="@color/primery"
+        &ndash;&gt;
+
+    </androidx.cardview.widget.CardView>-->
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

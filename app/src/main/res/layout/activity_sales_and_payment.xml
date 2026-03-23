@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.Activity.DashboardActivity.SalesAndPaymentActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:elevation="1dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary"
+            android:minHeight="?attr/actionBarSize"
+            android:theme="?attr/actionBarTheme">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:weightSum="1"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center_horizontal"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="5dp"
+                    android:backgroundTint="#fff"
+                    android:adjustViewBounds="true"
+                    android:src="@drawable/mlogo"
+                    android:layout_gravity="center"
+                    android:layout_weight="0.5"
+                    android:padding="4dp"
+                    android:layout_marginEnd="56dp"
+                    android:id="@+id/image"/>
+
+            </LinearLayout>
+
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:isScrollContainer="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/appbar"
+        app:layout_constraintVertical_bias="1.0">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="8dp">
+
+
+            <LinearLayout
+                android:id="@+id/calender_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/light_white"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/calender_imagex"-->
+<!--                    android:layout_width="30dp"-->
+<!--                    android:layout_height="30dp"-->
+<!--                    android:src="@drawable/svg_calender" />-->
+
+                <TextView
+                    android:id="@+id/calender_textx"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center_horizontal"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Date" />
+            </LinearLayout>
+
+
+<!--            <TextView-->
+<!--                android:id="@+id/fromtext"-->
+<!--                android:layout_width="50dp"-->
+<!--                android:layout_height="0dp"-->
+<!--                android:layout_gravity="center_vertical"-->
+<!--                android:layout_marginStart="8dp"-->
+<!--                android:fontFamily="@font/avenirnextltpro_medium"-->
+<!--                android:text="From"-->
+<!--                android:background="@drawable/shape_curve_grey_small"-->
+<!--                android:backgroundTint="@color/light_white"-->
+<!--                android:gravity="center"-->
+<!--                app:layout_constraintBottom_toBottomOf="@+id/from_calender_layout"-->
+<!--                app:layout_constraintStart_toStartOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="@+id/from_calender_layout" />-->
+
+
+<!--            <LinearLayout-->
+<!--                android:id="@+id/from_calender_layout"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginStart="2dp"-->
+<!--                android:layout_marginTop="16dp"-->
+<!--                android:layout_marginEnd="8dp"-->
+<!--                android:background="@drawable/shape_curve_grey_small"-->
+<!--                android:backgroundTint="@color/light_white"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingHorizontal="8dp"-->
+<!--                android:paddingVertical="6dp"-->
+<!--                app:layout_constraintEnd_toStartOf="@+id/search"-->
+<!--                app:layout_constraintStart_toEndOf="@+id/fromtext"-->
+<!--                app:layout_constraintTop_toBottomOf="@+id/calender_layout">-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/calender_image"-->
+<!--                    android:layout_width="24dp"-->
+<!--                    android:layout_height="24dp"-->
+<!--                    android:src="@drawable/svg_calender" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/calender_text"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_gravity="center_vertical"-->
+<!--                    android:layout_marginStart="10dp"-->
+<!--                    android:fontFamily="@font/avenirnextltpro_medium"-->
+<!--                    android:text="From Date" />-->
+<!--            </LinearLayout>-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/totext"-->
+<!--                android:layout_width="50dp"-->
+<!--                android:layout_height="0dp"-->
+<!--                android:layout_gravity="center_vertical"-->
+<!--                android:layout_marginStart="8dp"-->
+<!--                android:fontFamily="@font/avenirnextltpro_medium"-->
+<!--                android:text="To"-->
+<!--                android:background="@drawable/shape_curve_grey_small"-->
+<!--                android:backgroundTint="@color/light_white"-->
+<!--                android:gravity="center"-->
+<!--                app:layout_constraintBottom_toBottomOf="@+id/to_calender_layout"-->
+<!--                app:layout_constraintStart_toStartOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="@+id/to_calender_layout" />-->
+
+
+<!--            <LinearLayout-->
+<!--                android:id="@+id/to_calender_layout"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginStart="2dp"-->
+<!--                android:layout_marginTop="16dp"-->
+<!--                android:layout_marginEnd="8dp"-->
+<!--                android:background="@drawable/shape_curve_grey_small"-->
+<!--                android:backgroundTint="@color/light_white"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingHorizontal="8dp"-->
+<!--                android:paddingVertical="6dp"-->
+<!--                app:layout_constraintEnd_toStartOf="@+id/search"-->
+<!--                app:layout_constraintStart_toEndOf="@+id/fromtext"-->
+<!--                app:layout_constraintTop_toBottomOf="@+id/from_calender_layout">-->
+
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/tocalender_image"-->
+<!--                    android:layout_width="24dp"-->
+<!--                    android:layout_height="24dp"-->
+<!--                    android:src="@drawable/svg_calender" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tocalender_text"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_gravity="center_vertical"-->
+<!--                    android:layout_marginStart="10dp"-->
+<!--                    android:fontFamily="@font/avenirnextltpro_medium"-->
+<!--                    android:text="To Date" />-->
+<!--            </LinearLayout>-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/search"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_alignParentEnd="true"-->
+<!--                android:layout_marginEnd="8dp"-->
+<!--                android:background="@drawable/shape_curve_grey_big"-->
+<!--                android:backgroundTint="@color/secondary"-->
+<!--                android:fontFamily="@font/avenirnextltpro_medium"-->
+<!--                android:paddingHorizontal="20dp"-->
+<!--                android:paddingVertical="10dp"-->
+<!--                android:text="Go"-->
+
+<!--                android:textColor="@color/textdark"-->
+<!--                android:textSize="16dp"-->
+<!--                app:layout_constraintBottom_toBottomOf="@+id/to_calender_layout"-->
+<!--                app:layout_constraintEnd_toEndOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="@+id/from_calender_layout" />-->
+
+
+            <LinearLayout
+                android:id="@+id/card_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/calender_layout">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/invoice_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="170dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_weight="1"
+                    app:strokeWidth="0dp">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#9fcc2e">
+
+                        <ImageView
+                            android:id="@+id/imageView2"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:src="@drawable/svg_invoice"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Invoice"
+                            android:textColor="@color/white"
+                            android:textSize="15dp"
+                            app:layout_constraintBottom_toBottomOf="@+id/imageView2"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/imageView2"
+                            app:layout_constraintTop_toTopOf="@+id/imageView2" />
+
+                        <TextView
+                            android:id="@+id/invoice_text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="---"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:textSize="17dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/imageView2" />
+
+                        <RelativeLayout
+                            android:id="@+id/rl_1"
+                            android:layout_width="0dp"
+                            android:layout_marginTop="8dp"
+
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/invoice_text">
+
+                            <TextView
+                                android:id="@+id/invoice_paid_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:text="Invoice Paid"
+                                android:textColor="@color/white"
+                                android:textSize="15dp"
+                                android:layout_alignParentStart="true" />
+
+                            <TextView
+                                android:id="@+id/invoice_paid_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_below="@+id/invoice_paid_text"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:text="---"
+                                android:textColor="@color/white"
+                                android:textSize="15dp"
+                                android:textStyle="bold" />
+
+
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:id="@+id/rl_2"
+                            android:layout_width="0dp"
+                            android:layout_marginTop="8dp"
+
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/rl_1">
+
+                            <TextView
+                                android:id="@+id/invoice_unpaid_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:text="Invoice Unpaid"
+                                android:textColor="@color/white"
+                                android:textSize="15dp"
+                                android:layout_alignParentStart="true" />
+
+                            <TextView
+                                android:id="@+id/invoice_unpaid_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:fontFamily="@font/avenirnextltpro_medium"
+                                android:text="---"
+                                android:textColor="@color/white"
+                                android:textSize="15dp"
+                                android:textStyle="bold"
+                                android:layout_below="@+id/invoice_unpaid_text" />
+
+
+                        </RelativeLayout>
+
+
+
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/payment_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="170dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_weight="1"
+                    app:strokeWidth="0dp">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#248afd">
+
+                        <ImageView
+                            android:id="@+id/imageView3"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:src="@drawable/svg_payment"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:tint="@color/white"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Payments"
+                            android:textColor="@color/white"
+                            android:textSize="15dp"
+                            app:layout_constraintBottom_toBottomOf="@+id/imageView3"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@+id/imageView3"
+                            app:layout_constraintTop_toTopOf="@+id/imageView3" />
+
+                        <TextView
+                            android:id="@+id/recivedtext"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Received"
+                            android:textColor="@color/white"
+                            android:textSize="14dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/imageView3" />
+
+                        <TextView
+                            android:id="@+id/recivedvalue"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="---"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:textSize="17dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/recivedtext" />
+
+                        <TextView
+                            android:id="@+id/duetext"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="Due"
+                            android:textColor="@color/white"
+                            android:textSize="14dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/recivedvalue" />
+
+                        <TextView
+                            android:id="@+id/duevalue"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:text="---"
+                            android:textColor="@color/white"
+                            android:textSize="17dp"
+                            android:textStyle="bold"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/duetext" />
+
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rl1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="16dp"
+                android:weightSum="4"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/card3"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/card_container">
+
+                <TextView
+                    android:id="@+id/txt1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="InvoiceID"
+                    android:textStyle="bold"
+                    android:layout_weight="0.9"
+                    android:textColor="@color/textlite"
+                    android:textSize="16dp" />
+
+                <TextView
+                    android:id="@+id/txt2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Amount"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:layout_weight="1"
+                    android:textColor="@color/textlite"
+                    android:textSize="16dp" />
+
+                <TextView
+                    android:id="@+id/txt3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Date"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:layout_weight="1.4"
+                    android:textColor="@color/textlite"
+                    android:textSize="16dp" />
+
+                <TextView
+                    android:id="@+id/txt4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Mode"
+                    android:gravity="center"
+                    android:layout_weight="0.7"
+                    android:textStyle="bold"
+                    android:textColor="@color/textlite"
+                    android:textSize="16dp" />
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/salespayment_rcv"
+                android:layout_width="match_parent"
+                android:paddingBottom="50dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rl1" />
+
+            <ImageView
+                android:id="@+id/no_data_found"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                android:src="@drawable/nodata_found"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rl1"/>
+
+
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/progress"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/background_color"
+                app:cardCornerRadius="50dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ProgressBar
+                    style="?android:attr/progressBarStyleLarge"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="5dp"
+                    android:indeterminate="true"
+                    android:indeterminateDrawable="@drawable/custom_progress"
+                    android:indeterminateDuration="800" />
+
+                <!--
+                        android:indeterminateTint="@color/primery"
+                -->
+
+            </androidx.cardview.widget.CardView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/add_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="32dp"
+        android:src="@drawable/filter_icon_svg"
+        android:tint="@color/primary"
+        android:backgroundTint="@color/primary"
+        app:tint="@android:color/white"
+        android:text="Filter"
+        android:textColor="@color/white"
+        app:icon="@drawable/filter_icon_svg"
+        app:iconTint="@color/white"
+
+
+
+        app:fabSize="normal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

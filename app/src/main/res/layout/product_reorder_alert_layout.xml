@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorgrey"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cartLayout">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white">
+
+            <ImageView
+                android:id="@+id/productimg"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:adjustViewBounds="true"
+                android:src="@drawable/temp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toBottomOf="@+id/productimg"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/productimg"
+                app:layout_constraintTop_toTopOf="@+id/productimg">
+
+                <TextView
+                    android:id="@+id/item_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:singleLine="true"
+                    android:text="mm gold premium"
+                    android:textColor="@color/colorgreytwo"
+                    android:textSize="15dp"
+                    android:typeface="sans"
+                    app:layout_constraintEnd_toStartOf="@+id/quantity_container"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/pack_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:text="1 Liter Pack"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="13dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/item_name" />
+
+                <TextView
+                    android:id="@+id/avl_quantity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:paddingRight="5dip"
+                    android:layout_marginTop="4dp"
+                    android:text="Available Quantity : 4"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="12dp"
+                    app:layout_constraintStart_toStartOf="@+id/item_name"
+                    app:layout_constraintTop_toBottomOf="@+id/pack_type" />
+
+                <LinearLayout
+                    android:id="@+id/quantity_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/shape_curve_grey_small"
+                    android:backgroundTint="@color/card7"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:padding="16dp"
+                        android:text="-9"
+                        android:textColor="@color/goodgrey"
+                        android:textSize="18dp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

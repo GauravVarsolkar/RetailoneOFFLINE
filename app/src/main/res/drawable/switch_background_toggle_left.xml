@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/switch_bg_color" /> <!-- Default background color -->
+    <corners android:topLeftRadius="16dp"
+        android:topRightRadius="2dp"
+        android:bottomRightRadius="2dp"
+        android:bottomLeftRadius="16dp"
+        /> <!-- Adjust corner radius as needed -->
+    <stroke android:width="0dp" android:color="@color/secondary" /> <!-- Optional border -->
+</shape>
+
+<!--<?xml version="1.0" encoding="UTF-8" standalone="no"?>-->
+<!--<selector xmlns:android="http://schemas.android.com/apk/res/android">-->
+<!--    <item android:drawable="@color/secondary" android:state_checked="true" />-->
+<!--    <item android:drawable="@color/secondary" android:state_pressed="true" />-->
+<!--    <item android:drawable="@color/white" />-->
+
+<!--</selector>-->

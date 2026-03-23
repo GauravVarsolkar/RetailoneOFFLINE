@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/switch_bg_color" /> <!-- Default background color -->
+    <corners android:topLeftRadius="2dp"
+        android:topRightRadius="16dp"
+        android:bottomRightRadius="16dp"
+        android:bottomLeftRadius="2dp" /> <!-- Adjust corner radius as needed -->
+    <stroke android:width="0dp" android:color="@color/secondary" /> <!-- Optional border -->
+</shape>

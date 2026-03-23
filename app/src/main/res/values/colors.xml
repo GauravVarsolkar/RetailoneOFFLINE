@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+<!--
+    <color name="transparent">#00000000</color>
+-->
+    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#dd0b29</color>
+    <color name="secondary">#ffc000</color>
+    <color name="grey">#808080</color>
+    <color name="lightgrey">#f0f0f0</color>
+    <color name="light_white">#f5f5f5</color>
+    <color name="icon_tint">#1976D2</color>
+    <color name="background_color">#ecf0f3</color>
+
+    <color name="colorAccent">#03DAC5</color>
+
+
+    <color name="grad1s">#026A3D</color>
+    <color name="grad1e">#22C686</color>
+    <color name="grad1m">#159957</color>
+
+
+
+
+
+
+    <color name="grey2">#E9EAEE</color>
+    <color name="goodgrey">#535353</color>
+    <color name="colordeepb">#272727</color>
+    <color name="colorgrey">#F8F8F8</color>
+    <color name="colorgreytwo">#676666</color>
+    <color name="colorgreyfaded">#b2b2b2</color>
+    <color name="colorwhite">#FFFFFF</color>
+    <color name="textlite">#535353</color>
+    <color name="green">#4CAF50</color>
+    <color name="red">#F44336</color>
+    <color name="orange">#FF9800</color>
+    <color name="badge_green">#4CAF50</color>     <!-- good -->
+    <color name="badge_orange">#FF9800</color>   <!-- damaged -->
+    <color name="badge_red">#F44336</color>      <!-- expired -->
+
+    <!-- Fallback dynamic colors -->
+    <color name="badge_color_1">#FA0D25</color>
+    <color name="badge_color_2">#DB054F</color>
+    <color name="badge_color_3">#B812D4</color>
+    <color name="badge_color_4">#4C0BC6</color>
+    <color name="badge_color_5">#172BA8</color>
+    <color name="badge_color_6">#128CC4</color>
+    <color name="badge_color_7">#0F9AAB</color>
+    <color name="badge_color_8">#0FA860</color>
+    <color name="badge_color_9">#85EA0F</color>
+    <color name="badge_color_10">#B8A60D</color>
+
+
+    <color name="textdark">#272727</color>
+
+   <!-- <color name="card1">#FFCDD2</color>
+    <color name="card2">#B2DFDB</color>
+    <color name="card3">#E3F2FD</color>
+    <color name="card4">#D1C4E9</color>
+    <color name="card5">#FFAB91</color>
+    <color name="card6">#A5D6A7 </color>
+    <color name="card7">#FFF9C4</color>
+    <color name="card8">#E0E0E0</color>
+
+    <color name="icon_tint1">#FF4081</color>
+    <color name="icon_tint2">#009688 </color>
+    <color name="icon_tint3">#2196F3</color>
+    <color name="icon_tint4">#9C27B0</color>
+    <color name="icon_tint5">#FF5722</color>
+    <color name="icon_tint6">#4CAF50</color>
+    <color name="icon_tint7">#FFD600</color>
+    <color name="icon_tint8">#607D8B</color>-->
+
+    <color name="card1">#FFE0B2</color>
+    <color name="card2">#B2EBF2</color>
+    <color name="card3">#BBDEFB</color>
+    <color name="card4">#FFCCBC</color>
+    <color name="card5">#D1C4E9</color>
+    <color name="card6">#C5E1A5</color>
+    <color name="card7">#FFECB3</color>
+    <color name="card8">#F0F4C3</color>
+
+    <color name="icon_tint1">#FF6D00</color>
+    <color name="icon_tint2">#006064</color>
+    <color name="icon_tint3">#1565C0</color>
+    <color name="icon_tint4">#D84315</color>
+    <color name="icon_tint5">#9C27B0</color>
+    <color name="icon_tint6">#33691E</color>
+    <color name="icon_tint7">#FF6F00</color>
+    <color name="icon_tint8">#827717</color>
+
+
+
+
+
+
+
+
+    <color name="Black">#FF000000</color>
+    <color name="White">#FFFFFFFF</color>
+    <color name="Orange">#FFFF831C</color>
+    <color name="Red">#FFC90000</color>
+    <color name="Gray">#FF969696</color>
+    <color name="Common_Background">#FFDCDCDC</color>
+    <color name="Gray_Line">#FFC0C0C0</color>
+    <color name="transparent">#9000</color>
+    <color name="setting_background">#fff2f2f2</color>
+    <color name="preference_primary_text">#ff000000</color>
+    <color name="Blue">#ff61a8ff</color>
+    <color name="lily_white">#EBEBEB</color>
+    <color name="color_6b6b6b">#6B6B6B</color>
+    <color name="gray_blue">#bdeadc</color>
+    <color name="_grey_605E5C">#ff605e5c</color>
+    <color name="f5f5f5">#f5f5f5</color>
+
+    <drawable name="red">#f00</drawable>
+    <drawable name="green">#0f0</drawable>
+    <drawable name="gray">#ccc</drawable>
+    <drawable name="white">#ffffff</drawable>
+    <drawable name="color_6b6b6b">#6B6B6B</drawable>
+
+    <color name="lcd_black">#FF000000</color>
+    <color name="lcd_red">#FFFF0000</color>
+    <color name="lcd_green">#b7ff8d</color>
+    <color name="lcd_white">#FFFFFFFF</color>
+    <color name="lcd_blue">#FF0000FF</color>
+
+    <color name="sync_fab_red">#F44336</color>
+    <color name="sync_fab_green">#4CAF50</color>
+    <color name="sync_fab_orange">#FF9800</color>
+    <color name="badge_off_white">#FFFCDE</color>
+
+
+
+
+
+
+</resources>

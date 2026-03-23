@@ -1,0 +1,34 @@
+package com.retailone.pos.models.PosSalesDetailsModel
+
+data class Data(
+    val amount_tendered: String,
+    val discount_amount: String,
+    val grand_total: String,
+    val invoice_id: String,
+    val payment_type: String,
+    val purchase_date_time: String,
+    val salesItem: List<SalesItem>,
+    val store: Store,
+    val store_manager_id: String,
+    val sub_total: String,
+    val subtotal_after_discount: String,
+    val tax: Int,
+    val discount: Int,
+    val tax_amount: String,
+    val taxrate: String,
+
+    val customer_name: String?,
+    val customer_mob_no: String?,
+    val vat_no: String,
+    val tpin_no: String,
+    val buyers_tpin: String,
+    val tax_ex: String,
+    val ej_no: String,
+    val ej_activation_date: String,
+    val tax_sdc_idamount: String,
+    val internal_data: String,
+    val receipt_sign: String,
+    val receipt_no: String,
+    val rcptType: String,
+    val vsdc_reciept: VsdcReceipt?
+)

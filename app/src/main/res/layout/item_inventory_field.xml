@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end"
+    android:paddingVertical="2dp">
+
+    <!-- Label (lighter, right aligned) -->
+    <TextView
+        android:id="@+id/txtLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Total quantity"
+        android:textSize="11sp"
+        android:textColor="@color/textlite"
+        android:textAlignment="viewEnd"
+        android:layout_marginEnd="4dp" />
+
+    <!-- Value (bold, right aligned) -->
+    <TextView
+        android:id="@+id/txtValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="123"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:textColor="@color/black"
+        android:textAlignment="viewEnd" />
+</LinearLayout>

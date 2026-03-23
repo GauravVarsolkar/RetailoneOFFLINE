@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- ===== H-SCROLL quantity strip (EDIT MODE) ===== -->
+    <LinearLayout
+        android:id="@+id/quantity_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="4dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:orientation="horizontal"
+        android:paddingVertical="3dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <!-- Batch -->
+                <RelativeLayout
+                    android:id="@+id/batchname_layout"
+                    android:layout_width="64dp"
+                    android:layout_height="48dp"
+                    android:background="@android:color/transparent"
+                    android:paddingHorizontal="8dp">
+
+                    <TextView
+                        android:id="@+id/batch_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:includeFontPadding="false"
+                        android:text="Batch"
+                        android:textSize="13sp" />
+                </RelativeLayout>
+
+                <!-- Price -->
+                <RelativeLayout
+                    android:id="@+id/batch_pricelayout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/shape_curve_grey_small"
+                    android:paddingHorizontal="12dp">
+
+                    <TextView
+                        android:id="@+id/batch_price"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:includeFontPadding="false"
+                        android:text="Price"
+                        android:textSize="13sp" />
+                </RelativeLayout>
+
+                <!-- Stock -->
+                <RelativeLayout
+                    android:id="@+id/sale_layout"
+                    android:layout_width="64dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/shape_curve_grey_small">
+
+                    <TextView
+                        android:id="@+id/sale_quantity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:includeFontPadding="false"
+                        android:text="Stock"
+                        android:textSize="13sp" />
+                </RelativeLayout>
+
+                <!-- Return Quantity -->
+                <RelativeLayout
+                    android:id="@+id/return_quantity_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/shape_curve_grey_small"
+                    android:paddingHorizontal="10dp">
+
+                    <EditText
+                        android:id="@+id/return_quantity"
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_centerInParent="true"
+                        android:background="@drawable/rounded_edittext_background"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:gravity="center"
+                        android:hint="Qty"
+                        android:includeFontPadding="false"
+                        android:inputType="number"
+                        android:maxLength="8"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="6dp"
+                        android:textColor="@color/primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </RelativeLayout>
+
+                <!-- Update Button -->
+                <RelativeLayout
+                    android:id="@+id/update_button_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/shape_curve_grey_small"
+                    android:paddingHorizontal="6dp">
+
+                    <ImageButton
+                        android:id="@+id/update_btn"
+                        android:layout_width="50dp"
+                        android:layout_height="36dp"
+                        android:layout_centerInParent="true"
+                        android:background="@drawable/bg_dispatch_button"
+                        android:contentDescription="Update"
+                        android:padding="8dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/pencil"
+                        app:tint="@color/white" />
+                </RelativeLayout>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- ===== Compact strip (READ-ONLY MODE) ===== -->
+    <LinearLayout
+        android:id="@+id/quantity_layouts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="4dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:orientation="horizontal"
+        android:paddingVertical="3dp"
+        android:visibility="gone"
+        android:weightSum="5"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:id="@+id/batchname_layouts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="5dp"
+            android:layout_weight="0.5"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:id="@+id/batch_names"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:text="Batch"
+                android:textSize="13dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/batch_pricelayouts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1.4"
+            android:background="@drawable/shape_curve_grey_small"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:id="@+id/batch_prices"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:text="Price"
+                android:textSize="13dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/sale_layouts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="4dp"
+            android:layout_weight="0.7"
+            android:background="@drawable/shape_curve_grey_small"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:id="@+id/sale_quantitys"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:text="Stock"
+                android:textSize="13dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/return_quantity_layouts"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/shape_curve_grey_small"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <EditText
+                android:id="@+id/return_quantitys"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/rounded_edittext_background"
+                android:fontFamily="@font/avenirnextltpro_medium"
+                android:gravity="center"
+                android:hint="Quantity"
+                android:inputType="number"
+                android:maxLength="8"
+                android:minWidth="80dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="5dp"
+                android:textColor="@color/primary"
+                android:textSize="15dp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/return_reason_layout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="5dp"
+            android:layout_weight="1.4"
+            android:background="@drawable/shape_curve_grey_small"
+            android:orientation="vertical"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:id="@+id/return_reason"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/rounded_edittext_background"
+                android:ellipsize="marquee"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="5dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:text="Good"
+                android:textColor="@color/primary"
+                android:textSize="15dp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== Barrier: place cards below whichever quantity strip is visible ===== -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/qty_barrier"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="quantity_layout,quantity_layouts" />
+
+    <!-- ===== Totals card (EDIT MODE) BELOW the quantity barrier ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/paymentcard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/qty_barrier">
+
+        <LinearLayout
+            android:id="@+id/payment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorwhite"
+            android:orientation="vertical"
+            android:paddingVertical="8dp">
+
+            <!-- ===== Subtotal row ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="Sub Total"
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/subtotals"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="RWF0.00"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- ===== Tax row ===== -->
+            <LinearLayout
+                android:id="@+id/taxLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:id="@+id/taxfield"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="(+) Tax "
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/taxAmounts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="REF0.00"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- ===== Discount row (EDIT MODE) ===== -->
+            <LinearLayout
+                android:id="@+id/discountLayoutnew"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:visibility="gone">
+
+                <TextView
+
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="(-) Discount"
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/discountAmountnew"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="RWF0.00"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+
+
+
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/shape_dotted_line" />
+
+            <!-- ===== Grand total row ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/white"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="Grand Total"
+                    android:textColor="@color/colorgreytwo" />
+
+                <TextView
+                    android:id="@+id/alltotalAmounts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="RWF0.00"
+                    android:textColor="@color/goodgrey" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ===== Checkbox row (EDIT MODE) now UNDER the totals card ===== -->
+    <LinearLayout
+        android:id="@+id/box_pack_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/shape_curve_grey_small"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingVertical="6dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/paymentcard">
+
+        <CheckBox
+            android:id="@+id/cb_click"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="@font/avenirnextltpro_medium"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:text="Incomplete \nBox"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/box_inputs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <!-- Column 1: No. of Box -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_no_of_box_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="No. of Box"
+                    android:textAlignment="center"
+                    android:textSize="12sp"  />
+
+                <EditText
+                    android:id="@+id/et_no_of_box"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:background="@drawable/rounded_edittext_background"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:inputType="number"
+                    android:paddingHorizontal="8dp"
+                    android:singleLine="true"
+                    android:textColor="@color/primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Column 2: No. of Packs -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_number_of_packs_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="No. of Packs"
+                    android:textAlignment="center"
+                    android:textSize="12sp"  />
+
+                <EditText
+                    android:id="@+id/et_number_of_packs"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="2dp"
+                    android:background="@drawable/rounded_edittext_background"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:inputType="number"
+                    android:paddingHorizontal="8dp"
+                    android:singleLine="true"
+                    android:textColor="@color/primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ===== Totals card (READ-ONLY MODE) below the same barrier ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/paymentcards"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/qty_barrier">
+
+        <LinearLayout
+            android:id="@+id/payments"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/colorwhite"
+            android:orientation="vertical"
+            android:paddingVertical="8dp">
+
+            <!-- (Read-only card keeps its original rows) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="Sub Total"
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/subtotalss"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="RWF0.00"
+                    android:textColor="@color/goodgrey"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/taxLayouts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:id="@+id/taxfields"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="(+) Taxsss "
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/taxAmountss"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="REF0.00"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- ===== Discount row (EDIT MODE) ===== -->
+            <LinearLayout
+                android:id="@+id/discountLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/discountField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="(-) Discount"
+                    android:textColor="#000" />
+
+                <TextView
+                    android:id="@+id/discountAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_regular"
+                    android:text="RWF0.00"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+
+
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/shape_dotted_line" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/white"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="Grand Total"
+                    android:textColor="@color/colorgreytwo" />
+
+                <TextView
+                    android:id="@+id/alltotalAmountss"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:text="RWF0.00"
+                    android:textColor="@color/goodgrey" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/categorycard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        app:cardCornerRadius="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="@color/colorgreyfaded"
+        app:strokeWidth="0.05dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/productCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@android:color/white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/light_white"
+                app:strokeWidth="0.5dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <!-- Box Icon -->
+                    <ImageView
+                        android:id="@+id/productimg"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/temp"
+
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- Product Name -->
+                    <TextView
+                        android:id="@+id/itemName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="500 ml pouch"
+                        android:textColor="@color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/productimg"
+                        app:layout_constraintTop_toTopOf="@+id/productimg" />
+
+                    <!-- Category Label -->
+                    <TextView
+                        android:id="@+id/txtCategory"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginTop="4dp"
+                        android:text="Category: Milk"
+                        android:textColor="@color/textlite"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/productimg"
+                        app:layout_constraintTop_toBottomOf="@id/itemName" />
+
+                    <ImageView
+                        android:id="@+id/ivExpandArrow"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="4dp"
+                        android:contentDescription="Expand Icon"
+                        android:src="@drawable/ic_arrow_down"
+                        app:layout_constraintBottom_toBottomOf="@id/txtCategory"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="@id/itemName" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Product Image and Name -->
+            <!--   <androidx.constraintlayout.widget.ConstraintLayout
+                   android:id="@+id/parent"
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   android:paddingTop="12dp">
+
+                   <com.google.android.material.imageview.ShapeableImageView
+                       android:id="@+id/productimg"
+                       android:layout_width="70dp"
+                       android:layout_height="70dp"
+                       android:src="@drawable/temp"
+                       android:layout_marginTop="4dp"
+                       android:adjustViewBounds="true"
+                       app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize"
+                       app:layout_constraintTop_toTopOf="parent"
+                       app:layout_constraintStart_toStartOf="parent"
+                       app:layout_constraintEnd_toEndOf="parent" />
+
+                   <TextView
+                       android:id="@+id/item_name"
+                       android:layout_width="wrap_content"
+                       android:layout_height="wrap_content"
+                       android:layout_marginTop="8dp"
+                       android:text="500 ml pouch"
+                       android:textStyle="bold"
+                       android:textSize="16sp"
+                       android:textColor="@color/goodgrey"
+                       android:background="@drawable/shape_curve_grey_big"
+                       android:paddingHorizontal="12dp"
+                       android:paddingVertical="4dp"
+                       android:backgroundTint="@color/light_white"
+                       app:layout_constraintTop_toBottomOf="@+id/productimg"
+                       app:layout_constraintStart_toStartOf="parent"
+                       app:layout_constraintEnd_toEndOf="parent" />
+               </androidx.constraintlayout.widget.ConstraintLayout>
+   -->
+
+            <!-- Table Header -->
+            <LinearLayout
+                android:id="@+id/table_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="#72BBDEFB"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="6dp"
+                android:visibility="visible"
+                android:weightSum="2">
+
+                <TextView
+                    android:id="@+id/txt1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.3"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Batch Details"
+                    android:textColor="@color/textlite"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/txt4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:text="Quantity"
+                    android:textAlignment="center"
+                    android:textColor="@color/textlite"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <!-- Batch List (RecyclerView) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/pichild_rcv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never" /> <!-- Ensures spacing before below table -->
+
+            <!-- Table Footer -->
+            <LinearLayout
+                android:id="@+id/table_below"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#72BBDEFB"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:visibility="gone"
+                android:weightSum="3">
+
+                <!-- Good -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/value1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="2,938"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/status1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="Good"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Expired -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/value2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="45"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/status2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="Expired"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Damaged -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/value3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="23"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/status3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="Damaged"
+                        android:textColor="@color/textlite"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
