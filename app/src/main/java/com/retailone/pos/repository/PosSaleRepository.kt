@@ -80,6 +80,10 @@ class PosSaleRepository(private val context: Context) {
                 override fun onResponse(call: Call<PosSalesDetails>, response: Response<PosSalesDetails>) {
                     if (response.isSuccessful && response.body() != null) {
                         // ✅ API success
+                        // ✅ API success - ALSO save locally as SYNCED for offline records
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            saveSaleLocally(saleReq, syncStatus = "SYNCED")
+                        }
                         onSuccess(response.body()!!)
                     } else {
                         // ❌ API failed, save locally
@@ -109,7 +113,7 @@ class PosSaleRepository(private val context: Context) {
     /**
      * Save sale to Room database
      */
-    private suspend fun saveSaleLocally(saleReq: PosSaleReq) {
+    private suspend fun saveSaleLocally(saleReq: PosSaleReq, syncStatus: String = "PENDING") {
         try {
             val salesItemsJson = gson.toJson(saleReq.sales_items)
 
@@ -138,7 +142,7 @@ class PosSaleRepository(private val context: Context) {
                 sale_date_time = saleReq.sale_date_time,
                 tin_tpin_no = saleReq.tin_tpin_no,
                 invoice_id = saleReq.invoice_id,
-                sync_status = "PENDING"
+                sync_status = syncStatus
             )
 
             val saleId = dao.insertPendingSale(entity)
@@ -191,6 +195,7 @@ class PosSaleRepository(private val context: Context) {
                                 batch_no = dbBatch.batch_no,
                                 quantity = newQty,
                                 price = dbBatch.price,
+                                tax = dbBatch.tax, // FIX: Preserve tax rate for subsequent offline sales
                                 batch_cart_quantity = 0.0,
                                 batch_total_du_amount = dbBatch.batch_total_du_amount ?: "",
                                 dispense_status = dbBatch.dispense_status,

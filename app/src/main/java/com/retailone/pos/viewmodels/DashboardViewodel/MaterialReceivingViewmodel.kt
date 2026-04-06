@@ -1,6 +1,7 @@
 package com.retailone.pos.viewmodels.DashboardViewodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -43,6 +44,16 @@ class MaterialReceivingViewmodel: ViewModel() {
     fun callMaterialReceivedSubmitApi(materialReceivedReq: MatRcvInvReq, context: Context){
         loading.postValue(ProgressData(isProgress = true))
 
+        if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(context)) {
+            Log.d("WarehouseAPI", "Offline mode: Skipping material submit API call")
+            loading.postValue(ProgressData(
+                isProgress = false,
+                isMessage = true,
+                message = "Working Offline: Please sync when network is back"
+            ))
+            return
+        }
+
         ApiClient().getApiService(context).sendReceivedMaterials(materialReceivedReq).enqueue(object :
             Callback<MatRcvInvRes> {
             override fun onResponse(call: Call<MatRcvInvRes>, response: Response<MatRcvInvRes>) {
@@ -76,6 +87,16 @@ class MaterialReceivingViewmodel: ViewModel() {
     fun callSTNUploadApi(filePart: MultipartBody.Part, context: Context) {
 
         loading.postValue(ProgressData(isProgress = true))
+
+        if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(context)) {
+            Log.d("WarehouseAPI", "Offline mode: Skipping STN upload API call")
+            loading.postValue(ProgressData(
+                isProgress = false,
+                isMessage = true,
+                message = "Working Offline: STN upload skipped"
+            ))
+            return
+        }
 
         ApiClient().getApiService(context).uploadSTNImage(filePart)
             .enqueue(object : Callback<ExpenceImageRes> {

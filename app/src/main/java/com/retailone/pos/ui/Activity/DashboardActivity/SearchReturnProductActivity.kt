@@ -62,6 +62,7 @@ import java.util.TimeZone
 import java.math.RoundingMode
 
 import kotlin.math.log
+import kotlin.math.roundToInt
 
 class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
 
@@ -109,23 +110,16 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             if (!invoiceIdFromIntent.isNullOrEmpty()) {
                 binding.searchBar.setQuery(invoiceIdFromIntent, false)
 
-                // ✅ Check if online or offline
-                if (NetworkUtils.isInternetAvailable(this@SearchReturnProductActivity)) {
-                    // Online: Direct API call
-                    returnsale_viewmodel.callReturnSalesDetailsApi(
-                        ReturnItemReq(invoice_id = invoiceIdFromIntent),
-                        this@SearchReturnProductActivity
-                    )
-                } else {
-                    // Offline: Load from cache
-                    val cachedSale = returnsale_viewmodel.getDetailedSaleFromLocalDB(invoiceIdFromIntent)
-                    if (cachedSale != null) {
-                        Log.d("SearchReturn", "✅ Loaded from offline cache: $invoiceIdFromIntent")
-                        displaySaleDetails(cachedSale)
-                    } else {
-                        showMessage("No cached data available for this invoice. Please connect to internet.")
-                    }
-                }
+            // ✅ STEP 2: load and display the sale using unified ViewModel hub
+            if (!invoiceIdFromIntent.isNullOrEmpty()) {
+                binding.searchBar.setQuery(invoiceIdFromIntent, false)
+                
+                // Call unified API hub (it handles offline fallback automatically)
+                returnsale_viewmodel.callReturnSalesDetailsApi(
+                    ReturnItemReq(invoice_id = invoiceIdFromIntent, store_id = storeid.toString()),
+                    this@SearchReturnProductActivity
+                )
+            }
             }
 
             // ✅ STEP 3: Cleanup old data
@@ -140,25 +134,11 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             } else {
                 val invoiceId = binding.searchBar.query.toString().trim()
 
-                // ✅ Check if online or offline
-                if (NetworkUtils.isInternetAvailable(this)) {
-                    // Online: Direct API call
-                    returnsale_viewmodel.callReturnSalesDetailsApi(
-                        ReturnItemReq(invoice_id = invoiceId),
-                        this@SearchReturnProductActivity
-                    )
-                } else {
-                    // Offline: Load from cache
-                    lifecycleScope.launch {
-                        val cachedSale = returnsale_viewmodel.getDetailedSaleFromLocalDB(invoiceId)
-                        if (cachedSale != null) {
-                            Log.d("SearchReturn", "✅ Loaded from offline cache: $invoiceId")
-                            displaySaleDetails(cachedSale)
-                        } else {
-                            showMessage("No cached data available for this invoice. Please connect to internet.")
-                        }
-                    }
-                }
+                // ✅ Call unified API hub (handles both online/offline automatically)
+                returnsale_viewmodel.callReturnSalesDetailsApi(
+                    ReturnItemReq(invoice_id = invoiceId, store_id = storeid.toString()),
+                    this@SearchReturnProductActivity
+                )
             }
         }
 
@@ -185,19 +165,63 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 Log.d("INITIAL_TAX_DEBUG", "sub_total: ${data.sub_total}")
                 Log.d("INITIAL_TAX_DEBUG", "tax (String): '${data.tax}'")
                 Log.d("INITIAL_TAX_DEBUG", "tax_amount (String): '${data.tax_amount}'")
-                Log.d("INITIAL_TAX_DEBUG", "tax_amount (toDouble): ${data.tax_amount.toDoubleOrNull()}")
+                Log.d("INITIAL_TAX_DEBUG", "tax_amount (toDouble): ${data.tax_amount?.toDoubleOrNull() ?: 0.0}")
                 Log.d("INITIAL_TAX_DEBUG", "grand_total: ${data.grand_total}")
                 Log.d("INITIAL_TAX_DEBUG", "total_refunded_amount: ${data.total_refunded_amount}")
                 Log.d("INITIAL_TAX_DEBUG", "==================================")
 
                 lifecycleScope.launch {
                     returnsale_viewmodel.saveDetailedSaleToLocalDB(data)
-                    Log.d("SearchReturn", "💾 Saved to cache: ${data.invoice_id}")
+                    Log.d("OFFLINE_DEBUG_TAG", "💾 Saved to cache: ${data.invoice_id}")
+                }
+
+                // ✅ Normalize lists: If one is populated but not the other, sync them
+                Log.d("OFFLINE_DEBUG_TAG", "   - Data check: salesItems.size=${data.salesItems?.size}, sales_items.size=${data.sales_items?.size}")
+                
+                var finalData = data
+                if (data.salesItems.isNullOrEmpty() && !data.sales_items.isNullOrEmpty()) {
+                    Log.d("OFFLINE_DEBUG_TAG", "   - ⚠️ Mapping sales_items (snake) -> salesItems (camel)")
+                    val mappedItems = data.sales_items!!.map { d ->
+                        SalesItem(
+                            id = d.id,
+                            product_id = d.product_id,
+                            distribution_pack_id = d.distribution_pack_id,
+                            product_name = d.product?.product_name ?: d.distribution_pack_name,
+                            quantity = d.quantity,
+                            retail_price = d.retail_price,
+                            tax_exclusive_price = d.tax_exclusive_price,
+                            batches = d.sales_returns?.map { sr -> 
+                                BatchReturnItem(
+                                    batch = d.batch,
+                                    quantity = d.quantity,
+                                    retail_price = d.retail_price,
+                                    tax_exclusive_price = d.tax_exclusive_price,
+                                    subtotal = d.total_amount,
+                                    product_id = d.product_id,
+                                    distribution_pack_id = d.distribution_pack_id,
+                                    sales_item_id = d.id,
+                                    return_quantity = sr.return_quantity.toInt(),
+                                    batch_return_quantity = sr.return_quantity.toInt(),
+                                    return_reason = sr.reason?.reason_name ?: "Returned"
+                                )
+                            },
+                            product = d.product,
+                            distribution_pack = d.distribution_pack,
+                            distribution_pack_name = d.distribution_pack_name ?: d.distribution_pack?.product_description,
+                            total_amount = d.total_amount,
+                            tax_amount = d.retail_price - (d.tax_exclusive_price ?: d.retail_price),
+                            tax = if (d.tax > 0) d.tax else if (d.tax_exclusive_price != null && d.tax_exclusive_price!! > 0) {
+                                // Derive it once during normalization so it's stored in the model
+                                (((d.retail_price - d.tax_exclusive_price!!) / d.tax_exclusive_price!!) * 100.0).roundToInt()
+                            } else 0,
+                            created_at = null, updated_at = null, sales_id = null, status = 0, whole_sale_price = 0.0
+                        )
+                    }
+                    finalData = data.copy(salesItems = mappedItems)
                 }
 
                 // ✅ Use displaySaleDetails for consistency
-                displaySaleDetails(data)
-
+                displaySaleDetails(finalData)
             } else {
                 showMessage("No Invoice Found")
 
@@ -214,13 +238,13 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         returnsale_viewmodel.returnsalesubmit_liveData.observe(this) {
             if (it.status == 1) {
                 lifecycleScope.launch {
-                    val grandTotal = returnItemData.grand_total.toDoubleOrNull() ?: 0.0
+                    val grandTotal = (returnItemData.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
                     returnsale_viewmodel.updateSaleRefundedAmount(
-                        returnItemData.invoice_id,
+                        returnItemData.invoice_id ?: "",
                         grandTotal,
                         reasonid
                     )
-                    Log.d("OnlineReturn", "💾 Updated cache for ${returnItemData.invoice_id} as refunded")
+                    Log.d("OnlineReturn", "💾 Updated cache for ${returnItemData.invoice_id ?: ""} as refunded")
                 }
 
                 showSucessDialog(it.message, it)
@@ -264,30 +288,41 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
     // ✅ NEW: Unified display method for both online and offline
     private fun displaySaleDetails(data: ReturnItemData) {
-        Log.d("DISPLAY_SALE", "========== DISPLAYING SALE ==========")
-        Log.d("DISPLAY_SALE", "invoice_id: ${data.invoice_id}")
-        Log.d("DISPLAY_SALE", "total_refunded_amount: ${data.total_refunded_amount}")
-        Log.d("DISPLAY_SALE", "reason_id: ${data.reason_id}")
-        Log.d("DISPLAY_SALE", "====================================")
+        Log.d("OFFLINE_DEBUG_TAG", "========== displaySaleDetails START ==========")
+        Log.d("OFFLINE_DEBUG_TAG", "invoice_id: ${data.invoice_id}")
+        Log.d("OFFLINE_DEBUG_TAG", "refunded_amount: ${data.total_refunded_amount}, sub_total: ${data.sub_total}, grand_total: ${data.grand_total}")
+        Log.d("OFFLINE_DEBUG_TAG", "reason_id: ${data.reason_id}")
+        Log.d("OFFLINE_DEBUG_TAG", "Item count: ${data.salesItems?.size ?: 0}")
+        data.salesItems?.forEachIndexed { index, item ->
+            Log.d("OFFLINE_DEBUG_TAG", "Item $index: ID=${item.id}, return_qty=${item.return_quantity}, name=${item.product_name}")
+        }
+        Log.d("OFFLINE_DEBUG_TAG", "====================================")
 
         if (data.total_refunded_amount > 0) {
             // ✅ SALE ALREADY RETURNED - Fetch reason name and update UI
             lifecycleScope.launch {
                 Log.d("DISPLAY_SALE", "🔍 Sale is refunded, fetching reason for ID: ${data.reason_id}")
 
-                val reasonName = if (data.reason_id > 0) {
-                    val fetchedReason = returnsale_viewmodel.getReasonNameById(data.reason_id)
-                    Log.d("DISPLAY_SALE", "✅ Fetched reason: '$fetchedReason'")
-                    fetchedReason
+                var reasonName = "Not Given"
+
+                // First try to extract reason from API response nested inside sales_items
+                val firstReturnedItem = data.sales_items?.firstOrNull { !it.sales_returns.isNullOrEmpty() }
+                val apiReason = firstReturnedItem?.sales_returns?.firstOrNull()?.reason?.reason_name
+
+                if (!apiReason.isNullOrEmpty()) {
+                    reasonName = apiReason
+                    Log.d("DISPLAY_SALE", "✅ Extracted reason from API: '$reasonName'")
+                } else if (data.reason_id > 0) {
+                    reasonName = returnsale_viewmodel.getReasonNameById(data.reason_id)
+                    Log.d("DISPLAY_SALE", "✅ Fetched reason from local DB: '$reasonName'")
                 } else {
-                    Log.w("DISPLAY_SALE", "⚠️ reason_id is ${data.reason_id}, showing 'Not Given'")
-                    "Not Given"
+                    Log.w("DISPLAY_SALE", "⚠️ reason_id is ${data.reason_id} and API reason missing, showing 'Not Given'")
                 }
 
                 // ✅ Update UI on main thread with reason name
                 withContext(Dispatchers.Main) {
                     returnItemData = data
-                    returnItemList = data.salesItems.toMutableList()
+                    returnItemList = data.salesItems?.toMutableList() ?: mutableListOf()
 
                     // ✅ Pass reason name to adapter with named parameter
                     returnSalesItemAdapter = ReturnSalesItemAdapter(
@@ -308,10 +343,17 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
                     // ✅ Show summary card
                     binding.summaryCard.isVisible = true
+                    // Robustly parse totals to handle currency symbols/commas
+                    val subTotal = (data.sub_total ?: data.subtotal_after_discount ?: 0.0)
+                    val taxAmt = data.tax_amount?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
+                    val grandTotal = data.grand_total?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
+
+                    Log.d("OFFLINE_DEBUG_TAG", "Calling updateSummaryCard with: sub=$subTotal, tax=$taxAmt, total=$grandTotal")
+
                     updateSummaryCard(
-                        subtotal = data.sub_total,
-                        tax = data.tax_amount.toDoubleOrNull() ?: 0.0,
-                        total = data.grand_total.toDoubleOrNull() ?: 0.0
+                        subtotal = if (subTotal > 0) subTotal else (grandTotal - taxAmt),
+                        tax = taxAmt,
+                        total = grandTotal
                     )
 
                     // ❌ Hide old payment card and bottom layouts
@@ -327,7 +369,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         } else {
             // ✅ NORMAL RETURN FLOW
             returnItemData = data
-            returnItemList = data.salesItems.toMutableList()
+            returnItemList = data.salesItems?.toMutableList() ?: mutableListOf()
 
             // ✅ Pass default "Not Given" for normal returns (no reason yet)
             returnSalesItemAdapter = ReturnSalesItemAdapter(
@@ -354,9 +396,9 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             binding.relativeLayout2.isVisible = true
             binding.paymentcard.isVisible = false
 
-            val subtotalValue = data.sub_total
-            val taxValue = data.tax_amount.toDoubleOrNull() ?: 0.0
-            val grandValue = data.grand_total.toDoubleOrNull() ?: 0.0
+            val subtotalValue = data.sub_total ?: 0.0
+            val taxValue = data.tax_amount?.toDoubleOrNull() ?: 0.0
+            val grandValue = data.grand_total?.toDoubleOrNull() ?: 0.0
 
             val roundedSubtotal = BigDecimal.valueOf(subtotalValue)
                 .setScale(0, RoundingMode.HALF_UP)
@@ -386,6 +428,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
      * ✅ NEW: Updates the summary card with subtotal, tax, and total
      */
     private fun updateSummaryCard(subtotal: Double, tax: Double, total: Double, discount: Double = 0.0) {
+        Log.d("OFFLINE_DEBUG_TAG", "updateSummaryCard EXEC: sub=$subtotal, tax=$tax, total=$total")
         // Round values
         val roundedSubtotal = BigDecimal.valueOf(subtotal).setScale(0, RoundingMode.HALF_UP)
         val roundedTax = BigDecimal.valueOf(tax).setScale(0, RoundingMode.HALF_UP)
@@ -460,7 +503,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
     private fun buildReplaceLines(): List<ReturnedItem> {
 
         // 1️⃣ Aggregate defect info per sales_item_id from live batch list
-        val defectMap: Map<Int, Pair<Int, Int>> = returnbatchItemList
+        val defectMap: Map<Int?, Pair<Int, Int>> = returnbatchItemList
             .groupBy { it.sales_item_id }
             .mapValues { (_, batches) ->
                 val totalBoxes = batches.sumOf { it.defective_boxes ?: 0 }
@@ -476,13 +519,17 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
             cartLines.forEach { line ->
                 val (boxes, packs) = defectMap[line.id] ?: (0 to 0)
+                val pId = if ((line.product_id ?: 0) > 0) line.product_id!! else 0
+                Log.d("OFFLINE_DEBUG_TAG", "   - Queuing Item (Cart Mode): SI_ID=${line.id}, P_ID=$pId, Qty=${line.return_quantity}")
 
                 output.add(
                     ReturnedItem(
                         id = line.id,
                         return_quantity = line.return_quantity,  // qty user confirmed
                         defective_boxes = boxes,                // total boxes from all batches
-                        defective_bottles = packs               // total packs from all batches
+                        defective_bottles = packs,              // total packs from all batches
+                        product_id = pId,
+                        distribution_pack_id = line.distribution_pack_id
                     )
                 )
             }
@@ -501,13 +548,20 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             defectMap.forEach { (salesItemId, boxesPacks) ->
                 val (boxes, packs) = boxesPacks
                 val userQty = qtyMap[salesItemId] ?: 0
+                val firstBatch = returnbatchItemList.find { it.sales_item_id == salesItemId }
+                val pId = firstBatch?.product_id ?: 0
+                val dId = firstBatch?.distribution_pack_id ?: 0
+                
+                Log.d("OFFLINE_DEBUG_TAG", "   - Queuing Item (Batch Mode): SI_ID=$salesItemId, P_ID=$pId, D_ID=$dId, Qty=$userQty")
 
                 output.add(
                     ReturnedItem(
-                        id = salesItemId,
+                        id = salesItemId ?: 0,
                         return_quantity = userQty,
                         defective_boxes = boxes,
-                        defective_bottles = packs
+                        defective_bottles = packs,
+                        product_id = pId,
+                        distribution_pack_id = dId
                     )
                 )
             }
@@ -523,12 +577,16 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         // 4️⃣ Fallback: no edits at all → return full invoice with 0 defects
         val detailed = returnItemData.sales_items.orEmpty()
         detailed.forEach { si ->
+            val pId = if (si.product_id > 0) si.product_id else (si.product?.id ?: 0)
+            Log.d("OFFLINE_DEBUG_TAG", "   - Queuing Item (Fallback Mode): SI_ID=${si.id}, P_ID=$pId, Qty=${si.quantity}")
             output.add(
                 ReturnedItem(
                     id = si.id,
-                    return_quantity = kotlin.math.ceil(si.quantity).toInt(),
+                    return_quantity = kotlin.math.ceil(si.quantity ?: 0.0).toInt(),
                     defective_boxes = 0,
-                    defective_bottles = 0
+                    defective_bottles = 0,
+                    product_id = pId,
+                    distribution_pack_id = si.distribution_pack_id
                 )
             )
         }
@@ -559,7 +617,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             } else {
                 Log.d("ReturnSubmit", "📴 Offline - queuing for later sync")
                 lifecycleScope.launch {
-                    val queueId = returnsale_viewmodel.queueReturnRequest(return_data)
+                    val queueId = returnsale_viewmodel.queueReturnRequest(returnItemData.invoice_id ?: "", return_data)
 
                     if (queueId > 0) {
                         showOfflineSuccessDialog()
@@ -577,15 +635,16 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
     private fun showOfflineSuccessDialog() {
         lifecycleScope.launch {
-            val grandTotal = returnItemData.grand_total.toDoubleOrNull() ?: 0.0
+            val grandTotal = (returnItemData.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
 
-            Log.d("OfflineReturn", "🔍 BEFORE SAVE: invoice=${returnItemData.invoice_id}, reason=$reasonid")
+            Log.d("OfflineReturn", "🔍 BEFORE SAVE: invoice=${returnItemData.invoice_id ?: ""}, reason=$reasonid")
 
-            // ✅ STEP 1: Update cache with refunded amount AND reason_id
+            // ✅ STEP 1: Update cache with refunded amount AND reason_id AND detailed items
             returnsale_viewmodel.updateSaleRefundedAmount(
-                returnItemData.invoice_id,
+                returnItemData.invoice_id ?: "",
                 grandTotal,
-                reasonid
+                reasonid,
+                returnbatchItemList
             )
 
             Log.d("OfflineReturn", "💾 Called updateSaleRefundedAmount with reason=$reasonid")
@@ -594,7 +653,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             kotlinx.coroutines.delay(200)  // Increase delay
 
             // ✅ STEP 3: Reload sale from cache to get updated data with reason_id
-            val updatedSale = returnsale_viewmodel.getDetailedSaleFromLocalDB(returnItemData.invoice_id)
+            val updatedSale = returnsale_viewmodel.getDetailedSaleFromLocalDB(returnItemData.invoice_id ?: "")
 
             if (updatedSale != null) {
                 Log.d("OfflineReturn", "🔄 AFTER RELOAD: reason_id=${updatedSale.reason_id}")
@@ -661,7 +720,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
         val currentDateTime = calendar.time
 
-        val dateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm a", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         dateFormat.timeZone = zambiaTimeZone
 
         val formattedDateTime = dateFormat.format(currentDateTime)
@@ -712,7 +771,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         Log.d("QUANTITY_CHANGE_DEBUG", "position: $position")
         Log.d("QUANTITY_CHANGE_DEBUG", "newQuantity: $newQuantity")
         returnItemList[position].return_quantity = newQuantity
-        returnItemList[position].refund_amount = newQuantity * returnItemList[position].retail_price
+        returnItemList[position].refund_amount = newQuantity * (returnItemList[position].retail_price ?: 0.0)
 
         Log.d("QUANTITY_CHANGE_DEBUG", "Calling recalculateTotals()")
         recalculateTotals()
@@ -750,13 +809,13 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 Log.d("TAX_FIX_DEBUG", "  isExpired: ${item.isExpired}")
 
                 if (!item.readonlyMode && !item.isExpired && item.return_quantity > 0) {
-                    val taxExclusivePrice = item.tax_exclusive_price ?: item.retail_price
+                    val taxExclusivePrice = item.tax_exclusive_price ?: item.retail_price ?: 0.0
                     val qty = item.return_quantity
 
                     val itemSubtotal = taxExclusivePrice * qty
                     subtotal += itemSubtotal
 
-                    val itemTax = (item.retail_price - taxExclusivePrice) * qty
+                    val itemTax = ((item.retail_price ?: 0.0) - taxExclusivePrice) * qty
                     taxAmount += itemTax
 
                     Log.d("TAX_FIX_DEBUG", "  ✅ INCLUDED in calculation")
@@ -787,9 +846,9 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             // No items selected - show original invoice totals
             Log.d("TAX_FIX_DEBUG", "No items selected - showing original invoice totals")
 
-            val subtotalValue = returnItemData.sub_total
-            val taxValue = returnItemData.tax_amount.toDoubleOrNull() ?: 0.0
-            val grandValue = returnItemData.grand_total.toDoubleOrNull() ?: 0.0
+            val subtotalValue = returnItemData.sub_total ?: 0.0
+            val taxValue = returnItemData.tax_amount?.toDoubleOrNull() ?: 0.0
+            val grandValue = returnItemData.grand_total?.toDoubleOrNull() ?: 0.0
 
             val roundedSubtotal = BigDecimal.valueOf(subtotalValue)
                 .setScale(0, RoundingMode.HALF_UP)

@@ -14,6 +14,10 @@ interface PendingSaleDao {
     @Query("SELECT * FROM pending_sales WHERE sync_status IN ('PENDING', 'FAILED') ORDER BY created_at ASC")
     suspend fun getPendingSales(): List<PendingSaleEntity>
 
+    // Get all pending sales by date range
+    @Query("SELECT * FROM pending_sales WHERE store_id = :storeId AND sync_status IN ('PENDING', 'FAILED', 'SYNCING', 'SYNCED') AND created_at >= :startTime AND created_at <= :endTime ORDER BY created_at DESC")
+    suspend fun getSalesByDateRange(storeId: String, startTime: Long, endTime: Long): List<PendingSaleEntity>
+
     // Get all pending sales as Flow (reactive)
     @Query("SELECT * FROM pending_sales WHERE sync_status IN ('PENDING', 'FAILED') ORDER BY created_at DESC")
     fun getPendingSalesFlow(): Flow<List<PendingSaleEntity>>

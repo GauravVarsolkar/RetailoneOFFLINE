@@ -54,8 +54,9 @@ class SaleReplaceAdapter(
             ?.toString()
             ?.toDoubleOrNull() ?: 0.0
 
-        // Get on_hold value from backend
-        val isOnHold = (item.on_hold == 1)
+        // Get on_hold value from backend or offline logic
+        val isOfflineOnHold = com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.isOnHold(context, item.invoice_id)
+        val isOnHold = (item.on_hold == 1) || isOfflineOnHold
 
         // Badge Display Logic (WITH ON HOLD)
         when {

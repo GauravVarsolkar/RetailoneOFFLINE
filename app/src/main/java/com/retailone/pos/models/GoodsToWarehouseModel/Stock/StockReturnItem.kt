@@ -32,6 +32,9 @@ data class StockReturnItem(
     @SerializedName("product_id")
     val product_id: Int,
 
+    @SerializedName("product_name") // ✅ ADDED for offline feedback
+    val product_name: String = "",
+
     @SerializedName("quantity")
     val quantity: Int,
 

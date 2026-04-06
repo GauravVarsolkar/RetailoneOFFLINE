@@ -301,35 +301,28 @@ class PointofSaleViewmodel: ViewModel() {
         val offlineLoginHelper = OfflineLoginHelper(context.applicationContext)
 
         // =====================================================
-        // ✅ STEP 1: OFFLINE LOGIN (OPTION 2 – LAST LOGIN ONLY)
+        // ✅ STEP 1: OFFLINE LOGIN (SEARCH ALL CACHED CUSTOMERS)
         // =====================================================
         if (!NetworkUtils.isInternetAvailable(context)) {
 
             loading.postValue(ProgressData(isProgress = false))
 
             val inputMobile = getCustomerReq.mobile_no
-                ?: getCustomerReq.tin_tpin_no
-
-            val offlineLoginHelper = OfflineLoginHelper(context.applicationContext)
+            val inputTpin = getCustomerReq.tin_tpin_no
             val customerHelper = CustomerLocalHelper(context.applicationContext)
 
-            if (!offlineLoginHelper.canLoginOffline(inputMobile)) {
+            val customers = customerHelper.getCustomers()
+            val matchedCustomer = if (!inputMobile.isNullOrEmpty()) {
+                customers.find { it.mobile_no == inputMobile }
+            } else if (!inputTpin.isNullOrEmpty()) {
+                customers.find { it.tin_tpin_no == inputTpin }
+            } else null
+
+            if (matchedCustomer == null) {
                 loading.postValue(
                     ProgressData(
                         isMessage = true,
-                        message = "Offline login allowed only for last logged-in user"
-                    )
-                )
-                return
-            }
-
-            val lastCustomer = customerHelper.getLastLoggedInCustomer()
-
-            if (lastCustomer == null) {
-                loading.postValue(
-                    ProgressData(
-                        isMessage = true,
-                        message = "Offline data not available. Please login online once."
+                        message = "Customer not found in offline records. Please login online once."
                     )
                 )
                 return
@@ -339,12 +332,11 @@ class PointofSaleViewmodel: ViewModel() {
                 getCustomerRes(
                     status = 1,
                     message = "Offline login success",
-                    data = lastCustomer
+                    data = matchedCustomer
                 )
             )
             return
         }
-
 
         // =====================================================
         // ✅ STEP 2: ONLINE LOGIN (SOURCE OF TRUTH)
@@ -369,9 +361,9 @@ class PointofSaleViewmodel: ViewModel() {
                             mobile = customer.mobile_no
                         )
 
-                        // ✅ SAVE FULL REAL CUSTOMER
+                        // ✅ SAVE CUSTOMER FOR OFFLINE USE
                         CustomerLocalHelper(context.applicationContext)
-                            .saveLastLoggedInCustomer(customer)
+                            .saveCustomer(customer)
 
                         updateCustomerData(response.body()!!)
 

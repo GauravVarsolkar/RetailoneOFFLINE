@@ -36,7 +36,9 @@ import com.retailone.pos.models.SalesPaymentModel.SalesDetails.Product
 import com.retailone.pos.models.SalesPaymentModel.InvoicePayment.InvoiceData
 import com.retailone.pos.network.ApiClient
 import com.retailone.pos.repository.PaymentInvoiceRepository
+import com.retailone.pos.repository.PendingCancelSaleRepository
 import com.retailone.pos.repository.SalesDetailsRepository
+import com.retailone.pos.utils.NetworkUtils
 import com.retailone.pos.ui.Activity.DashboardActivity.SalesAndPaymentActivity
 import kotlinx.coroutines.launch
 import retrofit2.Call
@@ -47,6 +49,7 @@ class SalesPaymentViewmodel:ViewModel() {
 
     private var paymentInvoiceRepository: PaymentInvoiceRepository? = null
     private var salesDetailsRepository: SalesDetailsRepository? = null
+    private var pendingCancelSaleRepository: PendingCancelSaleRepository? = null
 
     val loading = MutableLiveData<ProgressData>()
     val loadingLiveData : LiveData<ProgressData>
@@ -74,6 +77,9 @@ class SalesPaymentViewmodel:ViewModel() {
         }
         if (salesDetailsRepository == null) {
             salesDetailsRepository = SalesDetailsRepository(context)
+        }
+        if (pendingCancelSaleRepository == null) {
+            pendingCancelSaleRepository = PendingCancelSaleRepository(context)
         }
     }
 
@@ -109,6 +115,124 @@ class SalesPaymentViewmodel:ViewModel() {
                 Toast.makeText(context, "Something went wrong: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    /**
+     * ✅ NEW: Offline-aware cancel sale API
+     * - If ONLINE: Calls API directly
+     * - If OFFLINE: Queues the cancel request in local DB and syncs when online
+     */
+    fun callCancelSaleAPIOfflineAware(
+        request: CancelSaleitemRequest,
+        context: Context,
+        saleId: Int,
+        saleDateTime: String,
+        storeId: String,
+        grandTotal: String,
+        paymentType: String
+    ) {
+        loading.postValue(ProgressData(isProgress = true))
+
+        if (NetworkUtils.isInternetAvailable(context)) {
+            // ✅ ONLINE: Call API directly
+            Log.d("CancelSale", "🌐 Online - calling cancel API directly for invoice: ${request.invoiceID}")
+
+            ApiClient().getApiService(context).cancelItemAPI(request).enqueue(object : Callback<CancelSaleResponse> {
+                override fun onResponse(call: Call<CancelSaleResponse>, response: Response<CancelSaleResponse>) {
+                    loading.postValue(ProgressData(isProgress = false))
+                    Log.d("CancelSale", "Response: ${response.body()}")
+                    if (response.isSuccessful && response.body() != null) {
+                        val res = response.body()!!
+                        if (res.status == 1) {
+                            Toast.makeText(context, res.message ?: "Sale cancelled successfully", Toast.LENGTH_LONG).show()
+
+                            // ✅ Redirect to SalesAndPaymentActivity
+                            val intent = Intent(context, SalesAndPaymentActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            context.startActivity(intent)
+                        } else {
+                            Toast.makeText(context, res.message ?: "Failed to cancel sale", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to cancel sale", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<CancelSaleResponse>, t: Throwable) {
+                    loading.postValue(ProgressData(isProgress = false))
+                    Toast.makeText(context, "Something went wrong: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        } else {
+            // ✅ OFFLINE: Queue the cancel request
+            Log.d("CancelSale", "📴 Offline - queuing cancel request for invoice: ${request.invoiceID}")
+
+            initRepository(context)
+
+            // Check if a cancel request is already queued (avoid duplication)
+            viewModelScope.launch {
+                try {
+                    val alreadyQueued = pendingCancelSaleRepository?.isCancelQueued(request.invoiceID) ?: false
+                    if (alreadyQueued) {
+                        loading.postValue(ProgressData(isProgress = false))
+                        Toast.makeText(context, "Cancel request already queued for this invoice", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+
+                    // Save the cancel request to local DB
+                    val saved = pendingCancelSaleRepository?.saveCancelRequest(
+                        invoiceId = request.invoiceID,
+                        saleId = saleId,
+                        saleDateTime = saleDateTime,
+                        storeId = storeId,
+                        grandTotal = grandTotal,
+                        paymentType = paymentType
+                    ) ?: false
+
+                    if (saved) {
+                        loading.postValue(ProgressData(isProgress = false))
+                        Toast.makeText(context, "Cancel request queued. Will sync when online.", Toast.LENGTH_LONG).show()
+
+                        // ✅ Redirect to SalesAndPaymentActivity
+                        val intent = Intent(context, SalesAndPaymentActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        context.startActivity(intent)
+                    } else {
+                        loading.postValue(ProgressData(isProgress = false))
+                        Toast.makeText(context, "Failed to queue cancel request", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    loading.postValue(ProgressData(isProgress = false))
+                    Log.e("CancelSale", "❌ Error saving cancel request: ${e.message}", e)
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a cancel request is queued for an invoice
+     */
+    suspend fun isCancelQueued(invoiceId: String, context: Context): Boolean {
+        initRepository(context)
+        return pendingCancelSaleRepository?.isCancelQueued(invoiceId) ?: false
+    }
+
+    /**
+     * ✅ NEW: Get cancelled sales as negative Sale objects
+     * These will be shown in SalesAndPaymentActivity with red/negative amounts
+     */
+    suspend fun getCancelledSalesAsNegativeSale(context: Context, startTime: Long? = null, endTime: Long? = null): List<Sale> {
+        initRepository(context)
+        return pendingCancelSaleRepository?.getCancelledSalesAsNegativeSale(startTime, endTime) ?: emptyList()
+    }
+
+    /**
+     * ✅ NEW: Check if a sale is cancelled (has a pending cancel request)
+     */
+    suspend fun isSaleCancelled(saleId: Int, context: Context): Boolean {
+        initRepository(context)
+        return pendingCancelSaleRepository?.isSaleCancelled(saleId) ?: false
     }
 
 
@@ -358,6 +482,49 @@ class SalesPaymentViewmodel:ViewModel() {
             null
         }
     }
+ 
+    /**
+     * Prefetch missing sales details from API and cache them locally.
+     * This ensures all sales in the list are available offline without pre-clicking them.
+     */
+    fun prefetchMissingSalesDetails(sales: List<Sale>, context: Context) {
+        if (!NetworkUtils.isInternetAvailable(context)) return
+        
+        initRepository(context)
+        
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            // Limit to top 30 most recent sales to avoid spamming the API
+            val recentSales = sales.take(30)
+            var fetchedCount = 0
+            
+            for (sale in recentSales) {
+                // Skip offline sales (they are already in pending_sales table)
+                if (sale.id <= 0) continue
+                
+                // Skip if already cached
+                if (salesDetailsRepository?.salesDetailsExists(sale.id) == true) continue
+                
+                try {
+                    // Call API directly for prefetching
+                    val response = ApiClient().getApiService(context).getSalesDetailsAPI(SalesDetailsReq(sale.id.toString())).execute()
+                    if (response.isSuccessful && response.body() != null) {
+                        val detailsRes = response.body()!!
+                        if (detailsRes.status == 1) {
+                            salesDetailsRepository?.saveSalesDetails(sale.id, sale.invoice_id, detailsRes)
+                            fetchedCount++
+                        }
+                    }
+                    // Small delay between calls to be nice to the server
+                    kotlinx.coroutines.delay(100)
+                } catch (e: Exception) {
+                    Log.d("PREFETCH", "⚠️ Error prefetching sale ${sale.id}: ${e.message}")
+                }
+            }
+            if (fetchedCount > 0) {
+                Log.d("PREFETCH", "✅ Prefetched $fetchedCount new sales details for offline mode")
+            }
+        }
+    }
 
     /**
      * Get cached sales details by invoice ID for offline viewing
@@ -413,15 +580,19 @@ class SalesPaymentViewmodel:ViewModel() {
     /**
      * Get all offline sales from pending_sales table (for offline mode display)
      */
-    suspend fun getOfflineSales(context: Context, storeId: Int): List<Sale> {
+    suspend fun getOfflineSales(context: Context, storeId: Int, startTime: Long? = null, endTime: Long? = null): List<Sale> {
         return try {
             val database = PosDatabase.getDatabase(context)
             val pendingSaleDao = database.pendingSaleDao()
-            val pendingSales = pendingSaleDao.getPendingSales()
+            
+            val pendingSales = if (startTime != null && endTime != null) {
+                pendingSaleDao.getSalesByDateRange(storeId.toString(), startTime, endTime)
+            } else {
+                pendingSaleDao.getPendingSales().filter { it.store_id == storeId.toString() }
+            }
             
             pendingSales
-                .filter { it.store_id == storeId.toString() }
-                .map { convertPendingSaleToSale(it) }
+                .map { convertPendingSaleToSale(context, it) }
                 .sortedByDescending { it.created_at }
         } catch (e: Exception) {
             Log.e("SalesPaymentViewModel", "❌ Error getting offline sales: ${e.message}", e)
@@ -440,7 +611,7 @@ class SalesPaymentViewmodel:ViewModel() {
             
             pendingSales
                 .filter { it.store_id == storeId.toString() }
-                .map { convertPendingSaleToSale(it) }
+                .map { convertPendingSaleToSale(context, it) }
                 .sortedByDescending { it.created_at }
         } catch (e: Exception) {
             Log.e("SalesPaymentViewModel", "❌ Error getting all offline sales: ${e.message}", e)
@@ -451,7 +622,7 @@ class SalesPaymentViewmodel:ViewModel() {
     /**
      * Convert PendingSaleEntity to Sale model for display in SalesAndPayment screen
      */
-    private fun convertPendingSaleToSale(pendingSale: PendingSaleEntity): Sale {
+    private fun convertPendingSaleToSale(context: Context, pendingSale: PendingSaleEntity): Sale {
         return Sale(
             id = pendingSale.id,
             invoice_id = pendingSale.invoice_id,
@@ -467,8 +638,8 @@ class SalesPaymentViewmodel:ViewModel() {
             store_manager_id = pendingSale.store_manager_id.toIntOrNull() ?: 0,
             amount_tendered = pendingSale.amount_tendered.toDoubleOrNull() ?: 0.0,
             // ✅ NEW: Format date for API display (convert from "dd-MMM-yyyy hh:mm a" to ISO format)
-            created_at = formatDateForApi(pendingSale.sale_date_time),
-            updated_at = formatDateForApi(pendingSale.sale_date_time),
+            created_at = formatDateForApi(context, pendingSale.sale_date_time),
+            updated_at = formatDateForApi(context, pendingSale.sale_date_time),
             status = 1 // Active status
         )
     }
@@ -515,12 +686,29 @@ class SalesPaymentViewmodel:ViewModel() {
      * ✅ NEW: Format date from "dd-MMM-yyyy hh:mm a" to "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" for DateTimeFormatting
      * Example: "20-Mar-2026 02:30 PM" -> "2026-03-20T14:30:00.000Z"
      */
-    private fun formatDateForApi(inputDate: String): String {
+    private fun formatDateForApi(context: Context, inputDate: String): String {
         if (inputDate.isEmpty()) return inputDate
+        
+        // ✅ If already ISO format, don't re-parse
+        if (inputDate.contains("T") && inputDate.endsWith("Z")) return inputDate
+
         return try {
+            val localizationData = com.retailone.pos.localstorage.SharedPreference.LocalizationHelper(context).getLocalizationData()
+            val zone = localizationData.timezone
+            
+            // Map store zone to full TimeZone ID
+            val timezoneId = when (zone) {
+                "IST" -> "Asia/Kolkata"
+                "CAT" -> "Africa/Lusaka"
+                else -> "Africa/Lusaka"
+            }
+
             val inputFormat = java.text.SimpleDateFormat("dd-MMM-yyyy hh:mm a", java.util.Locale.ENGLISH)
+            inputFormat.timeZone = java.util.TimeZone.getTimeZone(timezoneId) // ✅ Parse as Store Timezone
+            
             val outputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.ENGLISH)
-            outputFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            outputFormat.timeZone = java.util.TimeZone.getTimeZone("UTC") // ✅ Output as UTC
+            
             val date = inputFormat.parse(inputDate)
             outputFormat.format(date ?: throw Exception("Null date"))
         } catch (e: Exception) {
@@ -536,19 +724,54 @@ class SalesPaymentViewmodel:ViewModel() {
         return try {
             val database = PosDatabase.getDatabase(context)
             val pendingSaleDao = database.pendingSaleDao()
-            val pendingSale = pendingSaleDao.getSaleById(saleId)
+            
+            // ✅ RESOLVE ID: 
+            // Range -1 to -1000000 is for PendingSaleEntity
+            // Range -1000001 to -2000000 is for PendingCancelSaleEntity (reversals)
+            
+            if (saleId in -2000000..-1000001) {
+                val cancelId = kotlin.math.abs(saleId) - 1000000
+                Log.d("OFFLINE_DETAILS_DEBUG", "🔍 Resolving negative reversal ID ($saleId) to cancel request ID ($cancelId)")
+                val cancelRequest = database.pendingCancelSaleDao().getAllCancels().find { it.id == cancelId }
+                if (cancelRequest != null) {
+                    val originalSale = pendingSaleDao.getSaleById(cancelRequest.sale_id)
+                    if (originalSale != null) {
+                        val originalDetails = convertPendingSaleToSalesDetailsData(context, originalSale)
+                        // Create a "Reversal" version of details
+                        return originalDetails.copy(
+                            grand_total = -originalDetails.grand_total,
+                            sub_total = -originalDetails.sub_total,
+                            tax_amount = -originalDetails.tax_amount,
+                            invoice_id =  originalDetails.invoice_id
+                        ).let {
+                            SalesDetailsRes(status = 1, message = "Cancelled Offline Sale", data = listOf(it))
+                        }
+                    }
+                }
+            }
+
+            val realId = if (saleId in -1000000..-1) {
+                val absId = kotlin.math.abs(saleId)
+                Log.d("OFFLINE_DETAILS_DEBUG", "🔍 Resolving negative saleId ($saleId) to real database ID ($absId)")
+                absId
+            } else {
+                Log.d("OFFLINE_DETAILS_DEBUG", "🔍 Using positive saleId ($saleId) directly")
+                saleId
+            }
+            
+            val pendingSale = pendingSaleDao.getSaleById(realId)
             
             if (pendingSale != null) {
+                Log.d("OFFLINE_DETAILS_DEBUG", "✅ Record found in pending_sales table for ID: $realId")
+                Log.d("OFFLINE_DETAILS_DEBUG", "   - Invoice: ${pendingSale.invoice_id}")
+                Log.d("OFFLINE_DETAILS_DEBUG", "   - Grand Total: ${pendingSale.grand_total}")
                 // ✅ NEW: Debug log tax values from database
                 Log.d("TAX_DEBUG", "📦 getOfflineSaleDetails: Retrieved from DB")
                 Log.d("TAX_DEBUG", "   pendingSale.tax = '${pendingSale.tax}'")
                 Log.d("TAX_DEBUG", "   pendingSale.tax_amount = '${pendingSale.tax_amount}'")
-                Log.d("TAX_DEBUG", "   pendingSale.sub_total = '${pendingSale.sub_total}'")
-                Log.d("TAX_DEBUG", "   pendingSale.grand_total = '${pendingSale.grand_total}'")
                 
-                val salesDetailsData = convertPendingSaleToSalesDetailsData(pendingSale)
+                val salesDetailsData = convertPendingSaleToSalesDetailsData(context, pendingSale)
                 Log.d("TAX_DEBUG", "📦 After conversion: salesDetailsData.tax = ${salesDetailsData.tax}")
-                Log.d("TAX_DEBUG", "📦 After conversion: salesDetailsData.tax_amount = ${salesDetailsData.tax_amount}")
                 
                 SalesDetailsRes(
                     status = 1,
@@ -575,7 +798,7 @@ class SalesPaymentViewmodel:ViewModel() {
             val pendingSale = pendingSaleDao.getSaleByInvoice(invoiceId, storeId.toString())
             
             if (pendingSale != null) {
-                val salesDetailsData = convertPendingSaleToSalesDetailsData(pendingSale)
+                val salesDetailsData = convertPendingSaleToSalesDetailsData(context, pendingSale)
                 SalesDetailsRes(
                     status = 1,
                     message = "Offline sale",
@@ -593,7 +816,7 @@ class SalesPaymentViewmodel:ViewModel() {
     /**
      * Convert PendingSaleEntity to SalesDetailsData for viewing sale details offline
      */
-    private fun convertPendingSaleToSalesDetailsData(pendingSale: PendingSaleEntity): SalesDetailsData {
+    private fun convertPendingSaleToSalesDetailsData(context: Context, pendingSale: PendingSaleEntity): SalesDetailsData {
         val gson = Gson()
         
         // ✅ NEW: Get sale-level tax values for distribution to items
@@ -608,6 +831,7 @@ class SalesPaymentViewmodel:ViewModel() {
             val items = gson.fromJson(pendingSale.sales_items_json, Array<com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem>::class.java)
             items?.mapIndexed { index, posItem ->
                 val itemTotal = posItem.total_amount.toDoubleOrNull() ?: 0.0
+                val itemSubTotal = posItem.whole_sale_price.toDoubleOrNull() ?: 0.0
                 val itemQuantity = posItem.batch.sumOf { it.quantity.toDouble() }
                 // NEW: use per-item taxes from offline payload when available
                 val itemTax = (posItem.tax ?: 0.0)
@@ -620,12 +844,12 @@ class SalesPaymentViewmodel:ViewModel() {
                     quantity = itemQuantity,
                     retail_price = posItem.whole_sale_price.toDoubleOrNull() ?: 0.0,
                     total_amount = itemTotal,
-                    sub_total = itemTotal,
+                    sub_total = itemSubTotal,
                     // NEW: per-item taxes (no distribution)
                     tax = itemTax.toInt(),
                     whole_sale_price = posItem.whole_sale_price.toDoubleOrNull() ?: 0.0,
                     tax_amount = itemTaxAmount,
-                    discount = 0,
+                    discount = posItem.discount ?: 0,
                     distribution_pack_id = posItem.distribution_pack_id.toIntOrNull() ?: 0,
                     distribution_pack_name = posItem.distribution_pack_name,
                     total_quantity = itemQuantity,
@@ -659,13 +883,13 @@ class SalesPaymentViewmodel:ViewModel() {
             store_manager_id = pendingSale.store_manager_id.toIntOrNull() ?: 0,
             amount_tendered = pendingSale.amount_tendered.toDoubleOrNull()?.toInt() ?: 0,
             // ✅ NEW: Format date for display (convert from "dd-MMM-yyyy hh:mm a" to "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            created_at = formatDateForApi(pendingSale.sale_date_time),
-            updated_at = formatDateForApi(pendingSale.sale_date_time),
+            created_at = formatDateForApi(context, pendingSale.sale_date_time),
+            updated_at = formatDateForApi(context, pendingSale.sale_date_time),
             status = 1,
             sales_items = salesItems,
             customer = Customer(
                 id = pendingSale.customer_id,
-                customer_name = pendingSale.customer_name.ifEmpty { "Walk-in Customer" }.takeIf { it.isNotEmpty() },
+                customer_name = pendingSale.customer_name.ifEmpty { "N/A" }.takeIf { it.isNotEmpty() },
                 customer_mob_no = pendingSale.customer_mob_no.ifEmpty { "N/A" },
                 created_at = "",
                 updated_at = "",
@@ -674,7 +898,7 @@ class SalesPaymentViewmodel:ViewModel() {
             ),
             store_details = StoreDetails(
                 id = pendingSale.store_id.toIntOrNull() ?: 0,
-                store_name = "Store ${pendingSale.store_id}",
+                store_name = com.retailone.pos.localstorage.SharedPreference.ProfileAttendanceHelper(context).getUserProfile()?.data?.user_details?.store_name ?: "N/A",
                 address = "N/A",
                 cluster_id = 0,
                 created_at = "",
@@ -735,7 +959,9 @@ class SalesPaymentViewmodel:ViewModel() {
         return try {
             val database = PosDatabase.getDatabase(context)
             val pendingSaleDao = database.pendingSaleDao()
-            pendingSaleDao.getSaleById(saleId) != null
+            // ✅ RESOLVE ID: Only check pending_sales if ID is in the offline sale range (-1 to -1000000)
+            val realId = if (saleId in -1000000..-1) kotlin.math.abs(saleId) else saleId
+            pendingSaleDao.getSaleById(realId) != null
         } catch (e: Exception) {
             false
         }

@@ -10,7 +10,9 @@ data class ReplaceReturnedItem(
     // Optional – only needed for “Incomplete Box”
     @SerializedName("on_hold") val on_hold : Int,
     val defective_boxes: Int? = null,
-    val defective_bottles: Int? = null
+    val defective_bottles: Int? = null,
+    val product_id: Int? = null,
+    val distribution_pack_id: Int? = null
 )
 
 data class ReplaceSaleReq(

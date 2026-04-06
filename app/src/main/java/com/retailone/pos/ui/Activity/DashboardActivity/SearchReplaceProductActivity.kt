@@ -35,11 +35,15 @@ import com.retailone.pos.models.ReplaceModel.ReplaceSaleReq
 import com.retailone.pos.models.ReturnSalesItemModel.BatchReturnItem
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnItemData
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnItemReq
+import com.retailone.pos.models.ReturnSalesItemModel.ReturnItemRes
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.ReturnSaleRes
 import com.retailone.pos.models.ReturnSalesItemModel.SalesItem
 import com.retailone.pos.models.ReturnSalesItemModel.SalesReturnReasonModel.ReturnReasonData
 import com.retailone.pos.ui.Activity.MPOSDashboardActivity
 import com.retailone.pos.utils.PrinterUtil
+import com.retailone.pos.utils.NetworkUtils
+import com.retailone.pos.localstorage.RoomDB.PosDatabase
+
 import com.retailone.pos.viewmodels.DashboardViewodel.ReturnSalesDetailsViewmodel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -101,12 +105,25 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
 
         val loginSession = LoginSession.getInstance(this)
         lifecycleScope.launch {
+            // ✅ Initialize repository for offline state management
+            returnsale_viewmodel.initRepository(this@SearchReplaceProductActivity)
+
+            // ✅ Load return reasons from local cache FIRST (so they are available offline)
+            val cachedReasons = returnsale_viewmodel.getReturnReasonsFromLocalDB()
+            if (cachedReasons.isNotEmpty()) {
+                Log.d("ReplaceReasons", "✅ Loaded ${cachedReasons.size} reasons from cache")
+                returnReasonList = cachedReasons.toMutableList()
+                binding.reasonInput.setAdapter(ReturnReasonAdapter(this@SearchReplaceProductActivity, 0, returnReasonList))
+            }
+
             storeid = loginSession.getStoreID().first().toInt()
             store_manager_id = loginSession.getStoreManagerID().first().toString()
             if (!invoiceIdFromIntent.isNullOrEmpty()) {
                 binding.searchBar.setQuery(invoiceIdFromIntent, false)
+                
+                // ✅ Call unified API hub (handles both online/offline automatically)
                 returnsale_viewmodel.callReturnSalesDetailsApi(
-                    ReturnItemReq(invoice_id = invoiceIdFromIntent),
+                    ReturnItemReq(invoice_id = invoiceIdFromIntent, store_id = storeid.toString()),
                     this@SearchReplaceProductActivity
                 )
             }
@@ -120,8 +137,9 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             if (q.isEmpty()) {
                 showMessage("Enter a valid Invoice ID")
             } else {
+                // ✅ Call unified API hub (handles both online/offline automatically)
                 returnsale_viewmodel.callReturnSalesDetailsApi(
-                    ReturnItemReq(invoice_id = q), this@SearchReplaceProductActivity
+                    ReturnItemReq(invoice_id = q, store_id = storeid.toString()), this@SearchReplaceProductActivity
                 )
             }
         }
@@ -142,7 +160,30 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         returnsale_viewmodel.returnitem_liveData.observe(this) { res ->
             if (res.data.isNotEmpty()) {
                 val first = res.data[0]
-                val detailedItems = first.sales_items.orEmpty()
+                val detailedItems = if (first.sales_items.isNullOrEmpty()) {
+                    first.salesItems.orEmpty().map {
+                        com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
+                            id = it.id,
+                            sales_id = it.sales_id,
+                            product_id = it.product_id,
+                            on_hold = 0,
+                            distribution_pack_id = it.distribution_pack_id,
+                            distribution_pack_name = it.distribution_pack_name,
+                            batch = null,
+                            quantity = it.quantity,
+                            store_stock = 0,
+                            retail_price = it.retail_price,
+                            discount = 0.0,
+                            tax_exclusive_price = it.tax_exclusive_price,
+                            total_amount = it.total_amount,
+                            product = it.product,
+                            distribution_pack = it.distribution_pack,
+                            sales_returns = null
+                        )
+                    }
+                } else {
+                    first.sales_items.orEmpty()
+                }
 
                 storeStockBySalesItemId.clear()
                 storeStockByProductId.clear()
@@ -211,26 +252,87 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                             /// onHold == 1
                         }
 
+                // ✅ OFFLINE STOCK OVERRIDE:
+                // When offline, si.store_stock in the cached SalesItemDetailed is stale (often 0).
+                // Re-populate the stock maps from the local StoreProductDao so the on-hold
+                // decision logic mirrors exactly what online mode does with live API stock.
+                if (!NetworkUtils.isInternetAvailable(this@SearchReplaceProductActivity) && detailedItems.isNotEmpty()) {
+                    lifecycleScope.launch {
+                        try {
+                            val productIds = detailedItems.map { it.product_id }.distinct()
+                            val localProducts = PosDatabase.getDatabase(this@SearchReplaceProductActivity)
+                                .storeProductDao()
+                                .getProductsByProductIds(productIds, storeid)
+
+                            // Build a fast lookup: product_id -> sum of stock_quantity across all packs
+                            val localStockByProductId = localProducts
+                                .groupBy { it.product_id }
+                                .mapValues { (_, entities) -> entities.sumOf { it.stock_quantity }.toInt() }
+
+                            // Also build lookup by compositeKey (product_id_distribution_pack_id)
+                            val localStockByCompositeKey = localProducts.associateBy { it.compositeKey }
+
+                            Log.d("OfflineReplaceStock", "Local stock map: $localStockByProductId")
+
+                            // Override storeStockByProductId with local values
+                            localStockByProductId.forEach { (productId, localStock) ->
+                                storeStockByProductId[productId] = localStock
+                            }
+
+                            // Override storeStockBySalesItemId per sales item using composite key
+                            detailedItems.forEach { si ->
+                                val key = "${si.product_id}_${si.distribution_pack_id}"
+                                val localEntity = localStockByCompositeKey[key]
+                                if (localEntity != null) {
+                                    storeStockBySalesItemId[si.id] = localEntity.stock_quantity.toInt()
+                                    Log.d("OfflineReplaceStock", "Overridden sid=${si.id} product=${si.product_id} stock=${localEntity.stock_quantity}")
+                                } else {
+                                    // Fallback: use product-level sum if no exact pack match
+                                    val fallbackStock = localStockByProductId[si.product_id] ?: 0
+                                    storeStockBySalesItemId[si.id] = fallbackStock
+                                    Log.d("OfflineReplaceStock", "Fallback sid=${si.id} product=${si.product_id} stock=$fallbackStock")
+                                }
+                            }
+
+                            // Re-run visibility after overriding with real local stock
+                            updateNextLayoutVisibilityForStock()
+                            if (::returnSalesItemAdapter.isInitialized) {
+                                returnSalesItemAdapter.notifyDataSetChanged()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("OfflineReplaceStock", "Failed to load local stock: ${e.message}")
+                        }
+                    }
+                }
+
                 updateNextLayoutVisibilityForStock()
 
-                // replaceable items (not refunded)
-                val filteredItems = (res.data[0].salesItems
-                    ?: emptyList()).filter { (res.data[0].total_refunded_amount ?: 0.0) <= 0.0 }
-                    .toMutableList()
 
-                if (filteredItems.isEmpty()) {
-                    showMessage("All items are already refunded.")
-                    returnItemData = res.data[0]
-                    returnItemList = filteredItems
+                val data = res.data[0]
+                val allItems = data.salesItems.orEmpty()
+                
+                // Keep returnItemList as full list for index consistency
+                returnItemList = allItems.toMutableList()
+                returnItemData = data
+
+                // Logic to check if invoice is already replaced or all items refunded
+                val isAlreadyReplaced = (data.total_replaced_amount ?: 0.0) > 0.0 || isInvoiceAlreadyReplaced
+                val allRefunded = allItems.all { (data.total_refunded_amount ?: 0.0) > 0.0 } // Or check individual items if available
+
+                if (isAlreadyReplaced || allRefunded) {
+                    val msg = if (isAlreadyReplaced) "This invoice has already been replaced." else "All items are already refunded."
+                    showMessage(msg)
 
                     returnSalesItemAdapter = ReplaceSalesItemAdapter(
                         res.data,
                         this@SearchReplaceProductActivity,
                         this,
                         selectedParentPositions = selectedParentPositions,
-                        onBatchChange = { _, _ -> setTotalsFromServer(res.data[0]) }, // read-only
-                        onParentToggle = { _, _, _ -> /* ignore */ },
-                        readOnly = true
+                        onBatchChange = { _, _ -> /* no-op */ },
+                        onParentToggle = { _, _, _ -> /* no-op */ },
+                        readOnly = true,
+                        storeStockMap = storeStockByProductId,
+                        onHoldMap = onHoldByProductId
                     )
 
                     binding.positemRcv.adapter = returnSalesItemAdapter
@@ -238,142 +340,54 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                     binding.addproductLayout.isVisible = false
                     binding.reasonLayout.isVisible = false
                     binding.summaryCard.isVisible = true
-                    binding.relativeLayout.isVisible = false
                     binding.relativeLayout2.isVisible = true
                     binding.paymentcard.isVisible = false
-
-                    setTotalsFromServer(res.data[0])
+                    // ✅ Hide the action button — invoice is already replaced, no further action allowed
+                    binding.relativeLayout.isVisible = false
+                    binding.nextlayout.isVisible = false
+                    setTotalsFromServer(data)
                     return@observe
                 }
 
-                val patchedFirst = res.data[0].copy(salesItems = filteredItems)
-                val patchedData = res.data.toMutableList().apply { this[0] = patchedFirst }
 
-                if (isInvoiceAlreadyReplaced) {
-                    // ============ INVOICE ALREADY REPLACED ============
-                    if (!hasForceReplaceProduct) {
+                // NORMAL REPLACEABLE FLOW
+                selectedParentPositions.clear()
+                selectedBatchesByRow.clear()
+                applyZeroTotals()
 
-                        // 🔒 Pure read-only (no special product)
-                        showMessage("This invoice has already been replaced and cannot be replaced again.")
-
-                        returnItemData = patchedFirst
-                        returnItemList = filteredItems
-
-                        returnSalesItemAdapter = ReplaceSalesItemAdapter(
-                            patchedData,
-                            this@SearchReplaceProductActivity,
-                            this,
-                            selectedParentPositions = selectedParentPositions,
-                            onBatchChange = { _, _ -> setTotalsFromServer(res.data[0]) },
-                            onParentToggle = { _, _, _ -> /* ignore */ },
-                            readOnly = true
-                        )
-
-                        binding.positemRcv.adapter = returnSalesItemAdapter
-                        binding.positemRcv.isVisible = true
-                        binding.addproductLayout.isVisible = false
-                        binding.reasonLayout.isVisible = false
-                        binding.remarkLayout.isVisible = false
-                        binding.summaryCard.isVisible = true
-                        binding.relativeLayout.isVisible = false
-                        binding.relativeLayout2.isVisible = true
-                        binding.paymentcard.isVisible = false
-
-                        setTotalsFromServer(res.data[0])
-                    } else {
-                        // ✅ SPECIAL CASE:
-                        // invoice already replaced, BUT one product is on hold & stock > 1
-                        // → only that row is enabled (handled inside adapter),
-                        //   others stay read-only
-
-
-                        //// showMessage("This invoice was already replaced. One on-hold item is now in stock and can be replaced.")
-                        showMessage(
-                            if (onHoldAndStockAvailableReplace)
-                                "This invoice was already replaced. The on-hold item is now in stock and can be replaced."
-                            else
-                                "This invoice was already replaced, and the on-hold item is currently out of stock."
-                        )
-                        returnItemData = patchedFirst
-                        returnItemList = filteredItems
-                        selectedParentPositions.clear()
-                        selectedBatchesByRow.clear()
-                        applyZeroTotals()
-
-                        returnSalesItemAdapter = ReplaceSalesItemAdapter(
-                            patchedData,
-                            this@SearchReplaceProductActivity,
-                            this,
-                            selectedParentPositions = selectedParentPositions,
-                            onBatchChange = { adapterPos, currentSelectedBatches ->
-                                mergeBatchesForRow(adapterPos, currentSelectedBatches)
-                                recomputeTotalsUnion()
-                                updateReplaceUi()
-                            },
-                            onParentToggle = { productId, checked, adapterPos ->
-                                handleParentToggle(productId, checked, adapterPos)
-                                recomputeTotalsUnion()
-                                updateReplaceUi()
-                            },
-                            // 🔒 IMPORTANT: keep readOnly = true
-                            // adapter will open only the special product row
-                            readOnly = true
-                        )
-
-                        binding.positemRcv.adapter = returnSalesItemAdapter
-                        binding.positemRcv.isVisible = true
-                        binding.addproductLayout.isVisible = false
-                        binding.reasonLayout.isVisible = true
-                        binding.remarkLayout.isVisible = true
-                        binding.summaryCard.isVisible = true
-                        binding.relativeLayout.isVisible = true
-                        binding.relativeLayout2.isVisible = true
-                        binding.paymentcard.isVisible = false
-
-                        val taxDisplay = formatTaxForDisplay(returnItemData.tax)
-                        binding.taxfield.setText("(+) Tax @$taxDisplay")
+                returnSalesItemAdapter = ReplaceSalesItemAdapter(
+                    res.data,
+                    this@SearchReplaceProductActivity,
+                    this,
+                    selectedParentPositions = selectedParentPositions,
+                    onBatchChange = { adapterPos, currentSelectedBatches ->
+                        mergeBatchesForRow(adapterPos, currentSelectedBatches)
+                        recomputeTotalsUnion()
                         updateReplaceUi()
-                    }
-                } else {
-                    // ============ NORMAL REPLACEABLE FLOW (not yet replaced) ============
-                    returnItemData = patchedFirst
-                    returnItemList = filteredItems
-                    selectedParentPositions.clear()
-                    selectedBatchesByRow.clear()
-                    applyZeroTotals()
+                    },
+                    onParentToggle = { productId, checked, adapterPos ->
+                        handleParentToggle(productId, checked, adapterPos)
+                        recomputeTotalsUnion()
+                        updateReplaceUi()
+                    },
+                    readOnly = false,
+                    storeStockMap = storeStockByProductId,
+                    onHoldMap = onHoldByProductId
+                )
 
-                    returnSalesItemAdapter = ReplaceSalesItemAdapter(
-                        patchedData,
-                        this@SearchReplaceProductActivity,
-                        this,
-                        selectedParentPositions = selectedParentPositions,
-                        onBatchChange = { adapterPos, currentSelectedBatches ->
-                            mergeBatchesForRow(adapterPos, currentSelectedBatches)
-                            recomputeTotalsUnion()
-                            updateReplaceUi()
-                        },
-                        onParentToggle = { productId, checked, adapterPos ->
-                            handleParentToggle(productId, checked, adapterPos)
-                            recomputeTotalsUnion()
-                            updateReplaceUi()
-                        },
-                        readOnly = false
-                    )
+                binding.positemRcv.adapter = returnSalesItemAdapter
+                binding.positemRcv.isVisible = true
+                binding.addproductLayout.isVisible = false
+                binding.reasonLayout.isVisible = true
+                binding.remarkLayout.isVisible = true
+                binding.summaryCard.isVisible = true
+                binding.relativeLayout.isVisible = true
+                binding.relativeLayout2.isVisible = true
+                binding.paymentcard.isVisible = false
 
-                    binding.positemRcv.adapter = returnSalesItemAdapter
-                    binding.positemRcv.isVisible = true
-                    binding.addproductLayout.isVisible = false
-                    binding.reasonLayout.isVisible = true
-                    binding.remarkLayout.isVisible = true
-                    binding.summaryCard.isVisible = true
-                    binding.relativeLayout.isVisible = true
-                    binding.relativeLayout2.isVisible = true
-                    binding.paymentcard.isVisible = false
-
-                    val taxDisplay = formatTaxForDisplay(returnItemData.tax)
-                    binding.taxfield.setText("(+) Tax @$taxDisplay")
-                    updateReplaceUi()
-                }
+                val taxDisplay = formatTaxForDisplay(data.tax)
+                binding.taxfield.setText("(+) Tax @$taxDisplay")
+                updateReplaceUi()
             } else {
                 showMessage("No Invoice Found")
                 binding.positemRcv.isVisible = false
@@ -413,27 +427,35 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         }
 
         binding.nextlayout.setOnClickListener {
-            Log.e("ReplaceSaleRequest", canReplaceFlag.toString())
+            Log.e("ReplaceSaleRequest", "Save/Hold Button Clicked. canReplaceFlag=$canReplaceFlag")
 
             if (reasonid == -1) {
                 showMessage("Please select any reason for replacement")
+                Log.e("ReplaceSaleRequest", "Failed: Reason not selected (-1)")
                 return@setOnClickListener
             }
 
+            // CHECK BUTTON TEXT to determine if this is HOLD action BEFORE building replace lines
+            isHoldAction = (binding.next.text.toString().trim().equals("HOLD", ignoreCase = true))
+            Log.e("ReplaceSaleRequest", "Determined isHoldAction=$isHoldAction from button text '${binding.next.text}'")
+
             val replaceLines = buildReplaceLines()
+            Log.e("ReplaceSaleRequest", "buildReplaceLines returned ${replaceLines.size} items.")
+            
             if (replaceLines.isEmpty()) {
+                val detailedItemsSize = returnItemData.sales_items?.size ?: 0
+                val salesItemsSize = returnItemData.salesItems?.size ?: 0
+                val parentsSize = selectedParentPositions.size
+                val batchesSize = selectedBatchesByRow.size
+                Log.e("ReplaceSaleRequest", "Nothing to replace! state = detailedItems:$detailedItemsSize, salesItems:$salesItemsSize, parents:$parentsSize, batches:$batchesSize")
+                
                 showMessage("Nothing to replace")
                 return@setOnClickListener
             }
 
             val onHold = if (canReplaceFlag) 0 else 1
 
-            // CHECK BUTTON TEXT to determine if this is HOLD action
-            isHoldAction = (binding.next.text.toString().trim().equals("HOLD", ignoreCase = true))
-
-            Log.e("ReplaceSaleRequest", "Button text: ${binding.next.text}")
-            Log.e("ReplaceSaleRequest", "isHoldAction: $isHoldAction")
-            Log.e("ReplaceSaleRequest", "onHold value: $onHold")
+            Log.e("ReplaceSaleRequest", "Proceeding with replace/hold. onHold=$onHold")
 
             val req = ReplaceSaleReq(
                 sales_id = returnItemData.id,
@@ -449,7 +471,37 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             Log.e("ReplaceSaleRequest", "Request: $req")
             Log.e("ReplaceSaleRequest", "Request: ${Gson().toJson(req)}")
 
-            returnsale_viewmodel.callReplaceSaleApi(req, this@SearchReplaceProductActivity)
+            if (NetworkUtils.isInternetAvailable(this@SearchReplaceProductActivity)) {
+                Log.d("ReplaceSubmit", "📡 Online - submitting immediately")
+                // Even online, setting local flag ensures instant consistency
+                if (isHoldAction) {
+                   com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.markAsOnHold(this@SearchReplaceProductActivity, returnItemData.invoice_id.orEmpty())
+                } else {
+                   com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.removeOnHold(this@SearchReplaceProductActivity, returnItemData.invoice_id.orEmpty())
+                }
+                returnsale_viewmodel.callReplaceSaleApi(req, this@SearchReplaceProductActivity)
+            } else {
+                Log.d("ReplaceSubmit", "📴 Offline - queuing for later sync")
+                
+                // IMPORTANT: Locally mark this invoice as "ON HOLD" immediately, 
+                // so replaced/return lists show the yellow ON HOLD badge instead of REPLACED.
+                if (isHoldAction) {
+                   com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.markAsOnHold(this@SearchReplaceProductActivity, returnItemData.invoice_id.orEmpty())
+                } else {
+                   com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.removeOnHold(this@SearchReplaceProductActivity, returnItemData.invoice_id.orEmpty())
+                }
+                
+                lifecycleScope.launch {
+                    val invoiceId = binding.searchBar.query.toString().trim()
+                    val queueId = returnsale_viewmodel.queueReplaceRequest(invoiceId, req)
+
+                    if (queueId > 0) {
+                        showOfflineSuccessDialog()
+                    } else {
+                        showMessage("Failed to queue replace request")
+                    }
+                }
+            }
         }
 
     }
@@ -622,7 +674,7 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             else si.batches?.firstOrNull { normalizeBatchKey(it.batch) == bkey }
 
             val qtyPurchased = if (b != null) {
-                ceil(b.quantity).toInt().coerceAtLeast(0)
+                ceil(b.quantity ?: 0.0).toInt().coerceAtLeast(0)
             } else {
                 ceil(si.quantity).toInt().coerceAtLeast(0)
             }
@@ -780,6 +832,35 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
 //        binding.tvTotalValue.text = NumberFormatter().formatPrice("0.00", localizationData)
 //    }
 
+    private fun showOfflineSuccessDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.pos_sucess_dialog)
+        dialog.setCancelable(false)
+        dialog.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val confirm = dialog.findViewById<MaterialButton>(R.id.prefer_confirm)
+        val logoutMsg = dialog.findViewById<TextView>(R.id.logout_msg)
+        val print_receipt = dialog.findViewById<MaterialButton>(R.id.print_receipt)
+
+        logoutMsg.text = "Replace request saved offline.\nIt will be submitted when internet is available."
+        logoutMsg.textSize = 16F
+
+        print_receipt.isVisible = false
+
+        confirm.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this@SearchReplaceProductActivity, MPOSDashboardActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+
+        dialog.show()
+    }
+
     private fun applyZeroTotals() {
         binding.subtotal.setText("0.00")
         binding.taxAmount.setText("0.00")
@@ -864,7 +945,7 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             else -> {
                 val detailed = returnItemData.sales_items.orEmpty()
                 detailed.isNotEmpty() && detailed.all { si ->
-                    val available = si.store_stock
+                    val available = storeStockByProductId[si.product_id] ?: storeStockBySalesItemId[si.id] ?: si.store_stock
                     val needed = ceil(si.quantity).toInt()
                     available >= needed
                 }
@@ -1123,31 +1204,54 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
     private fun updateNextLayoutVisibilityForStock() {
 
         if (!this::returnItemData.isInitialized) {
-            /// println("RTN skipped: returnItemData not initialized")
             return
         }
 
-        // println("RTN " + Gson().toJson(returnItemData))
+        val detailed = if (this::returnItemData.isInitialized) {
+            if (returnItemData.sales_items.isNullOrEmpty()) {
+                returnItemData.salesItems.orEmpty().map {
+                    com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
+                        id = it.id,
+                        sales_id = it.sales_id,
+                        product_id = it.product_id,
+                        on_hold = 0,
+                        distribution_pack_id = it.distribution_pack_id,
+                        distribution_pack_name = it.distribution_pack_name,
+                        batch = null,
+                        quantity = it.quantity,
+                        store_stock = 0,
+                        retail_price = it.retail_price,
+                        discount = 0.0,
+                        tax_exclusive_price = it.tax_exclusive_price,
+                        total_amount = it.total_amount,
+                        product = it.product,
+                        distribution_pack = it.distribution_pack,
+                        sales_returns = null
+                    )
+                }
+            } else {
+                returnItemData.sales_items.orEmpty()
+            }
+        } else emptyList()
 
-
-
-        val anyStockAvailable = if (storeStockBySalesItemId.isNotEmpty()) {
-            storeStockBySalesItemId.values.any { it > 0 }
-        } else {
-            returnItemData.sales_items.orEmpty().any { it.store_stock > 0 }
+        val anyStockAvailable = detailed.any { si ->
+            val available = storeStockByProductId[si.product_id] ?: storeStockBySalesItemId[si.id] ?: si.store_stock
+            available > 0
         }
 
-        val detailed =
-            if (this::returnItemData.isInitialized) returnItemData.sales_items.orEmpty() else emptyList()
-
-        // 🚩 FORCE REPLACE: product on hold but now has store stock > 1
-        // 🚩 FORCE REPLACE (only when invoice is already replaced):
-        // product was on hold but now has store stock > 1
         val forceReplaceExists = isInvoiceAlreadyReplaced && detailed.any { si ->
             val stockForProduct = storeStockByProductId[si.product_id] ?: si.store_stock
-            val saleQuantityForProduct =  saleQuantityByProductId[si.product_id] ?: si.quantity
-            ////si.on_hold == 1 && stockForProduct > 1
+            val saleQuantityForProduct = saleQuantityByProductId[si.product_id] ?: si.quantity
             si.on_hold == 1 && stockForProduct >= saleQuantityForProduct
+        }
+
+        // ✅ If the invoice is already replaced with no force-replace opportunity, hide the button.
+        // This also prevents the async offline stock coroutine from re-showing the button after
+        // return@observe has already been called in the isAlreadyReplaced block.
+        if (isInvoiceAlreadyReplaced && !forceReplaceExists) {
+            binding.relativeLayout.isVisible = false
+            binding.nextlayout.isVisible = false
+            return
         }
 
         // Treat as "still on hold" ONLY if not a force-replace candidate
@@ -1163,11 +1267,15 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
 
         val hasAnyPositiveUnderstock = detailed.any { si ->
             val needed = ceil(si.quantity).toInt()
-            si.store_stock > 0 && si.store_stock < needed
+            val available = storeStockByProductId[si.product_id] ?: storeStockBySalesItemId[si.id] ?: si.store_stock
+            available > 0 && available < needed
         }
 
 
-        val allZeroStock = detailed.isNotEmpty() && detailed.all { it.store_stock <= 0 }
+        val allZeroStock = detailed.isNotEmpty() && detailed.all { si -> 
+            val available = storeStockByProductId[si.product_id] ?: storeStockBySalesItemId[si.id] ?: si.store_stock
+            available <= 0 
+        }
 
 
         // can Any product save and replace newly added by Smruti
@@ -1184,10 +1292,8 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         binding.relativeLayout.isVisible = true
         binding.nextlayout.isVisible = true
 
-        // 🔑 If forceReplaceExists, always show "Save and Replace"
-        binding.next.text =
-            if ((anyStockAvailable && !hasAnyPositiveUnderstock) || forceReplaceExists || canAnySaveReplace) "Save and Replace"
-            else "HOLD"
+        canReplaceFlag = (anyStockAvailable && !hasAnyPositiveUnderstock) || forceReplaceExists || canAnySaveReplace
+        binding.next.text = if (canReplaceFlag) "Save and Replace" else "HOLD"
 
 
 
@@ -1202,17 +1308,25 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             else -> anyStockAvailable || !isOnHold || forceReplaceExists
         }
 
-        /*  Log.d(
-              "Replace",
-              "allZeroStock=$allZeroStock, \n" +
-                      "forceReplaceExists=$forceReplaceExists, \n" +
-                      "hasAnyPositiveUnderstock=$hasAnyPositiveUnderstock,\n "+
-                      "anyStockAvailable=$anyStockAvailable, \n"+
-                      " isOnHold=$isOnHold, \n" +
-                        "enabled=$enabled \n"
+        Log.d(
+            "ReplaceDebugLog",
+            "updateNextLayoutVisibilityForStock summary:\n" +
+            "anyStockAvailable: $anyStockAvailable \n" +
+            "forceReplaceExists: $forceReplaceExists \n" +
+            "isOnHold: $isOnHold \n" +
+            "hasAnyPositiveUnderstock: $hasAnyPositiveUnderstock \n" +
+            "allZeroStock: $allZeroStock \n" +
+            "canAnySaveReplace: $canAnySaveReplace \n" +
+            "canReplaceFlag: $canReplaceFlag \n" +
+            "enabled: $enabled"
+        )
+        // Also log per-item stock mapping
+        detailed.forEach {
+            val stock = storeStockByProductId[it.product_id] ?: it.store_stock
+            val saleQty = saleQuantityByProductId[it.product_id] ?: it.quantity
+            Log.d("ReplaceDebugLog", "Product ID: ${it.product_id}, mapped stock: $stock, true sale qty: $saleQty, API on_hold: ${it.on_hold}, API store_stock: ${it.store_stock}")
+        }
 
-
-          )*/
 
         binding.next.isEnabled = enabled
         binding.nextlayout.isEnabled = enabled
@@ -1271,11 +1385,11 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             "CAT" -> "Africa/Lusaka"
             else -> "Africa/Lusaka"
         }
-        val cal = Calendar.getInstance().apply { timeZone = TimeZone.getTimeZone(timezone) }
-        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply {
+        val calendar = Calendar.getInstance().apply { timeZone = TimeZone.getTimeZone(timezone) }
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).apply {
             timeZone = TimeZone.getTimeZone(timezone)
         }
-        return fmt.format(cal.time)
+        return dateFormat.format(calendar.time)
     }
 
     private fun setToolbarImage() {
@@ -1414,7 +1528,32 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
 
     /** Build returned_items for API (positions → ids at the end) */
     private fun buildReplaceLines(): List<ReplaceReturnedItem> {
-        val detailedItems = returnItemData.sales_items.orEmpty()
+        // If the backend didn't supply sales_items (pure offline scenario), fake it from salesItems
+        val detailedItems = if (returnItemData.sales_items.isNullOrEmpty()) {
+            returnItemData.salesItems.orEmpty().map {
+                com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
+                    id = it.id,
+                    sales_id = it.sales_id,
+                    product_id = it.product_id,
+                    on_hold = 0,
+                    distribution_pack_id = it.distribution_pack_id,
+                    distribution_pack_name = it.distribution_pack_name,
+                    batch = null,
+                    quantity = it.quantity,
+                    store_stock = 0,
+                    retail_price = it.retail_price,
+                    discount = 0.0,
+                    tax_exclusive_price = it.tax_exclusive_price,
+                    total_amount = it.total_amount,
+                    product = it.product,
+                    distribution_pack = it.distribution_pack,
+                    sales_returns = null
+                )
+            }
+        } else {
+            returnItemData.sales_items.orEmpty()
+        }
+        
         val totalReplacedAmount =
             returnItemData.total_replaced_amount // not null, but kept for clarity
 
@@ -1449,7 +1588,7 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                     else -> 0
                 }
 
-                val boxes = mapForRow.values.sumOf { it.batch_return_quantity }
+                val boxes = mapForRow.values.sumOf { it.batch_return_quantity ?: 0 }
                 val bottles = mapForRow.values.sumOf { it.return_quantity ?: 0 }
 
                 Log.d(
@@ -1462,7 +1601,9 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                     return_quantity = ceil(si.quantity).toInt(),
                     defective_boxes = boxes,
                     defective_bottles = bottles,
-                    on_hold = lineOnHold
+                    on_hold = lineOnHold,
+                    product_id = si.product_id,
+                    distribution_pack_id = si.distribution_pack_id
                 )
             }
 
@@ -1507,7 +1648,9 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                         return_quantity = ceil(si.quantity).toInt(),
                         defective_boxes = 0,
                         defective_bottles = 0,
-                        on_hold = lineOnHold
+                        on_hold = lineOnHold,
+                        product_id = si.product_id,
+                        distribution_pack_id = si.distribution_pack_id
                     )
                 }
             }
@@ -1545,10 +1688,6 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                 }
 
 
-
-
-
-
                 val wasOnHold = (si?.on_hold ?: 0) == 1
                 val forceReplace =
                     (totalReplacedAmount != null) && wasOnHold && availableStockForProduct >= saleQuantityForProduct
@@ -1570,8 +1709,39 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
                 ReplaceReturnedItem(
                     id = line.id, return_quantity = ceil(
                         si?.quantity ?: 0.0
-                    ).toInt(), defective_boxes = 0, defective_bottles = 0, on_hold = lineOnHold
+                    ).toInt(), defective_boxes = 0, defective_bottles = 0, on_hold = lineOnHold,
+                    product_id = si?.product_id, distribution_pack_id = si?.distribution_pack_id
                 )
+            }
+        }
+        if (isHoldAction && selectedBatchesByRow.isEmpty() && selectedParentPositions.isEmpty()) {
+            if (detailedItems.isNotEmpty()) {
+                Log.e("ReplaceSaleRequest", "buildReplaceLines: using detailedItems for hold action")
+                return detailedItems.map { si ->
+                    ReplaceReturnedItem(
+                        id = si.id,
+                        return_quantity = ceil(si.quantity).toInt(),
+                        defective_boxes = 0,
+                        defective_bottles = 0,
+                        on_hold = 1,
+                        product_id = si.product_id,
+                        distribution_pack_id = si.distribution_pack_id
+                    )
+                }
+            } else {
+                val fallbackItems = returnItemData.salesItems.orEmpty()
+                Log.e("ReplaceSaleRequest", "buildReplaceLines: detailedItems is empty, using fallback items (size=${fallbackItems.size})")
+                return fallbackItems.map { si ->
+                    ReplaceReturnedItem(
+                        id = si.id,
+                        return_quantity = ceil(si.quantity).toInt(),
+                        defective_boxes = 0,
+                        defective_bottles = 0,
+                        on_hold = 1,
+                        product_id = si.product_id,
+                        distribution_pack_id = si.distribution_pack_id
+                    )
+                }
             }
         }
         return emptyList()

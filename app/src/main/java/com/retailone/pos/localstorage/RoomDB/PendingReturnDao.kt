@@ -18,6 +18,10 @@ interface PendingReturnDao {
     @Query("SELECT * FROM pending_returns WHERE sync_status = 'PENDING' ORDER BY created_at ASC")
     fun getPendingReturnsFlow(): Flow<List<PendingReturnEntity>>
 
+    // Get count of pending returns as Flow
+    @Query("SELECT COUNT(*) FROM pending_returns WHERE sync_status = 'PENDING'")
+    fun getPendingReturnsCountFlow(): Flow<Int>
+
     // Get count of pending returns
     @Query("SELECT COUNT(*) FROM pending_returns WHERE sync_status = 'PENDING'")
     suspend fun getPendingReturnsCount(): Int
@@ -45,4 +49,7 @@ interface PendingReturnDao {
     // Get return by ID
     @Query("SELECT * FROM pending_returns WHERE id = :id LIMIT 1")
     suspend fun getPendingReturnById(id: Int): PendingReturnEntity?
+
+    @Query("SELECT * FROM pending_returns WHERE invoice_id = :invoiceId LIMIT 1")
+    suspend fun getPendingReturnByInvoice(invoiceId: String): PendingReturnEntity?
 }

@@ -97,18 +97,40 @@ class ReplacedSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener
 
         val loginSession = LoginSession.getInstance(this)
         lifecycleScope.launch {
+            // ✅ Initialize repository for offline state management
+            returnsale_viewmodel.initRepository(this@ReplacedSaleActivity)
+            
             storeid = loginSession.getStoreID().first().toInt()
             store_manager_id = loginSession.getStoreManagerID().first().toString()
+
+            // ✅ Load from local DB first (instant, works offline!)
+            val localSales = returnsale_viewmodel.getSalesFromLocalDB(this@ReplacedSaleActivity)
+            if (localSales.isNotEmpty()) {
+                salesListAdapter = SaleReplaceAdapter(this@ReplacedSaleActivity, localSales)
+                binding.salesRecyclerView.apply {
+                    adapter = salesListAdapter
+                    layoutManager = LinearLayoutManager(this@ReplacedSaleActivity)
+                    isVisible = true
+                }
+            }
+
+            // ✅ Refresh from API
             returnsale_viewmodel.callreplaceSalesListApi(this@ReplacedSaleActivity, storeid.toString())
+            
+            // ✅ Fetch reasons for offline use
+            returnsale_viewmodel.callSaleReturnReasonApi(this@ReplacedSaleActivity)
         }
 
         // Observe lists
         returnsale_viewmodel.salesListLiveData.observe(this) { response ->
             if (response.status == 1 && response.data.isNotEmpty()) {
-                salesListAdapter = SaleReplaceAdapter(this, response.data)
-                binding.salesRecyclerView.adapter = salesListAdapter
-                binding.salesRecyclerView.layoutManager = LinearLayoutManager(this)
-                binding.salesRecyclerView.isVisible = true
+                val data = response.data
+                salesListAdapter = SaleReplaceAdapter(this, data)
+                binding.salesRecyclerView.apply {
+                    adapter = salesListAdapter
+                    layoutManager = LinearLayoutManager(this@ReplacedSaleActivity)
+                    isVisible = true
+                }
             } else showMessage("No Sales Found")
         }
 
@@ -213,8 +235,8 @@ class ReplacedSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener
     private fun callReturnAPI(returnbatchItemList: MutableList<BatchReturnItem>) {
         val cartitemlist = mutableListOf<ReturnedItem>()
         returnbatchItemList.forEach {
-            if (it.batch_return_quantity != 0) {
-                cartitemlist.add(ReturnedItem(id = it.sales_item_id, return_quantity = it.batch_return_quantity))
+            if ((it.batch_return_quantity ?: 0) != 0) {
+                cartitemlist.add(ReturnedItem(id = it.sales_item_id ?: 0, return_quantity = it.batch_return_quantity ?: 0))
             }
         }
         if (reasonid == -1) { showMessage("please select any reason for return"); return }

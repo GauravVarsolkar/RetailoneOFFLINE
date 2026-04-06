@@ -7,6 +7,7 @@ import com.retailone.pos.localstorage.RoomDB.PosDatabase
 import com.retailone.pos.localstorage.RoomDB.StoreProductDao
 import com.retailone.pos.localstorage.RoomDB.toEntity
 import com.retailone.pos.localstorage.RoomDB.toStoreProData
+import com.retailone.pos.localstorage.RoomDB.CustomerDiscountEntity
 import com.retailone.pos.models.CommonModel.StroreProduct.StoreProData
 import com.retailone.pos.models.PointofsaleModel.SearchStroreProModel.SearchStoreProReq
 import com.retailone.pos.models.PointofsaleModel.SearchStroreProModel.SearchStoreProRes
@@ -43,7 +44,27 @@ class PosProductRepository(private val context: Context) {
         } else {
             dao.searchProducts(storeId, searchQuery)
         }.map { entities ->
-            entities.map { it.toStoreProData() }
+            val products = entities.map { it.toStoreProData() }
+            if (customerId != 0) {
+                products.forEach { product ->
+                    product.batch.forEach { batch ->
+                        val offlineDiscount = database.customerDiscountDao().getDiscount(
+                            customerId,
+                            product.product_id,
+                            product.distribution_pack_id,
+                            batch.batch_no
+                        )
+                        batch.discount = offlineDiscount ?: 0.0
+                    }
+                }
+            } else {
+                products.forEach { product ->
+                    product.batch.forEach { batch ->
+                        batch.discount = 0.0
+                    }
+                }
+            }
+            products
         }
 
         // If online, sync with API in background
@@ -79,7 +100,25 @@ class PosProductRepository(private val context: Context) {
                             try {
                                 val entities = products.map { it.toEntity() }
                                 dao.insertProducts(entities)
-                                Log.d("PosRepository", "Cached ${entities.size} products")
+                                
+                                // Save discounts per customer
+                                val discounts = mutableListOf<CustomerDiscountEntity>()
+                                products.forEach { product ->
+                                    product.batch.forEach { batch ->
+                                        discounts.add(
+                                            CustomerDiscountEntity(
+                                                customer_id = customerId,
+                                                product_id = product.product_id,
+                                                distribution_pack_id = product.distribution_pack_id,
+                                                batch_no = batch.batch_no,
+                                                discount = batch.discount
+                                            )
+                                        )
+                                    }
+                                }
+                                database.customerDiscountDao().insertDiscounts(discounts)
+                                
+                                Log.d("PosRepository", "Cached ${entities.size} products and ${discounts.size} discounts for customer $customerId")
                             } catch (e: Exception) {
                                 Log.e("PosRepository", "Error caching products: ${e.message}")
                             }

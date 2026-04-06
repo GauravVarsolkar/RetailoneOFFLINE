@@ -41,7 +41,13 @@ import com.retailone.pos.localstorage.SharedPreference.OrganisationDetailsHelper
 import com.retailone.pos.localstorage.SharedPreference.SharedPrefHelper
 import com.retailone.pos.localstorage.SharedPreference.TimeoutHelper
 import com.retailone.pos.models.GetCustomerModel.getCustomerReq
+import com.retailone.pos.repository.PendingCancelSaleRepository
 import com.retailone.pos.repository.PosSaleRepository
+import com.retailone.pos.repository.PendingReturnRepository
+import com.retailone.pos.localstorage.RoomDB.PendingReplaceRepository
+import com.retailone.pos.localstorage.RoomDB.PosDatabase
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import com.retailone.pos.ui.Activity.DashboardActivity.*
 import com.retailone.pos.utils.CrashHandler
 import com.retailone.pos.utils.NetworkUtils
@@ -71,6 +77,11 @@ class MPOSDashboardActivity : AppCompatActivity() {
     lateinit var organisationDetailsHelper: OrganisationDetailsHelper
 
     private lateinit var posSaleRepository: PosSaleRepository
+    private lateinit var pendingReturnRepository: PendingReturnRepository
+    private lateinit var pendingReplaceRepository: PendingReplaceRepository
+    private lateinit var pendingCancelRepository: PendingCancelSaleRepository
+    private lateinit var pendingGoodsReturnRepository: com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnRepository
+    private lateinit var expenseRepository: com.retailone.pos.repository.ExpenseRepository
     private var isSyncing = false
 
     var storemanager_id = ""
@@ -91,6 +102,7 @@ class MPOSDashboardActivity : AppCompatActivity() {
         binding = ActivityMposdashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // ... truncated generic setup routines
         setSupportActionBar(binding.toolbar)
         drawer = binding.drawer
         actionBarDrawerToggle = ActionBarDrawerToggle(this, drawer, R.string.nav_open, R.string.nav_close)
@@ -113,6 +125,13 @@ class MPOSDashboardActivity : AppCompatActivity() {
         loginViewmodel = ViewModelProvider(this)[MPOSLoginViewmodel::class.java]
 
         posSaleRepository = PosSaleRepository(this)
+        pendingReturnRepository = PendingReturnRepository(this)
+        pendingCancelRepository = PendingCancelSaleRepository(this)
+        expenseRepository = com.retailone.pos.repository.ExpenseRepository(this)
+        
+        val db = PosDatabase.getDatabase(this)
+        pendingReplaceRepository = PendingReplaceRepository(db.pendingReplaceDao())
+        pendingGoodsReturnRepository = com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnRepository(db.pendingGoodsReturnDao())
 
         setupSyncButton()
         observePendingSalesCount()
@@ -249,15 +268,26 @@ class MPOSDashboardActivity : AppCompatActivity() {
         }
     }
 
-    // ✅ OBSERVE PENDING SALES AND UPDATE BADGE
+    // ✅ OBSERVE PENDING COUNTS AND UPDATE BADGE
     private fun observePendingSalesCount() {
         lifecycleScope.launch {
-            posSaleRepository.getPendingSalesCountFlow().collectLatest { count ->
-                Log.d("SyncBadge", "Pending sales count: $count")
+            combine(
+                listOf(
+                    posSaleRepository.getPendingSalesCountFlow(),
+                    pendingReturnRepository.getPendingReturnsCountFlow(),
+                    pendingReplaceRepository.getPendingCountFlow(),
+                    pendingCancelRepository.getPendingCancelCountFlow(),
+                    pendingGoodsReturnRepository.getPendingCountFlow(),
+                    expenseRepository.getPendingExpensesCountFlow()
+                )
+            ) { counts ->
+                counts.sum()
+            }.collectLatest { totalCount ->
+                Log.d("SyncBadge", "Total pending items: $totalCount")
 
-                if (count > 0) {
+                if (totalCount > 0) {
                     binding.tvSyncBadge.visibility = android.view.View.VISIBLE
-                    binding.tvSyncBadge.text = if (count > 99) "99+" else count.toString()
+                    binding.tvSyncBadge.text = if (totalCount > 99) "99+" else totalCount.toString()
                 } else {
                     binding.tvSyncBadge.visibility = android.view.View.GONE
                 }
@@ -368,17 +398,35 @@ class MPOSDashboardActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 delay(300)
-                val success = posSaleRepository.syncOfflineSales()
+                // ✅ 1. Sync Sales
+                val saleSuccess = posSaleRepository.syncOfflineSales()
+                
+                // ✅ 2. Sync Returns
+                Log.d("OFFLINE_SYNC_DEBUG", "🔘 Manual Sync Button: Starting Return Sync...")
+                val returnSuccess = pendingReturnRepository.syncAllPendingReturns(this@MPOSDashboardActivity)
+                Log.d("OFFLINE_SYNC_DEBUG", "🔘 Manual Sync Button: Return Sync Result = $returnSuccess")
+                
+                // ✅ 3. Sync Replaces
+                val replaceSuccess = pendingReplaceRepository.syncAllPendingReplaces(this@MPOSDashboardActivity)
+
+                // ✅ 4. Sync Cancels
+                val cancelSuccess = pendingCancelRepository.syncAllPendingCancels()
+                
+                // ✅ 5. Sync Warehouse Goods Returns
+                val goodsSuccess = pendingGoodsReturnRepository.syncAllPendingReturns(this@MPOSDashboardActivity)
+
+                // ✅ 6. Sync Expenses
+                val expenseSuccess = expenseRepository.syncAllPendingExpenses()
+                
                 delay(1500)
 
-                if (success) {
+                if (saleSuccess && returnSuccess && replaceSuccess && cancelSuccess && goodsSuccess && expenseSuccess) {
                     transitionToSuccess()
-//                    showMessage("All sales synced successfully!")
                 } else {
                     // Failed - revert to idle
                     binding.ivSyncIcon.clearAnimation()
                     transitionToIdle()
-                    showMessage("Some sales failed to sync. Please try again.")
+                    showMessage("Some items failed to sync. Please try again.")
                 }
 
             } catch (e: Exception) {
@@ -448,12 +496,8 @@ class MPOSDashboardActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(d_binding.root)
 
-        // ✅ ADD THIS: Hide skip button if offline
-        if (!isInternetAvailable()) {
-            d_binding.skipBtn.visibility = android.view.View.GONE
-        } else {
-            d_binding.skipBtn.visibility = android.view.View.VISIBLE
-        }
+        // ✅ Skip button always visible (works in both online and offline mode)
+        d_binding.skipBtn.visibility = android.view.View.VISIBLE
 
 
 
@@ -496,7 +540,9 @@ class MPOSDashboardActivity : AppCompatActivity() {
 
             if (!isInternetAvailable()) {
                 val localHelper = CustomerLocalHelper(this)
-                val matchedCustomer = if (d_binding.toggle.checkedRadioButtonId == R.id.mobile_btn) {
+                val isMobile = d_binding.toggle.checkedRadioButtonId == R.id.mobile_btn
+                
+                val matchedCustomer = if (isMobile) {
                     localHelper.getCustomers().find { it.mobile_no == inputValue }
                 } else {
                     localHelper.getCustomers().find { it.tin_tpin_no == inputValue }
@@ -518,7 +564,7 @@ class MPOSDashboardActivity : AppCompatActivity() {
                     startActivity(intent)
                     dialog.dismiss()
                 } else {
-                    showMessage("Customer not found in offline records")
+                    showMessage("Customer does not exist.")
                 }
                 return@setOnClickListener
             }
@@ -537,15 +583,6 @@ class MPOSDashboardActivity : AppCompatActivity() {
         }
 
         d_binding.skipBtn.setOnClickListener {
-            if (!NetworkUtils.isInternetAvailable(this)) {
-                Toast.makeText(
-                    this,
-                    "Cannot continue as new customer in offline mode.",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@setOnClickListener
-            }
-
             if (dialog.isShowing) dialog.dismiss()
             val intent = Intent(this, PointOfSaleActivity::class.java)
             intent.putExtra("c_id", 0)
@@ -622,6 +659,20 @@ class MPOSDashboardActivity : AppCompatActivity() {
             drawer.closeDrawer(androidx.core.view.GravityCompat.START)
         } else {
             super.onBackPressed()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        
+        // Auto-sync if there are pending items and internet is available
+        if (isInternetAvailable() && !isSyncing && currentState == SyncButtonState.IDLE) {
+            lifecycleScope.launch {
+                delay(500) // Give UI time to update badge visibility if coming from onCreate or returning
+                if (binding.tvSyncBadge.visibility == android.view.View.VISIBLE) {
+                    syncOfflineSales()
+                }
+            }
         }
     }
 }

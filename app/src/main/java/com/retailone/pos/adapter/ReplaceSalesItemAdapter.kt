@@ -28,8 +28,9 @@ class ReplaceSalesItemAdapter(
     /** Parent checkbox toggle => (productId, checked, adapterPosition) */
     private val onParentToggle: (Int, Boolean, Int) -> Unit,
     /** 🔒 when true, parent & batch checkboxes are read-only (disabled) by default. */
-    private val readOnly: Boolean = false
-
+    private val readOnly: Boolean = false,
+    private val storeStockMap: Map<Int, Int>? = null,
+    private val onHoldMap: Map<Int, Int>? = null
 ) : RecyclerView.Adapter<ReplaceSalesItemAdapter.StockSearchViewHolder>() {
 
     private val sharedPrefHelper = SharedPrefHelper(context)
@@ -39,38 +40,35 @@ class ReplaceSalesItemAdapter(
         RecyclerView.ViewHolder(binding.root)
 
 
-    // productId -> total sale quantity
+    private val detailedItemsOrFallback = returnitem.firstOrNull()?.sales_items.takeIf { !it.isNullOrEmpty() }
+        ?: returnitem.firstOrNull()?.salesItems?.map {
+            com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
+                id = it.id,
+                sales_id = it.sales_id,
+                product_id = it.product_id,
+                on_hold = 0,
+                distribution_pack_id = it.distribution_pack_id,
+                distribution_pack_name = it.distribution_pack_name,
+                batch = null,
+                quantity = it.quantity,
+                store_stock = 0,
+                retail_price = it.retail_price,
+                discount = 0.0,
+                tax_exclusive_price = it.tax_exclusive_price,
+                total_amount = it.total_amount,
+                product = it.product,
+                distribution_pack = it.distribution_pack,
+                sales_returns = null
+            )
+        } ?: emptyList()
+
+    // productId -> total sale quantity (Computed internally once based on fallback)
     private val saleQuantityByProductId: Map<Int, Double> =
-        returnitem
-            .firstOrNull()
-            ?.sales_items
-            ?.groupBy { it.product_id }
-            ?.mapValues { (_, list) ->
+        detailedItemsOrFallback
+            .groupBy { it.product_id }
+            .mapValues { (_, list) ->
                 list.sumOf { it.quantity }
             }
-            ?: emptyMap()
-
-    // productId -> total store stock
-    private val storeStockByProductId: Map<Int, Int> =
-        returnitem
-            .firstOrNull()
-            ?.sales_items
-            ?.groupBy { it.product_id }
-            ?.mapValues { (_, list) ->
-                list.sumOf { it.store_stock }
-            }
-            ?: emptyMap()
-
-    // productId -> on_hold (1 if any detailed row for this product is on hold)
-    private val onHoldByProductId: Map<Int, Int> =
-        returnitem
-            .firstOrNull()
-            ?.sales_items
-            ?.groupBy { it.product_id }
-            ?.mapValues { (_, list) ->
-                if (list.any { it.on_hold == 1 }) 1 else 0
-            }
-            ?: emptyMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StockSearchViewHolder {
         return StockSearchViewHolder(
@@ -93,7 +91,7 @@ class ReplaceSalesItemAdapter(
          gson.toJson(returnitem)
         Log.d("ReplaceAdapterX",json.toString())
 
-        val item: SalesItem = returnitem[0].salesItems[position]
+        val item: SalesItem = returnitem[0].salesItems?.getOrNull(position) ?: return
 
         val totalReplacedAmount = returnitem[0].total_replaced_amount
         val isInvoiceAlreadyReplaced = (totalReplacedAmount ?: 0.0) > 0.0
@@ -101,10 +99,11 @@ class ReplaceSalesItemAdapter(
         val productId = item.product_id
         val productQuantity = item.quantity
 
-        val storeStockForProduct = storeStockByProductId[productId] ?: 0
+        // Fallback to internal computation if maps aren't provided
+        val storeStockForProduct = storeStockMap?.get(productId) ?: detailedItemsOrFallback.filter { it.product_id == productId }.sumOf { it.store_stock }
         val saleQuantity = saleQuantityByProductId[productId] ?: 0.0
 
-        val productOnHold = onHoldByProductId[productId] ?: 0
+        val productOnHold = onHoldMap?.get(productId) ?: if (detailedItemsOrFallback.filter { it.product_id == productId }.any { it.on_hold == 1 }) 1 else 0
 
 
 
@@ -130,8 +129,8 @@ class ReplaceSalesItemAdapter(
             if (!rowReadOnly && canShowHold) android.view.View.VISIBLE else android.view.View.GONE
 
         // Header
-        holder.binding.itemName.text = item.product.product_name
-        holder.binding.itemDesc.text = item.distribution_pack.product_description
+        holder.binding.itemName.text = item.product?.product_name ?: ""
+        holder.binding.itemDesc.text = item.distribution_pack?.product_description ?: ""
         holder.binding.itemUnit.text = "Purchase -  " + FunUtils.DtoString(item.quantity)
         holder.binding.itemPrice.text = "Rate -   " +
                 NumberFormatter().formatPrice(item.retail_price.toString(), localizationData)
@@ -209,7 +208,7 @@ class ReplaceSalesItemAdapter(
         }
     }
 
-    override fun getItemCount(): Int = returnitem[0].salesItems.size
+    override fun getItemCount(): Int = returnitem[0].salesItems?.size ?: 0
     override fun getItemViewType(position: Int) = position
     override fun getItemId(position: Int) = position.toLong()
 }

@@ -16,9 +16,17 @@ import androidx.room.TypeConverters
         ReturnReasonEntity::class,
         PendingReturnEntity::class,
         PaymentInvoiceEntity::class,         // ✅ ADDED for sales/payment offline support
-        SalesDetailsEntity::class            // ✅ ADDED for sales details offline support
+        SalesDetailsEntity::class,           // ✅ ADDED for sales details offline support
+        PendingCancelSaleEntity::class,      // ✅ ADDED for cancel sale offline support
+        PendingReplaceEntity::class,         // ✅ ADDED for replace sale offline support
+        PendingGoodsReturnEntity::class,     // ✅ ADDED for warehouse return offline support
+        StockListEntity::class,              // ✅ ADDED for warehouse stock list offline support
+        StockReturnEntity::class,             // ✅ ADDED for stock return list offline support
+        UserEntity::class,                    // ✅ ADDED for offline login support
+        PendingExpenseEntity::class,           // ✅ ADDED for offline expense support
+        CustomerDiscountEntity::class          // ✅ ADDED for offline customer discounts
     ],
-    version = 9,                           // ✅ INCREMENTED from 8 to 9
+    version = 16,                          // ✅ INCREMENTED from 15 to 16
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -33,6 +41,14 @@ abstract class PosDatabase : RoomDatabase() {
     abstract fun pendingReturnDao(): PendingReturnDao
     abstract fun paymentInvoiceDao(): PaymentInvoiceDao  // ✅ ADDED for sales/payment offline support
     abstract fun salesDetailsDao(): SalesDetailsDao       // ✅ ADDED for sales details offline support
+    abstract fun pendingCancelSaleDao(): PendingCancelSaleDao // ✅ ADDED for cancel sale offline support
+    abstract fun pendingReplaceDao(): PendingReplaceDao      // ✅ ADDED for replace sale offline support
+    abstract fun pendingGoodsReturnDao(): PendingGoodsReturnDao // ✅ ADDED for warehouse return offline support
+    abstract fun stockListDao(): StockListDao                    // ✅ ADDED for warehouse stock list offline support
+    abstract fun stockReturnDao(): StockReturnDao              // ✅ ADDED for stock return list offline support
+    abstract fun userDao(): UserDao                            // ✅ ADDED for offline login support
+    abstract fun pendingExpenseDao(): PendingExpenseDao        // ✅ ADDED for expense offline support
+    abstract fun customerDiscountDao(): CustomerDiscountDao    // ✅ ADDED for offline customer discounts
 
     companion object {
         @Volatile

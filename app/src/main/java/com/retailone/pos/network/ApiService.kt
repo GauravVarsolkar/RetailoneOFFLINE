@@ -208,7 +208,7 @@ interface ApiService {
 
     // ApiService.kt
     @POST("replacesale/replace")
-    fun replaceSale(@Body req: ReplaceSaleReq): Call<ReturnSaleResRaw>
+    fun replaceSale(@Body req: ReplaceSaleReq): Call<okhttp3.ResponseBody>
 
     @POST("returnsale")
     fun getReturnSalesSubmitAPI(@Body returnSaleReq: ReturnSaleReq): Call<ReturnSaleRes>

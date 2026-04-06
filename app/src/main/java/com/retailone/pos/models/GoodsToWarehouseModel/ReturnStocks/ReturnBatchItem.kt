@@ -2,6 +2,7 @@ package com.retailone.pos.models.GoodsToWarehouseModel.ReturnStocks
 
 data class ReturnBatchItem(
     val productId: Int,
+    val productName: String, // ✅ ADDED
     val stockqqty: Int,
     val batchNo: String,
     val noOfPacks: Int,

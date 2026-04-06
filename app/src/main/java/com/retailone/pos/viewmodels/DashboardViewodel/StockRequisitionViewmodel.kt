@@ -1,6 +1,7 @@
 package com.retailone.pos.viewmodels.DashboardViewodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -38,6 +39,16 @@ class StockRequisitionViewmodel: ViewModel() {
     fun callPastRequsitionApi(store_id: String, context: Context){
         loading.postValue(ProgressData(isProgress = true))
 
+        if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(context)) {
+            Log.d("StockReqAPI", "Offline mode: Skipping past requisition API call")
+            loading.postValue(ProgressData(
+                isProgress = false,
+                isMessage = true,
+                message = "Working Offline: Please check your network"
+            ))
+            return
+        }
+
         ApiClient().getApiService(context).pastRequsition(PastRequsitionReq(store_id)).enqueue(object :
             Callback<PastRequsitionRes> {
             override fun onResponse(call: Call<PastRequsitionRes>, response: Response<PastRequsitionRes>) {
@@ -58,6 +69,16 @@ class StockRequisitionViewmodel: ViewModel() {
 
     fun callRequisitionDetailsApi(request_id: String, context: Context){
         loading.postValue(ProgressData(isProgress = true))
+
+        if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(context)) {
+            Log.d("StockReqAPI", "Offline mode: Skipping requisition details API call")
+            loading.postValue(ProgressData(
+                isProgress = false,
+                isMessage = true,
+                message = "Working Offline: Please check your network"
+            ))
+            return
+        }
 
         ApiClient().getApiService(context).pastRequsitionDetails(PastReqDetailsReq(request_id)).enqueue(object :
             Callback<PastReqDetailsRes> {

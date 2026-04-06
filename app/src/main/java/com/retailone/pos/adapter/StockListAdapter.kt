@@ -111,7 +111,7 @@ class StockListAdapter(
 
             // 🔁 Flatten to the same list the child binds
             val flattenedBatchLists =
-                flattenReturnItems(product.product_id, product.distribution_pack_data)
+                flattenReturnItems(product.product_id, product.product_name, product.distribution_pack_data)
 
             // ✅ If you want to show total available instead of total stock, you can swap these
             val overallAvailableQty = flattenedBatchLists.sumOf { availableQtyFor(it) }
@@ -158,7 +158,7 @@ class StockListAdapter(
 
             // ✅ Flatten returned_items + good_returned_items into batches for child adapter
             val flattenedBatchList =
-                flattenReturnItems(product.product_id, product.distribution_pack_data)
+                flattenReturnItems(product.product_id, product.product_name, product.distribution_pack_data)
 
             val batchAdapter = BatchListAdapter(flattenedBatchList, reasonNames)
 
@@ -177,6 +177,7 @@ class StockListAdapter(
 
     private fun flattenReturnItems(
         productId: Int,
+        productName: String, // ✅ ADDED
         batches: List<DistributionPack>
     ): List<ReturnBatchItem> {
         val result = mutableListOf<ReturnBatchItem>()
@@ -192,6 +193,7 @@ class StockListAdapter(
                 result.add(
                     ReturnBatchItem(
                         productId = productId,
+                        productName = productName, // ✅ ADDED
                         stockqqty = totalStockQty,
                         batchNo = batch.batch_no,
                         noOfPacks = batch.no_of_packs,
@@ -215,6 +217,7 @@ class StockListAdapter(
                     result.add(
                         ReturnBatchItem(
                             productId = productId,
+                            productName = productName, // ✅ ADDED
                             stockqqty = totalStockQty,
                             batchNo = batch.batch_no,
                             noOfPacks = batch.no_of_packs,
@@ -240,6 +243,7 @@ class StockListAdapter(
                     result.add(
                         ReturnBatchItem(
                             productId = productId,
+                            productName = productName, // ✅ ADDED
                             stockqqty = totalStockQty,
                             batchNo = batch.batch_no,
                             noOfPacks = batch.no_of_packs,

@@ -44,7 +44,7 @@ class AuthInterceptor(val context: Context) : Interceptor {
         }
 
         requestBuilder.addHeader("Authorization", "Bearer $token")
-
+        requestBuilder.addHeader("Accept", "application/json")
 
         return chain.proceed(requestBuilder.build())
     }

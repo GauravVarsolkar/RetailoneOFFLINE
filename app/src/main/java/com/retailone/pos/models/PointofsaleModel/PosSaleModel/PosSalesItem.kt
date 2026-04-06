@@ -18,7 +18,8 @@ data class PosSalesItem(
     val uom: String,
     // NEW: offline per-item taxes (if available from API response)
     val tax: Double? = null,
-    val tax_amount: Double? = null
+    val tax_amount: Double? = null,
+    val discount: Int? = null
 )
 
 

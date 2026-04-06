@@ -56,40 +56,30 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
             val saleIdInt = id.toIntOrNull() ?: 0
             
             lifecycleScope.launch {
-                // ✅ NEW: First check if this is an offline sale
                 val isOffline = viewmodel.isOfflineSale(this@SalesPaymentDetailsActivity, saleIdInt)
                 Log.d("SalesPaymentDetails", "Is offline sale: $isOffline")
                 
-                if (isOffline) {
-                    // ✅ OFFLINE SALE: Load from pending_sales table directly
-                    Log.d("SalesPaymentDetails", "📴 Loading offline sale details...")
-                    val offlineDetails = viewmodel.getOfflineSaleDetails(this@SalesPaymentDetailsActivity, saleIdInt)
-                    if (offlineDetails != null) {
-                        Log.d("SalesPaymentDetails", "✅ Loaded offline sale details")
-                        displaySalesDetails(offlineDetails)
-                    } else {
-                        Log.e("SalesPaymentDetails", "❌ Failed to load offline sale details")
-                        showMessage("Error loading offline sale details")
-                    }
-                } else {
-                    // ✅ ONLINE SALE: Load from cache first (instant, works offline!)
-                    val cachedDetails = viewmodel.getCachedSalesDetails(saleIdInt)
-                    if (cachedDetails != null) {
-                        Log.d("SalesPaymentDetails", "✅ Loaded sale details from cache")
-                        displaySalesDetails(cachedDetails)
-                    } else {
-                        Log.d("SalesPaymentDetails", "ℹ️ No cached data found for sale $saleIdInt")
-                    }
-                    
-                    // ✅ Then call API to refresh if online
-                    if (NetworkUtils.isInternetAvailable(this@SalesPaymentDetailsActivity)) {
-                        viewmodel.callSalesDetailsApi(SalesDetailsReq(id),this@SalesPaymentDetailsActivity)
-                    } else {
-                        Log.d("SalesPaymentDetails", "📴 Offline - showing cached data only")
-                        if (cachedDetails == null) {
-                            showMessage("No offline data available. Please connect to the internet.")
-                        }
-                    }
+                // ✅ 1. Load best available local data first (Instant UI)
+                val offlineDetails = viewmodel.getOfflineSaleDetails(this@SalesPaymentDetailsActivity, saleIdInt)
+                val cachedDetails = viewmodel.getCachedSalesDetails(saleIdInt)
+                
+                // Show offline data if it exists, otherwise check cache
+                val localData = if (isOffline && offlineDetails != null) offlineDetails else cachedDetails ?: offlineDetails
+                
+                if (localData != null) {
+                    Log.d("SalesPaymentDetails", "✅ Loaded local data baseline")
+                    displaySalesDetails(localData)
+                }
+
+                // ✅ 2. Priority: Only refresh from API for SYNCED (positive) IDs
+                if (NetworkUtils.isInternetAvailable(this@SalesPaymentDetailsActivity) && saleIdInt > 0) {
+                    Log.d("OFFLINE_DETAILS_DEBUG", "🌐 Positive ID found - refreshing from API...")
+                    viewmodel.callSalesDetailsApi(SalesDetailsReq(id), this@SalesPaymentDetailsActivity)
+                } else if (saleIdInt <= 0) {
+                    Log.d("OFFLINE_DETAILS_DEBUG", "📦 Local ID ($saleIdInt) - bypassing API call")
+                } else if (localData == null) {
+                    Log.d("OFFLINE_DETAILS_DEBUG", "📴 Offline and no local data found")
+                    showMessage("No offline data available. Please connect to the internet.")
                 }
             }
         }
@@ -159,8 +149,17 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
             //customername.text = "Customer name: "+(salesdata.customer.customer_name?:"")
             customername.text = "Customer name: " + (salesdata.customer?.customer_name ?: "N/A")
             // binding.btnConfirmcancel.isVisible = salesdata.grand_total >= 0
-            binding.btnConfirmcancel.isVisible =
-                salesdata.grand_total >= 0 && salesdata.total_refunded_amount <= 0.0
+            
+            lifecycleScope.launch {
+                val isQueued = viewmodel.isCancelQueued(salesdata.invoice_id, this@SalesPaymentDetailsActivity)
+                binding.btnConfirmcancel.isVisible =
+                    salesdata.grand_total >= 0 && salesdata.total_refunded_amount <= 0.0 && !isQueued
+                
+                if (isQueued) {
+                    binding.btnConfirmcancel.text = "Cancellation Pending"
+                    binding.btnConfirmcancel.isEnabled = false
+                }
+            }
 
 
             val roundedSubtotal = BigDecimal.valueOf(subtotalValue)
@@ -201,11 +200,26 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
 
             val request = CancelSaleitemRequest(
                 invoiceID = invoiceId
-
             )
             Log.d("CancelSale", "Calling API with invoiceId: $invoiceId")
 
-            viewmodel.callCancelSaleAPI(request, this)
+            // ✅ NEW: Use offline-aware cancel API
+            // Get sale details for offline queuing
+            val saleId = salesdata?.id ?: 0
+            val saleDateTime = salesdata?.created_at ?: ""
+            val storeId = (salesdata?.store_id ?: 0).toString()
+            val grandTotal = (salesdata?.grand_total ?: 0.0).toString()
+            val paymentType = salesdata?.payment_type ?: ""
+
+            viewmodel.callCancelSaleAPIOfflineAware(
+                request = request,
+                context = this,
+                saleId = saleId,
+                saleDateTime = saleDateTime,
+                storeId = storeId,
+                grandTotal = grandTotal,
+                paymentType = paymentType
+            )
         }
     }
 

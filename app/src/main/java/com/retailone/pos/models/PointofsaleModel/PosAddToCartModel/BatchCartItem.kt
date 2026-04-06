@@ -21,7 +21,7 @@ data class BatchCartItem(
     // quantity in the JSON is a number (0). Keep it numeric to avoid parse errors.
     @SerializedName("quantity") val quantity: Int,
 
+    @SerializedName("tax") val tax: String = "0", // Tax rate from batch (e.g., "18" for 18%)
+
     @SerializedName("discount") val discount: Double
-
-
 ) : Parcelable

@@ -140,7 +140,7 @@ class SaleCorrectionActivity : AppCompatActivity(), OnReturnQuantityChangeListen
                 } else{
                     returnItemData=it.data[0]
 
-                    returnItemList=it.data[0].salesItems.toMutableList()
+                    returnItemList = it.data[0].salesItems?.toMutableList() ?: mutableListOf()
 
 
 
@@ -278,10 +278,10 @@ class SaleCorrectionActivity : AppCompatActivity(), OnReturnQuantityChangeListen
         val cartitemlist = mutableListOf<ReturnedItem>()
 
         returnbatchItemList.forEach {
-            if (it.batch_return_quantity != 0) {
+            if ((it.batch_return_quantity ?: 0) != 0) {
                 cartitemlist.add(
-                    ReturnedItem(id = it.sales_item_id,
-                        return_quantity = it.batch_return_quantity,
+                    ReturnedItem(id = it.sales_item_id ?: 0,
+                        return_quantity = it.batch_return_quantity ?: 0,
                     )
                 )
             }

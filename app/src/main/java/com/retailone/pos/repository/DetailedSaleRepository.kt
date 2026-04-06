@@ -6,7 +6,10 @@ import com.google.gson.Gson
 import com.retailone.pos.localstorage.RoomDB.DetailedSaleDao
 import com.retailone.pos.localstorage.RoomDB.DetailedSaleEntity
 import com.retailone.pos.localstorage.RoomDB.PosDatabase
+import com.retailone.pos.models.ReturnSalesItemModel.BatchReturnItem
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnItemData
+import com.retailone.pos.models.ReturnSalesItemModel.SalesReturn
+import com.retailone.pos.models.ReturnSalesItemModel.SalesReturnReason
 
 class DetailedSaleRepository(private val context: Context) {
 
@@ -25,7 +28,7 @@ class DetailedSaleRepository(private val context: Context) {
     suspend fun saveDetailedSale(returnItemData: ReturnItemData) {
         try {
             val entity = DetailedSaleEntity(
-                invoice_id = returnItemData.invoice_id,
+                invoice_id = returnItemData.invoice_id ?: "",
                 sale_id = returnItemData.id,
                 detailed_data_json = gson.toJson(returnItemData)
             )
@@ -55,6 +58,13 @@ class DetailedSaleRepository(private val context: Context) {
     }
 
     /**
+     * Get the raw database entity for a detailed sale
+     */
+    suspend fun getDetailedSaleEntityByInvoiceId(invoiceId: String): DetailedSaleEntity? {
+        return dao.getDetailedSaleByInvoiceId(invoiceId)
+    }
+
+    /**
      * Check if detailed sale exists in database
      */
     suspend fun detailedSaleExists(invoiceId: String): Boolean {
@@ -70,60 +80,165 @@ class DetailedSaleRepository(private val context: Context) {
         Log.d(TAG, "🗑️ Deleted $deletedCount old detailed sales")
         return deletedCount
     }
+
     /**
-     * Update total_refunded_amount for a sale (after successful return)
+     * Update total_refunded_amount and items (Support partial returns offline)
      */
-    suspend fun updateRefundedAmount(invoiceId: String, refundedAmount: Double, reasonId: Int) {
+    suspend fun updateRefundedAmount(
+        invoiceId: String,
+        refundedAmount: Double,
+        reasonId: Int,
+        returnedItems: List<BatchReturnItem>? = null
+    ) {
         try {
-            Log.d(TAG, "🔍 updateRefundedAmount called: invoice=$invoiceId, amount=$refundedAmount, reason=$reasonId")
+            Log.d(TAG, "🔍 updateRefundedAmount: invoice=$invoiceId, amount=$refundedAmount, partial=${returnedItems != null}")
 
             val entity = dao.getDetailedSaleByInvoiceId(invoiceId)
             if (entity != null) {
-                Log.d(TAG, "✅ Found entity in DB")
-
                 val saleData = gson.fromJson(entity.detailed_data_json, ReturnItemData::class.java)
 
-                Log.d(TAG, "📝 BEFORE update: refunded=${saleData.total_refunded_amount}, reason=${saleData.reason_id}")
+                // ✅ Update individual items and batches
+                val reasonName = getReasonNameById(reasonId) ?: "Offline Return"
+                val updatedItems = saleData.salesItems?.map { si ->
+                    val providedReturnedBatches = returnedItems?.filter { it.sales_item_id == si.id }
+                    
+                    Log.d("RETAILONE_DEBUG", "Processing item ${si.product_name} (ID: ${si.id}). Found ${providedReturnedBatches?.size ?: 0} returned batches.")
 
-                // ✅ Update refunded amount AND reason_id
+                    if (returnedItems != null) {
+                        // PARTIAL RETURN: Update ONLY specified batches
+                        val updatedBatches = si.batches?.map { batch ->
+                            val match = providedReturnedBatches?.find { 
+                                it.batch?.trim()?.equals(batch.batch?.trim() ?: "", ignoreCase = true) == true
+                            }
+                            if (match != null) {
+                                Log.d("RETAILONE_DEBUG", "   - Match found for batch ${batch.batch}: qty=${match.batch_return_quantity}")
+                                batch.copy(
+                                    return_quantity = match.batch_return_quantity ?: match.return_quantity ?: 0,
+                                    batch_return_quantity = match.batch_return_quantity ?: match.return_quantity ?: 0
+                                )
+                            } else {
+                                batch
+                            }
+                        }
+                        si.copy(
+                            return_quantity = updatedBatches?.sumOf { it.batch_return_quantity ?: 0 } ?: 0,
+                            batches = updatedBatches,
+                            return_reason = reasonName // ✅ Track reason at item level too
+                        )
+                    } else {
+                        // FULL RETURN: Mark everything as returned
+                        Log.d("RETAILONE_DEBUG", "   - Marking FULL RETURN for item ${si.product_name}")
+                        val updatedBatches = si.batches?.map { batch ->
+                            batch.copy(
+                                return_quantity = batch.quantity?.toInt() ?: 0,
+                                batch_return_quantity = batch.quantity?.toInt() ?: 0
+                            )
+                        }
+                        si.copy(
+                            return_quantity = si.quantity.toInt(),
+                            batches = updatedBatches,
+                            return_reason = reasonName // ✅ Track reason at item level too
+                        )
+                    }
+                } ?: emptyList()
+
+                // Also update the snake_case list
+                val updatedDetailedItems = saleData.sales_items?.map { si ->
+                    val providedReturnedBatches = returnedItems?.filter { it.sales_item_id == si.id }
+                    val returnQty = if (returnedItems != null) {
+                        providedReturnedBatches?.sumOf { it.batch_return_quantity ?: it.return_quantity ?: 0 }?.toDouble() ?: 0.0
+                    } else {
+                        si.quantity
+                    }
+
+                    if (returnQty > 0) {
+                        si.copy(sales_returns = listOf(
+                            SalesReturn(
+                                id = 0,
+                                sales_id = si.id ?: 0,
+                                invoice_id = invoiceId ?: "",
+                                sales_item_id = si.id ?: 0,
+                                return_quantity = returnQty,
+                                reason_id = reasonId,
+                                rate = si.retail_price,
+                                amount = returnQty * si.retail_price,
+                                reason = SalesReturnReason(reasonId, reasonName)
+                            )
+                        ))
+                    } else {
+                        si.copy(sales_returns = emptyList())
+                    }
+                } ?: emptyList()
+
                 val updatedSaleData = saleData.copy(
+                    salesItems = updatedItems,
+                    sales_items = updatedDetailedItems,
                     total_refunded_amount = refundedAmount,
                     reason_id = reasonId
                 )
 
-                Log.d(TAG, "📝 AFTER update: refunded=${updatedSaleData.total_refunded_amount}, reason=${updatedSaleData.reason_id}")
-
-                // Save back to database
                 val updatedEntity = entity.copy(
-                    detailed_data_json = gson.toJson(updatedSaleData)
+                    detailed_data_json = gson.toJson(updatedSaleData),
+                    created_at = System.currentTimeMillis()
                 )
 
                 dao.insertDetailedSale(updatedEntity)
-                Log.d(TAG, "✅ Saved to DB: invoice=$invoiceId, refunded=$refundedAmount, reason=$reasonId")
-
-                // ✅ VERIFY: Read it back immediately
-                kotlinx.coroutines.delay(50)
-                val verifyEntity = dao.getDetailedSaleByInvoiceId(invoiceId)
-                if (verifyEntity != null) {
-                    val verifySale = gson.fromJson(verifyEntity.detailed_data_json, ReturnItemData::class.java)
-                    Log.d(TAG, "🔍 VERIFY after save: reason_id = ${verifySale.reason_id}")
-                }
-
-            } else {
-                Log.e(TAG, "❌ Entity NOT found for invoice: $invoiceId")
+                Log.d("RETAILONE_DEBUG", "✅ updateRefundedAmount SUCCESS: invoice=$invoiceId, total_refunded=$refundedAmount")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error updating refunded amount and reason: ${e.message}", e)
-            e.printStackTrace()
+            Log.e("RETAILONE_DEBUG", "❌ updateRefundedAmount ERROR: ${e.message}")
         }
     }
 
-
     /**
-     * Clear all detailed sales
+     * Update total_replaced_amount for a sale (after successful replace)
      */
-    suspend fun clearAllDetailedSales() {
-        dao.clearAll()
-        Log.d(TAG, "🗑️ Cleared all detailed sales")
+    suspend fun updateReplacedAmount(invoiceId: String, replacedAmount: Double, reasonId: Int) {
+        try {
+            val entity = dao.getDetailedSaleByInvoiceId(invoiceId)
+            if (entity != null) {
+                val saleData = gson.fromJson(entity.detailed_data_json, ReturnItemData::class.java)
+                
+                // ✅ Update individual items to reflect replace quantity
+                val updatedItems = saleData.salesItems?.map { si ->
+                    val updatedBatches = si.batches?.map { batch ->
+                        batch.copy(
+                            return_quantity = batch.quantity?.toInt() ?: 0,
+                            batch_return_quantity = batch.quantity?.toInt() ?: 0
+                        )
+                    }
+                    si.copy(
+                        return_quantity = si.quantity.toInt(),
+                        batches = updatedBatches
+                    )
+                } ?: emptyList()
+
+                val updatedSaleData = saleData.copy(
+                    total_replaced_amount = replacedAmount,
+                    reason_id = reasonId,
+                    salesItems = updatedItems
+                )
+                val updatedEntity = entity.copy(
+                    detailed_data_json = gson.toJson(updatedSaleData),
+                    created_at = System.currentTimeMillis()
+                )
+                dao.insertDetailedSale(updatedEntity)
+                Log.d("RETAILONE_DEBUG", "✅ updateReplacedAmount SUCCESS: invoice=$invoiceId, total_replaced=$replacedAmount")
+            }
+        } catch (e: Exception) {
+            Log.e("RETAILONE_DEBUG", "❌ updateReplacedAmount ERROR: ${e.message}")
+        }
+    }
+    /**
+     * Helper to get reason name by ID
+     */
+    suspend fun getReasonNameById(reasonId: Int): String? {
+        return try {
+            val database = PosDatabase.getDatabase(context)
+            val reason = database.returnReasonDao().getReasonById(reasonId)
+            reason?.reason_name
+        } catch (e: Exception) {
+            null
+        }
     }
 }

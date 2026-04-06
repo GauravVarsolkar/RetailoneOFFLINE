@@ -251,52 +251,27 @@ class BatchListAdapter(
                     }
 
                     override fun afterTextChanged(s: android.text.Editable?) {
+                        val enteredBtl = s.toString().trim().toIntOrNull() ?: 0
                         val maxBottles = item.totalBottles
-                        val enteredBtl = etBottleQty.text.toString().trim().toIntOrNull() ?: 0
+                        val unitQty = etEnterQty.text.toString().toIntOrNull() ?: 0
 
                         Log.d(
                             "BatchList",
                             "bottleChanged pos=$position cond=${item.condition} entered=$enteredBtl max=$maxBottles"
                         )
 
-                        val  qt=  etEnterQty.text.toString().toIntOrNull() ?: 0
-                        val  maxBottleThatCanEntered=  qt*(item.noOfPacks)
-
-                        // Bottle qty cannot exceed total bottles
-                        //  if (maxBottles >= 0 && enteredBtl > maxBottles) {
-
-                        if ((qt >= 0 && enteredBtl > maxBottleThatCanEntered)||enteredBtl > maxBottles) {
-
-                            Log.d(
-                                "BatchList",
-                                "bottleChanged pos=$position -> INVALID (entered=$enteredBtl > max=$maxBottles). Resetting to 0"
-                            )
+                        if (enteredBtl > maxBottles) {
+                            Log.d("BatchList", "bottleChanged INVALID. Resetting to 0")
 
                             etBottleQty.setText("")
                             etBottleQty.setSelection(etBottleQty.text.length)
 
-                            if(enteredBtl > maxBottleThatCanEntered){
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Bottle qty cannot be more than $maxBottleThatCanEntered",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            else if(enteredBtl > maxBottles){
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Bottle qty cannot be more than $maxBottles",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-
-                            /*android.widget.Toast.makeText(
+                            android.widget.Toast.makeText(
                                 context,
-                                "Bottle qty cannot be more than $maxBottleThatCanEntered",
+                                "Bottle qty cannot be more than $maxBottles",
                                 android.widget.Toast.LENGTH_SHORT
-                            ).show()*/
+                            ).show()
 
-                            val unitQty = etEnterQty.text.toString().toIntOrNull() ?: 0
                             saveOrUpdateSelectedItem(
                                 item,
                                 unitQty,
@@ -307,7 +282,6 @@ class BatchListAdapter(
                             return
                         }
 
-                        val unitQty = etEnterQty.text.toString().toIntOrNull() ?: 0
                         saveOrUpdateSelectedItem(
                             item,
                             unitQty,
@@ -444,6 +418,7 @@ class BatchListAdapter(
             selectedItems.add(
                 StockReturnItem(
                     product_id = item.productId,
+                    product_name = item.productName, // ✅ ADDED
                     batch_no = item.batchNo,
                     quantity = qty,
                     bottle_quantity = safeBottleQty,

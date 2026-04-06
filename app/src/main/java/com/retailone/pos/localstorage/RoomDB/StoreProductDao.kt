@@ -66,6 +66,11 @@ interface StoreProductDao {
     @Query("SELECT COUNT(*) FROM store_products WHERE store_id = :storeId")
     suspend fun getProductCount(storeId: Int): Int
 
+    // Get offline stock for a set of product IDs (used by offline replace logic)
+    @Query("SELECT * FROM store_products WHERE product_id IN (:productIds) AND store_id = :storeId")
+    suspend fun getProductsByProductIds(productIds: List<Int>, storeId: Int): List<StoreProductEntity>
+
+
     // Update stock quantity after sale
     @Query("UPDATE store_products SET stock_quantity = :newQuantity WHERE compositeKey = :key")
     suspend fun updateStockQuantity(key: String, newQuantity: Double)

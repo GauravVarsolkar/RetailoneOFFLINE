@@ -37,7 +37,7 @@ class ReplaceSalesItemBatchAdapter(
 
     private val sharedPrefHelper = SharedPrefHelper(context)
     val localizationData = LocalizationHelper(context).getLocalizationData()
-    private val filteredList = returnbatchlist.filter { it.quantity > 0.0 }
+    private val filteredList = returnbatchlist.filter { (it.quantity ?: 0.0) > 0.0 }
 
     private val matReceivedList = mutableListOf<BatchReturnItem>().apply { clear() }
 
@@ -109,7 +109,7 @@ class ReplaceSalesItemBatchAdapter(
     private fun isAlreadyReturned(item: BatchReturnItem): Boolean {
         val bottles = item.return_quantity ?: 0
         val boxes = item.batch_return_quantity
-        return bottles > 0 || boxes > 0
+        return bottles > 0 || (boxes ?: 0) > 0
     }
 
     /**
@@ -152,7 +152,7 @@ class ReplaceSalesItemBatchAdapter(
 
         val formattedPrice =
             NumberFormatter().formatPrice((item.retail_price ?: 0.0).toString(), localizationData)
-        val purchasedQty = ceil(item.quantity).toInt()
+        val purchasedQty = ceil(item.quantity ?: 0.0).toInt()
         val packsPerBox = max(1, basePacksPerBox(item))
         val alreadyReturned = isAlreadyReturned(item)
 
@@ -364,7 +364,7 @@ class ReplaceSalesItemBatchAdapter(
 
     // ✅ FIXED: Calculate tax from price difference (retail_price - tax_exclusive_price)
     private fun calculateTotals(holder: StockSearchViewHolder, item: BatchReturnItem) {
-        val qtyPurchased = ceil(item.quantity).toInt().coerceAtLeast(0)
+        val qtyPurchased = ceil(item.quantity ?: 0.0).toInt().coerceAtLeast(0)
 
         if (qtyPurchased > 0) {
             // ✅ Get CORRECT prices from sales_items (detailed list)
@@ -490,7 +490,7 @@ class ReplaceSalesItemBatchAdapter(
         }
 
         val validItems = matReceivedList.filter {
-            (it.batch_return_quantity > 0) || ((it.return_quantity ?: 0) > 0)
+            ((it.batch_return_quantity ?: 0) > 0) || ((it.return_quantity ?: 0) > 0)
         }
         Log.d(
             "ReplaceAdapter",

@@ -22,6 +22,7 @@ class SalesListAdapter(
         val totalAmount: TextView = itemView.findViewById(R.id.tvGrandTotal)
         val paymentType: TextView = itemView.findViewById(R.id.tvPaymentType)
         val returnableFlag: TextView = itemView.findViewById(R.id.tvReturnableFlag)
+        val onHoldBadge: TextView? = itemView.findViewById(R.id.tvOnHoldBadge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SalesViewHolder {
@@ -43,15 +44,27 @@ class SalesListAdapter(
             ?.toString()
             ?.toDoubleOrNull() ?: 0.0
 
-        // Show badge based on return status only (ignore on_hold)
-        if (refundedAmt > 0.0) {
-            holder.returnableFlag.visibility = View.VISIBLE
-            holder.returnableFlag.text = "Returned"
-            holder.returnableFlag.setBackgroundResource(R.drawable.bg_returned_flag)
-        } else {
-            holder.returnableFlag.visibility = View.VISIBLE
-            holder.returnableFlag.text = "Returnable"
-            holder.returnableFlag.setBackgroundResource(R.drawable.bg_returnable_flag)
+        val isOfflineOnHold = com.retailone.pos.localstorage.SharedPreference.OnHoldInvoiceHelper.isOnHold(context, item.invoice_id)
+        val isOnHold = (item.on_hold == 1) || isOfflineOnHold
+
+        // Show badge based on return status and on-hold status
+        when {
+            refundedAmt > 0.0 -> {
+                holder.onHoldBadge?.visibility = View.GONE
+                holder.returnableFlag.visibility = View.VISIBLE
+                holder.returnableFlag.text = "Returned"
+                holder.returnableFlag.setBackgroundResource(R.drawable.bg_returned_flag)
+            }
+            isOnHold -> {
+                holder.onHoldBadge?.visibility = View.VISIBLE
+                holder.returnableFlag.visibility = View.GONE
+            }
+            else -> {
+                holder.onHoldBadge?.visibility = View.GONE
+                holder.returnableFlag.visibility = View.VISIBLE
+                holder.returnableFlag.text = "Returnable"
+                holder.returnableFlag.setBackgroundResource(R.drawable.bg_returnable_flag)
+            }
         }
 
         holder.itemView.setOnClickListener {

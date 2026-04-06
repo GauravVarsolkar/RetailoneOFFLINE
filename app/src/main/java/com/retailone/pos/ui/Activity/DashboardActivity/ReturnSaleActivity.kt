@@ -107,7 +107,7 @@ class ReturnSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
             store_manager_id = loginSession.getStoreManagerID().first().toString()
 
             // ✅ Load from local DB first (instant, works offline!)
-            val localSales = returnsale_viewmodel.getSalesFromLocalDB()
+            val localSales = returnsale_viewmodel.getSalesFromLocalDB(this@ReturnSaleActivity)
             if (localSales.isNotEmpty()) {
                 // Display cached sales immediately
                 salesListAdapter = SalesListAdapter(this@ReturnSaleActivity, localSales)
@@ -127,12 +127,18 @@ class ReturnSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
 
             // ✅ Cleanup old sales (7+ days)
             returnsale_viewmodel.cleanupOldSales()
-            // ✅ NEW: Auto-sync pending returns if online
+            // ✅ NEW: Auto-sync pending returns and replaces if online
             if (NetworkUtils.isInternetAvailable(this@ReturnSaleActivity)) {
-                val pendingCount = returnsale_viewmodel.getPendingReturnsCount()
-                if (pendingCount > 0) {
-                    Log.d("ReturnSale", "🔄 Found $pendingCount pending returns, syncing...")
+                val pendingReturnsCount = returnsale_viewmodel.getPendingReturnsCount()
+                if (pendingReturnsCount > 0) {
+                    Log.d("ReturnSale", "🔄 Found $pendingReturnsCount pending returns, syncing...")
                     returnsale_viewmodel.syncPendingReturns(this@ReturnSaleActivity)
+                }
+
+                val pendingReplacesCount = returnsale_viewmodel.getPendingReplacesCount()
+                if (pendingReplacesCount > 0) {
+                    Log.d("ReturnSale", "🔄 Found $pendingReplacesCount pending replaces, syncing...")
+                    returnsale_viewmodel.syncPendingReplaces(this@ReturnSaleActivity)
                 }
             }
         }
@@ -140,7 +146,8 @@ class ReturnSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
         // Sales list - updates when API responds
         returnsale_viewmodel.salesListLiveData.observe(this) { response ->
             if (response.status == 1 && response.data.isNotEmpty()) {
-                salesListAdapter = SalesListAdapter(this, response.data)
+                val data = response.data
+                salesListAdapter = SalesListAdapter(this, data)
                 binding.salesRecyclerView.apply {
                     adapter = salesListAdapter
                     layoutManager = LinearLayoutManager(this@ReturnSaleActivity)
@@ -148,7 +155,7 @@ class ReturnSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
                 }
 
                 // ✅ Batch cache all sales details in background
-                val invoiceIds = response.data.map { it.invoice_id }
+                val invoiceIds = data.map { it.invoice_id }
                 returnsale_viewmodel.batchCacheSalesDetails(this@ReturnSaleActivity, invoiceIds)
                 Log.d("ReturnSale", "🚀 Started batch caching ${invoiceIds.size} sales")
             } else showMessage("No Sales Found")
@@ -263,8 +270,8 @@ class ReturnSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener {
     private fun callReturnAPI(returnbatchItemList: MutableList<BatchReturnItem>) {
         val cartitemlist = mutableListOf<ReturnedItem>()
         returnbatchItemList.forEach {
-            if (it.batch_return_quantity != 0) {
-                cartitemlist.add(ReturnedItem(id = it.sales_item_id, return_quantity = it.batch_return_quantity))
+            if ((it.batch_return_quantity ?: 0) != 0) {
+                cartitemlist.add(ReturnedItem(id = it.sales_item_id ?: 0, return_quantity = it.batch_return_quantity ?: 0))
             }
         }
         if (reasonid == -1) {

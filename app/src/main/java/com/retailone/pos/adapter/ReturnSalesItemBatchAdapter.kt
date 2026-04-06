@@ -41,7 +41,7 @@ class ReturnSalesItemBatchAdapter(
 
     private val sharedPrefHelper = SharedPrefHelper(context)
     private val localizationData = LocalizationHelper(context).getLocalizationData()
-    private val filteredList = returnbatchlist.filter { it.quantity > 0.0 }
+    private val filteredList = returnbatchlist.filter { (it.quantity ?: 0.0) > 0.0 }
 
     // Global list to maintain received quantities
     private val matReceivedList = mutableListOf<BatchReturnItem>()
@@ -103,15 +103,26 @@ class ReturnSalesItemBatchAdapter(
 
         var discount = exact?.discount ?: 0.0
 
-        // Fallback: match only by sales_item_id
+        // Fallback 1: match only by sales_item_id
         if (discount <= 0.0) {
             val byId = detailedSales.firstOrNull { it.id == item.sales_item_id }
             discount = byId?.discount ?: 0.0
         }
 
+        // Fallback 2: match only by product_id (good for offline sales)
+        if (discount <= 0.0) {
+            val byProdId = detailedSales.firstOrNull { it.product_id == item.product_id }
+            discount = byProdId?.discount ?: 0.0
+        }
+
+        // Fallback 3: single item invoice
+        if (discount <= 0.0 && detailedSales.toList().size == 1) {
+            discount = detailedSales.firstOrNull()?.discount ?: 0.0
+        }
+
         Log.d(
             "ReturnAdapter",
-            "discountForBatch -> sales_item_id=${item.sales_item_id}, batch='$batchName', discount=$discount"
+            "discountForBatch -> sales_item_id=${item.sales_item_id}, p_id=${item.product_id} discount=$discount"
         )
 
         return discount.coerceAtLeast(0.0)
@@ -132,7 +143,7 @@ class ReturnSalesItemBatchAdapter(
         val byIdAndBatch =
             returnitems.asSequence().mapNotNull { it.sales_items }.flatten().firstOrNull { si ->
                 si.id == item.sales_item_id && (si.batch?.trim()
-                    ?.equals(item.batch.trim(), ignoreCase = true) ?: false)
+                    ?.equals(item.batch?.trim() ?: "", ignoreCase = true) ?: false)
             }?.distribution_pack?.no_of_packs
 
         if (byIdAndBatch != null) return byIdAndBatch
@@ -144,7 +155,7 @@ class ReturnSalesItemBatchAdapter(
     }
 
     private fun keyOf(item: BatchReturnItem): String =
-        "${item.sales_item_id}::${item.batch.trim().lowercase()}"
+        "${item.sales_item_id}::${item.batch?.trim()?.lowercase() ?: ""}"
 
     override fun onBindViewHolder(holder: StockSearchViewHolder, position: Int) {
         val rowItem = filteredList[position]
@@ -157,7 +168,15 @@ class ReturnSalesItemBatchAdapter(
         val formattedPrice = NumberFormatter().formatPrice(
             rowItem.retail_price.toString(), localizationData
         )
-        val taxDisplay = formatTaxForDisplay(returnitems.firstOrNull()?.tax)
+        // ✅ FIX: Use item-specific tax and reason instead of top-level invoice tax
+        val itemTaxRaw = returnitems.firstOrNull()?.salesItems?.find { 
+            it.id == rowItem.sales_item_id || (it.product_id == (rowItem.product_id ?: 0) && it.distribution_pack_id == (rowItem.distribution_pack_id ?: 0))
+        }?.tax
+        val itemReasonRaw = returnitems.firstOrNull()?.salesItems?.find { 
+            it.id == rowItem.sales_item_id || (it.product_id == (rowItem.product_id ?: 0) && it.distribution_pack_id == (rowItem.distribution_pack_id ?: 0))
+        }?.return_reason
+        val taxToUse = itemTaxRaw?.toString() ?: returnitems.firstOrNull()?.tax ?: "0"
+        val taxDisplay = formatTaxForDisplay(taxToUse)
 
         holder.binding.apply {
             if (readonlyMode) {
@@ -168,7 +187,7 @@ class ReturnSalesItemBatchAdapter(
                 saleQuantitys.text = rowItem.quantity.toString()
                 returnQuantitys.isEnabled = false
                 returnQuantitys.isFocusable = false
-                returnQuantitys.setText(rowItem.return_quantity.toString())
+                returnQuantitys.setText((rowItem.return_quantity ?: 0).toString())
                 returnReasonLayout.isVisible = true
                 returnReason.isVisible = true
                 returnReason.isSelected = true
@@ -185,8 +204,8 @@ class ReturnSalesItemBatchAdapter(
 
                 calculateTotalss(holder, rowItem)
                 returnReason.setText(returnReasonName)  // ✅ Use the passed reason name
-                val taxPercentRounded = kotlin.math.round(parseTaxPercent(returnitems.firstOrNull()?.tax)).toInt()
-                taxfields.text = "(+) Tax @$taxPercentRounded%"
+                
+                // (Tax label is handled inside calculateTotalss)
             } else {
                 // EDITABLE UI
                 quantityLayout.isVisible = true
@@ -198,13 +217,13 @@ class ReturnSalesItemBatchAdapter(
                 returnReason.isVisible = false
 
                 // If user already entered qty earlier, keep it
-                if (rowItem.batch_return_quantity > 0) {
+                if ((rowItem.batch_return_quantity ?: 0) > 0) {
                     returnQuantity.setText(rowItem.batch_return_quantity.toString())
                 } else {
                     returnQuantity.setText("")
                 }
                 // Prefill No. of Box from model (mirror previous qty if present)
-                if (rowItem.batch_return_quantity > 0) {
+                if ((rowItem.batch_return_quantity ?: 0) > 0) {
                     etNoOfBox.setText(rowItem.batch_return_quantity.toString())
                 } else {
                     etNoOfBox.setText("")
@@ -218,9 +237,7 @@ class ReturnSalesItemBatchAdapter(
                     etNumberOfPacks.setText("")
                 }
 
-                // Tax label
-                val taxDisplayRounded = kotlin.math.round(taxDisplay.toDoubleOrNull() ?: 0.0).toInt()
-                taxfield.text = "(+) Tax @$taxDisplayRounded%"
+                // (Tax label is handled inside calculateTotals)
 
                 // ----- Save/Remove state -----
                 val currentList = LocalReturnCartHelper.getCartItems(context)
@@ -343,7 +360,7 @@ class ReturnSalesItemBatchAdapter(
                             }
                             return
                         } else {
-                            if (enteredValue > rowItem.quantity.toInt()) {
+                            if (enteredValue > (rowItem.quantity?.toInt() ?: 0)) {
                                 Toast.makeText(
                                     context,
                                     "Entered quantity exceeds the quantity purchased.",
@@ -580,7 +597,7 @@ class ReturnSalesItemBatchAdapter(
 
                         if (returnQty != null && returnQty > 0) {
                             val item = ReturnedItem(
-                                id = rowItem.sales_item_id, return_quantity = returnQty
+                                id = rowItem.sales_item_id ?: 0, return_quantity = returnQty
                             )
                             LocalReturnCartHelper.saveSingleItem(context, item)
                             Toast.makeText(context, "Saved to cart", Toast.LENGTH_SHORT).show()
@@ -626,26 +643,52 @@ class ReturnSalesItemBatchAdapter(
     private fun calculateTotalss(holder: StockSearchViewHolder, item: BatchReturnItem) {
         // ✅ Get quantity from sales_items detailed list (same way you get prices)
         val batchName = batchText(item).trim()
-        val detailedItem = returnitems.firstOrNull()?.sales_items?.firstOrNull { si ->
+        // ✅ Robust lookup: try snake_case list first, then camelCase as fallback
+        val detailedItemsList = returnitems.firstOrNull()?.sales_items.orEmpty()
+        val camelItemsList = returnitems.firstOrNull()?.salesItems.orEmpty()
+
+        val detailedItem = detailedItemsList.firstOrNull { si ->
             si.id == item.sales_item_id &&
                     (batchName.isEmpty() || si.batch?.trim()?.equals(batchName, ignoreCase = true) == true)
-        } ?: returnitems.firstOrNull()?.sales_items?.firstOrNull { si ->
-            si.id == item.sales_item_id  // Fallback: match by ID only
-        }
+        } ?: detailedItemsList.firstOrNull { si ->
+            si.product_id == item.product_id && item.product_id != null && item.product_id != 0 &&
+                    (batchName.isEmpty() || si.batch?.trim()?.equals(batchName, ignoreCase = true) == true)
+        } ?: detailedItemsList.firstOrNull { si ->
+            // Batch-name-only fallback: handles cases where both sales_item_id=0 and product_id=0
+            // (common when offline-returning an online-made multi-item sale)
+            batchName.isNotEmpty() && si.batch?.trim()?.equals(batchName, ignoreCase = true) == true
+        } ?: if (detailedItemsList.size == 1) detailedItemsList[0] else null
 
-        // ✅ Get quantity from detailedItem first, then fallback to item fields
-        val qty = detailedItem?.quantity?.toInt() ?: item.quantity.toInt()
-        ?: item.return_quantity
-        ?: item.batch_return_quantity
-        ?: item.quantity.toInt()
+        // If not found in snake_case, check camelCase (common for offline-merged sales)
+        val camelItem = if (detailedItem == null) {
+            camelItemsList.firstOrNull { it.id == item.sales_item_id && (item.sales_item_id ?: 0) > 0 }
+                ?: camelItemsList.firstOrNull { it.product_id == item.product_id && (item.product_id ?: 0) > 0 && it.distribution_pack_id == item.distribution_pack_id }
+        } else null
+
+        // ✅ Fix: Use the actual RETURNED quantity. In read-only mode, if no return_quantity was
+        // restored (common for multi-item offline offline sales), fall back to the original
+        // purchased quantity so the totals card is not blank.
+        val restoredQty = item.return_quantity?.takeIf { it > 0 }
+            ?: item.batch_return_quantity?.takeIf { it > 0 }
+        val fallbackQty = item.quantity?.takeIf { it > 0 }?.toInt()
+            ?: detailedItem?.quantity?.takeIf { it > 0 }?.toInt()
+            ?: camelItem?.quantity?.takeIf { it > 0 }?.toInt()
+            ?: 0
+        val qty = restoredQty ?: fallbackQty
 
         if (qty > 0) {
-            val taxExclusivePrice = detailedItem?.tax_exclusive_price
-                ?: item.tax_exclusive_price
+            // ✅ Price resolution priority:
+            // 1. detailedItem (SalesItemDetailed, snake_case) — most reliable, from API
+            // 2. item.retail_price — the batch item itself (synthetic batches carry the correct price from restore)
+            // 3. camelItem (SalesItem, camelCase) — may have retail_price=0 due to cache serialization mismatch
+            val taxExclusivePrice = detailedItem?.tax_exclusive_price?.takeIf { it > 0 }
+                ?: item.tax_exclusive_price?.takeIf { it > 0 }
+                ?: camelItem?.tax_exclusive_price?.takeIf { it > 0 }
                 ?: 0.0
 
-            val retailPrice = detailedItem?.retail_price
-                ?: item.retail_price
+            val retailPrice = detailedItem?.retail_price?.takeIf { it > 0 }
+                ?: item.retail_price?.takeIf { it > 0 }
+                ?: camelItem?.retail_price?.takeIf { it > 0 }
                 ?: 0.0
 
             // ✅ Calculate tax from price difference
@@ -663,7 +706,7 @@ class ReturnSalesItemBatchAdapter(
 
             // Discount calculation
             val totalDiscountForBatch = discountForBatch(item).coerceAtLeast(0.0)
-            val actualQtySold = item.quantity.takeIf { it > 0.0 } ?: detailedItem?.quantity ?: 0.0
+            val actualQtySold = item.quantity?.takeIf { it > 0.0 } ?: detailedItem?.quantity ?: camelItem?.quantity ?: 0.0
 
             val discountForThisQty: Double = if (totalDiscountForBatch > 0.0 && actualQtySold > 0.0) {
                 val perUnit = totalDiscountForBatch / actualQtySold
@@ -678,12 +721,22 @@ class ReturnSalesItemBatchAdapter(
                 .setScale(0, RoundingMode.HALF_UP)
                 .toDouble()
 
+            // ✅ Round Subtotal to INT for consistency with bottom card
+            val itemTotalRounded = BigDecimal
+                .valueOf(itemTotal)
+                .setScale(0, RoundingMode.HALF_UP)
+                .toDouble()
+
+            // ✅ Display logic: Show actual tax applied.
+            // In the presence of a discount, (GrandTotal - Subtotal) is not just Tax anymore.
+            val finalTaxAmount = taxAmountRounded
+
             // UI updates
             holder.binding.subtotalss.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", itemTotal), localizationData
+                String.format(Locale.US, "%.2f", itemTotalRounded), localizationData
             )
             holder.binding.taxAmountss.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", taxAmountRounded), localizationData
+                String.format(Locale.US, "%.2f", finalTaxAmount), localizationData
             )
 
             if (discountForThisQty > 0.0) {
@@ -701,11 +754,35 @@ class ReturnSalesItemBatchAdapter(
                 String.format(Locale.US, "%.2f", grandTotalRounded), localizationData
             )
 
-            // ✅ Show actual tax percentage
-            val actualTaxPercent = if (taxExclusivePrice > 0) {
-                (taxPerUnit / taxExclusivePrice * 100.0)
-            } else 0.0
-            holder.binding.taxfields.text = "(+) Tax @${formatPercent(actualTaxPercent)}%"
+            // ✅ Real-time calculation logic for Online-made sales in offline mode
+            // If tax amount is 0, percentage must stay 0%. Else calculate real-time for online sales.
+            val invoiceIdStr = returnitems.firstOrNull()?.invoice_id ?: ""
+            // Offline sales usually have "OFF" or are local records
+            val isOnlineSaleSync = !invoiceIdStr.contains("OFF", ignoreCase = true) && !invoiceIdStr.startsWith("INV", ignoreCase = true)
+            
+            val taxPercentValue = if (isOnlineSaleSync) {
+                if (taxExclusivePrice > 0.0) {
+                    (taxPerUnit / taxExclusivePrice * 100.0)
+                } else 0.0
+            } else {
+                // Prefer stored tax (Integer like 18), fallback to calculated (Double like 17.99)
+                val storedTax = (detailedItem?.tax ?: camelItem?.tax ?: 0).toDouble()
+                if (storedTax > 0.0) {
+                    storedTax
+                } else if (taxExclusivePrice > 0.0) {
+                    (taxPerUnit / taxExclusivePrice * 100.0)
+                } else 0.0
+            }
+
+            Log.d("DEBUG_TAX_PERCENT", "--- calculateTotalss Debug ---")
+            Log.d("DEBUG_TAX_PERCENT", "Invoice: $invoiceIdStr, OnlineSync: $isOnlineSaleSync")
+            Log.d("DEBUG_TAX_PERCENT", "Item ID: ${item.sales_item_id}, Batch: $batchName")
+            Log.d("DEBUG_TAX_PERCENT", "DetailedItem Null: ${detailedItem == null}, CamelItem Null: ${camelItem == null}")
+            Log.d("DEBUG_TAX_PERCENT", "Retail: $retailPrice, TaxExcl: $taxExclusivePrice, TaxPerUnit: $taxPerUnit")
+            Log.d("DEBUG_TAX_PERCENT", "Stored Tax (Detailed): ${detailedItem?.tax}, Stored Tax (Camel): ${camelItem?.tax}")
+            Log.d("DEBUG_TAX_PERCENT", "Final Tax Percent: $taxPercentValue")
+
+            holder.binding.taxfields.text = "(+) Tax @${formatPercent(taxPercentValue)}%"
 
             Log.d(
                 "ReturnAdapter",
@@ -727,7 +804,7 @@ class ReturnSalesItemBatchAdapter(
 
     // ---- EDIT totals (calculateTotals) ----
     private fun calculateTotals(holder: StockSearchViewHolder, item: BatchReturnItem) {
-        val qty = item.batch_return_quantity.coerceAtLeast(0)
+        val qty = (item.batch_return_quantity ?: 0).coerceAtLeast(0)
 
         if (qty > 0) {
             // ✅ Get CORRECT prices from sales_items (detailed list)
@@ -762,7 +839,7 @@ class ReturnSalesItemBatchAdapter(
 
             // Discount calculation
             val totalDiscountForBatch = discountForBatch(item).coerceAtLeast(0.0)
-            val actualQtySold = item.quantity.takeIf { it > 0.0 } ?: 0.0
+            val actualQtySold = item.quantity?.takeIf { it > 0.0 } ?: detailedItem?.quantity ?: 0.0
 
             val discountForThisQty: Double = if (totalDiscountForBatch > 0.0 && actualQtySold > 0.0) {
                 val perUnit = totalDiscountForBatch / actualQtySold
@@ -777,9 +854,15 @@ class ReturnSalesItemBatchAdapter(
                 .setScale(0, RoundingMode.HALF_UP)
                 .toDouble()
 
+            // ✅ Round Subtotal to INT for consistency
+            val itemTotalRounded = BigDecimal
+                .valueOf(itemTotal)
+                .setScale(0, RoundingMode.HALF_UP)
+                .toDouble()
+
             // UI updates
             holder.binding.subtotals.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", itemTotal), localizationData
+                String.format(Locale.US, "%.2f", itemTotalRounded), localizationData
             )
             holder.binding.taxAmounts.text = NumberFormatter().formatPrice(
                 String.format(Locale.US, "%.2f", taxAmountRounded), localizationData
@@ -804,7 +887,9 @@ class ReturnSalesItemBatchAdapter(
             val actualTaxPercent = if (taxExclusivePrice > 0) {
                 (taxPerUnit / taxExclusivePrice * 100.0)
             } else 0.0
-            holder.binding.taxfield.text = "(+) Tax @${formatPercent(actualTaxPercent)}%"
+            val percentStr = "(+) Tax @${formatPercent(actualTaxPercent)}%"
+            holder.binding.taxfield.text = percentStr
+            holder.binding.taxfields.text = percentStr
 
             Log.d(
                 "ReturnAdapter",
@@ -820,20 +905,21 @@ class ReturnSalesItemBatchAdapter(
             holder.binding.discountLayoutnew.isVisible = false
             holder.binding.discountAmountnew.text = NumberFormatter().formatPrice("0.00", localizationData)
             holder.binding.taxfield.text = "(+) Tax @0%"
+            holder.binding.taxfields.text = "(+) Tax @0%"
         }
     }
 
     private fun updateReceivedQuantity(item: BatchReturnItem) {
-        val batchKey = item.batch.trim().lowercase()
+        val batchKey = item.batch?.trim()?.lowercase() ?: ""
         val salesItemId = item.sales_item_id
 
         // Remove old entry for this (sales_item_id, batch)
         matReceivedList.removeAll {
-            it.sales_item_id == salesItemId && it.batch.trim().lowercase() == batchKey
+            it.sales_item_id == salesItemId && (it.batch?.trim()?.lowercase() ?: "") == batchKey
         }
 
         // Prefer return_quantity (what user typed in Qty EditText), fallback to batch_return_quantity
-        val qty = (item.return_quantity ?: item.batch_return_quantity).coerceAtLeast(0)
+        val qty = (item.return_quantity ?: item.batch_return_quantity ?: 0).coerceAtLeast(0)
 
         // Add only if qty > 0
         if (qty > 0) {
@@ -868,7 +954,7 @@ class ReturnSalesItemBatchAdapter(
 
 
     fun getValidReturnBatches(): List<BatchReturnItem> =
-        matReceivedList.filter { it.batch_return_quantity > 0 }
+        matReceivedList.filter { (it.batch_return_quantity ?: 0) > 0 }
 
     // -------------- percent utils --------------
     private fun formatTaxForDisplay(raw: Any?): String {

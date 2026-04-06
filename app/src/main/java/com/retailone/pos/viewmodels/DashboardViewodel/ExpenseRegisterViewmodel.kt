@@ -23,7 +23,23 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+import androidx.lifecycle.viewModelScope
+import com.retailone.pos.localstorage.SharedPreference.ExpenseCacheHelper
+import com.retailone.pos.repository.ExpenseRepository
+import com.retailone.pos.utils.NetworkUtils
+import kotlinx.coroutines.launch
+
 class ExpenseRegisterViewmodel : ViewModel() {
+
+    private lateinit var repository: ExpenseRepository
+    private lateinit var cacheHelper: ExpenseCacheHelper
+
+    private fun init(context: Context) {
+        if (!::repository.isInitialized) {
+            repository = ExpenseRepository(context)
+            cacheHelper = ExpenseCacheHelper(context)
+        }
+    }
 
     val expensecategory_data = MutableLiveData<ExpenseCategoryRes>()
     val expensecategory_liveData: LiveData<ExpenseCategoryRes>
@@ -51,24 +67,21 @@ class ExpenseRegisterViewmodel : ViewModel() {
 
 
     fun callExpenseSubmitApi(expenseSubmitReq: ExpenseSubmitReq, context: Context){
+        init(context)
         loading.postValue(ProgressData(isProgress = true))
 
-        ApiClient().getApiService(context).getExpenseSubmitAPI(expenseSubmitReq).enqueue(object :
-            Callback<ExpenseSubmitRes> {
-            override fun onResponse(call: Call<ExpenseSubmitRes>, response: Response<ExpenseSubmitRes>) {
-
-                if(response.isSuccessful && response.body()!=null){
-                    expensesubmit_data.postValue(response.body())
+        viewModelScope.launch {
+            repository.submitExpense(
+                expenseSubmitReq,
+                onSuccess = {
+                    expensesubmit_data.postValue(it)
                     loading.postValue(ProgressData(isProgress = false))
-                }else{
-                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                },
+                onError = {
+                    loading.postValue(ProgressData(isProgress = false, isMessage = true, message = it))
                 }
-            }
-
-            override fun onFailure(call: Call<ExpenseSubmitRes>, t: Throwable) {
-                loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
-            }
-        })
+            )
+        }
     }
 
 
@@ -96,6 +109,17 @@ class ExpenseRegisterViewmodel : ViewModel() {
 
 
     fun callExpenseCategoryApi(context: Context) {
+        init(context)
+        
+        // Show cached data immediately if offline
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            val cached = cacheHelper.getCategories()
+            if (cached != null) {
+                expensecategory_data.postValue(cached)
+                return
+            }
+        }
+        
         loading.postValue(ProgressData(isProgress = true))
         ApiClient().getApiService(context).getExpenceCategoryAPI()
             .enqueue(object : Callback<ExpenseCategoryRes> {
@@ -105,19 +129,44 @@ class ExpenseRegisterViewmodel : ViewModel() {
                 ) {
                     if (response.isSuccessful && response.body() != null) {
                         expensecategory_data.postValue(response.body())
+                        cacheHelper.saveCategories(response.body()!!)
                         loading.postValue(ProgressData(isProgress = false))
                     } else {
-                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        // Fallback to cache if API fails
+                        val cached = cacheHelper.getCategories()
+                        if (cached != null) {
+                            expensecategory_data.postValue(cached)
+                            loading.postValue(ProgressData(isProgress = false))
+                        } else {
+                            loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<ExpenseCategoryRes>, t: Throwable) {
-                     loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                     val cached = cacheHelper.getCategories()
+                     if (cached != null) {
+                         expensecategory_data.postValue(cached)
+                         loading.postValue(ProgressData(isProgress = false))
+                     } else {
+                         loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                     }
                 }
             })
     }
 
     fun callExpenseVendorApi(context: Context) {
+        init(context)
+
+        // Show cached data immediately if offline
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            val cached = cacheHelper.getVendors()
+            if (cached != null) {
+                expensevendor_data.postValue(cached)
+                return
+            }
+        }
+
         loading.postValue(ProgressData(isProgress = true))
         ApiClient().getApiService(context).getExpenceVendorAPI()
             .enqueue(object : Callback<ExpenseVendorRes> {
@@ -127,14 +176,28 @@ class ExpenseRegisterViewmodel : ViewModel() {
                 ) {
                     if (response.isSuccessful && response.body() != null) {
                         expensevendor_data.postValue(response.body())
+                        cacheHelper.saveVendors(response.body()!!)
                         loading.postValue(ProgressData(isProgress = false))
                     } else {
-                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        // Fallback to cache if API fails
+                        val cached = cacheHelper.getVendors()
+                        if (cached != null) {
+                            expensevendor_data.postValue(cached)
+                            loading.postValue(ProgressData(isProgress = false))
+                        } else {
+                            loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<ExpenseVendorRes>, t: Throwable) {
-                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                    val cached = cacheHelper.getVendors()
+                    if (cached != null) {
+                        expensevendor_data.postValue(cached)
+                        loading.postValue(ProgressData(isProgress = false))
+                    } else {
+                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                    }
                 }
             })
     }

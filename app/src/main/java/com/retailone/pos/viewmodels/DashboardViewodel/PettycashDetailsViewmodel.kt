@@ -19,7 +19,18 @@ import retrofit2.Callback
 import retrofit2.Response
 
 
+import com.retailone.pos.localstorage.SharedPreference.ExpenseCacheHelper
+import com.retailone.pos.utils.NetworkUtils
+
 class PettycashDetailsViewmodel: ViewModel() {
+
+    private lateinit var cacheHelper: ExpenseCacheHelper
+
+    private fun init(context: Context) {
+        if (!::cacheHelper.isInitialized) {
+            cacheHelper = ExpenseCacheHelper(context)
+        }
+    }
 
     val loading = MutableLiveData<ProgressData>()
     val loadingLiveData : LiveData<ProgressData>
@@ -57,6 +68,17 @@ class PettycashDetailsViewmodel: ViewModel() {
 
 
     fun callPettycashDataApi(store_id: String, context: Context){
+        init(context)
+        
+        // Return cached data immediately if offline
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            val cached = cacheHelper.getPettyCash()
+            if (cached != null) {
+                pettycash_data.postValue(cached)
+                return
+            }
+        }
+        
         loading.postValue(ProgressData(isProgress = true))
 
         ApiClient().getApiService(context).getPettyCashData(storeId = store_id).enqueue(object :
@@ -65,14 +87,28 @@ class PettycashDetailsViewmodel: ViewModel() {
 
                 if(response.isSuccessful && response.body()!=null){
                     pettycash_data.postValue(response.body())
+                    cacheHelper.savePettyCash(response.body()!!)
                     loading.postValue(ProgressData(isProgress = false))
                 }else{
-                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                    // Fallback to cache if API fails
+                    val cached = cacheHelper.getPettyCash()
+                    if (cached != null) {
+                        pettycash_data.postValue(cached)
+                        loading.postValue(ProgressData(isProgress = false))
+                    } else {
+                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                    }
                 }
             }
 
             override fun onFailure(call: Call<PettycashReportRes>, t: Throwable) {
-                loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                val cached = cacheHelper.getPettyCash()
+                if (cached != null) {
+                    pettycash_data.postValue(cached)
+                    loading.postValue(ProgressData(isProgress = false))
+                } else {
+                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                }
             }
         })
     }

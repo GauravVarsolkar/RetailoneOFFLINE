@@ -3,7 +3,12 @@ package com.retailone.pos.workers
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import com.retailone.pos.repository.PendingCancelSaleRepository
 import com.retailone.pos.repository.PosSaleRepository
+import com.retailone.pos.repository.PendingReturnRepository
+import com.retailone.pos.localstorage.RoomDB.PendingReplaceRepository
+import com.retailone.pos.repository.ExpenseRepository
+import com.retailone.pos.localstorage.RoomDB.PosDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -15,20 +20,40 @@ class SyncWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            Log.d("SyncWorker", "🔄 Starting sync of offline sales...")
+            Log.d("SyncWorker", "🔄 Starting sync of offline data...")
 
-            val repository = PosSaleRepository(applicationContext)
-            val syncResult = repository.syncOfflineSales()
+            // ✅ Sync offline sales
+            val saleRepository = PosSaleRepository(applicationContext)
+            val saleSyncResult = saleRepository.syncOfflineSales()
 
-            return@withContext if (syncResult) {
-                Log.d("SyncWorker", "✅ Sync completed successfully")
+            // ✅ NEW: Sync pending returns
+            val returnRepository = PendingReturnRepository(applicationContext)
+            val returnSyncResult = returnRepository.syncAllPendingReturns(applicationContext)
+
+            // ✅ NEW: Sync pending cancel requests
+            val cancelRepository = PendingCancelSaleRepository(applicationContext)
+            val cancelSyncResult = cancelRepository.syncAllPendingCancels()
+
+            // ✅ NEW: Sync pending replacements
+            val db = PosDatabase.getDatabase(applicationContext)
+            val replaceRepository = PendingReplaceRepository(db.pendingReplaceDao())
+            val replaceSyncResult = replaceRepository.syncAllPendingReplaces(applicationContext)
+
+            // ✅ NEW: Sync pending expenses
+            val expenseRepository = ExpenseRepository(applicationContext)
+            val expenseSyncResult = expenseRepository.syncAllPendingExpenses()
+
+            Log.d("SyncWorker", "📊 Sync results: sales=$saleSyncResult, cancels=$cancelSyncResult, returns=$returnSyncResult, replaces=$replaceSyncResult, expenses=$expenseSyncResult")
+
+            return@withContext if (saleSyncResult && cancelSyncResult && returnSyncResult && replaceSyncResult && expenseSyncResult) {
+                Log.d("SyncWorker", "✅ All syncs completed successfully")
 
                 // ⚡ Schedule another network-triggered sync for next time
                 scheduleNetworkTriggeredSync(applicationContext)
 
                 Result.success()
             } else {
-                Log.d("SyncWorker", "⚠️ Sync failed, will retry")
+                Log.d("SyncWorker", "⚠️ Some syncs failed, will retry")
                 Result.retry()
             }
 

@@ -174,7 +174,7 @@ class PointofsaleBatchAdapter(
     private fun buildFullListWithEntered(): List<PosSaleBatch> {
         return batchList.map { src ->
             val q = enteredQty[src.batch_no] ?: src.batch_cart_quantity
-            PosSaleBatch(src.batch_no, src.quantity, src.price, q)
+            PosSaleBatch(src.batch_no, src.quantity, src.price, tax = src.tax, batch_cart_quantity = q)
         }
     }
 

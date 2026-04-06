@@ -236,6 +236,11 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
         }
 
         binding.linearcomplete.setOnClickListener {
+            binding.linearcomplete.isEnabled = false
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                binding.linearcomplete.isEnabled = true
+            }, 2000)
+
             validateDetails(
                 binding.mobileInput.text.toString(),
                 binding.nameInput.text.toString(),
@@ -480,21 +485,45 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
 
             val isExistingCustomer = binding.toggle.checkedRadioButtonId == R.id.existingcust
             if (isExistingCustomer) {
-                //  pos_viewmodel.callposSaleApi(pos_saledata!!, this)
-                pos_viewmodel.callposSaleApiPatched(pos_saledata!!, this)
-            } else {
-                // avoid stacking observers on multiple clicks
-                pos_viewmodel.get_customer_liveData.removeObservers(this)
-                pos_viewmodel.callGetCustomerDetailsApi(
-                    getCustomerReq(mobile_no = mobileInput, tin_tpin_no = tinInput),
-                    this
-                )
-                pos_viewmodel.get_customer_liveData.observe(this) {
-                    if (it.status == 1) {
-                        showMessage("Customer Already Exists!")
+                if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this)) {
+                    val mobile = binding.mobileInput.text.toString().trim()
+                    val tpin = binding.tinInput.text.toString().trim()
+                    val localHelper = com.retailone.pos.localstorage.SharedPreference.CustomerLocalHelper(this)
+                    val customers = localHelper.getCustomers()
+                    val matchedCustomer = customers.find { 
+                        (mobile.isNotEmpty() && it.mobile_no == mobile) || 
+                        (tpin.isNotEmpty() && it.tin_tpin_no == tpin) 
+                    }
+                    if (matchedCustomer == null) {
+                        showMessage("Customer does not exist in Offline Records.")
+                        return
                     } else {
-                        // pos_viewmodel.callposSaleApi(pos_saledata!!, this)
+                        pos_saledata = pos_saledata?.copy(customer_id = matchedCustomer.id)
                         pos_viewmodel.callposSaleApiPatched(pos_saledata!!, this)
+                    }
+                } else {
+                    // pos_viewmodel.callposSaleApi(pos_saledata!!, this)
+                    pos_viewmodel.callposSaleApiPatched(pos_saledata!!, this)
+                }
+            } else {
+                if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this)) {
+                    // NEW: If offline, we can't check if the customer already exists 
+                    // via API, so just proceed with saving the offline sale directly.
+                    pos_viewmodel.callposSaleApiPatched(pos_saledata!!, this)
+                } else {
+                    // avoid stacking observers on multiple clicks
+                    pos_viewmodel.get_customer_liveData.removeObservers(this)
+                    pos_viewmodel.callGetCustomerDetailsApi(
+                        getCustomerReq(mobile_no = mobileInput, tin_tpin_no = tinInput),
+                        this
+                    )
+                    pos_viewmodel.get_customer_liveData.observe(this) {
+                        if (it.status == 1) {
+                            showMessage("Customer Already Exists!")
+                        } else {
+                            // pos_viewmodel.callposSaleApi(pos_saledata!!, this)
+                            pos_viewmodel.callposSaleApiPatched(pos_saledata!!, this)
+                        }
                     }
                 }
             }
@@ -545,6 +574,11 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
             // If after merge everything is still zero, skip
             if (mergedQty <= 0.0 && computedTotal <= 0.0) return@forEach
 
+            // ✅ FIX: Sum per-item tax amounts and discounts across merged items for this product
+            val mergedTaxRate = first.tax.toDouble()
+            val mergedTaxAmount = items.sumOf { (it.tax_amount?.toDoubleOrNull() ?: 0.0) }
+            val mergedDiscount = items.sumOf { it.discount }
+
             result.add(
                 PosSalesItem(
                     product_id = first.product_id.toString(),
@@ -554,7 +588,10 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                     batch = mergedBatches,
                     product_name = first.product_name,
                     distribution_pack_name = first.distribution_pack.product_description,
-                    uom = first.distribution_pack.uom
+                    uom = first.distribution_pack.uom,
+                    tax = mergedTaxRate,    // ✅ Pass per-item tax rate for offline sales details
+                    tax_amount = mergedTaxAmount,  // ✅ Pass per-item tax amount for offline sales details
+                    discount = mergedDiscount // ✅ Pass per-item discount for offline sales details
                 )
             )
         }

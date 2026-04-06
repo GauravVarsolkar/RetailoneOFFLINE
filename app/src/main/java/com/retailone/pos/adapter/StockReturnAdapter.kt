@@ -26,8 +26,21 @@ class StockReturnAdapter(
         val context = holder.itemView.context
         val productCount = item.products.size
 
-        val sdfInput = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault())
-        val date = sdfInput.parse(item.requested_date)
+        val formats = arrayOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        var date: Date? = null
+        for (format in formats) {
+            try {
+                date = SimpleDateFormat(format, Locale.getDefault()).parse(item.requested_date)
+                if (date != null) break
+            } catch (e: Exception) {
+                // Try next format
+            }
+        }
+        
         val day = SimpleDateFormat("dd", Locale.getDefault()).format(date ?: Date())
         val month = SimpleDateFormat("MMM", Locale.getDefault()).format(date ?: Date()).uppercase()
 

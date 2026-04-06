@@ -338,6 +338,11 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.app.Dialog
+import android.view.ViewGroup
+import android.widget.TextView
+import com.google.android.material.button.MaterialButton
+import com.retailone.pos.models.GoodsToWarehouseModel.Stocklist.StockListResponse
 
 class GoodsReturnToWarehouseActivity : AppCompatActivity() {
     lateinit var binding: ActivityGoodsReturntoWarehouseBinding
@@ -363,8 +368,25 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
         enableBackButton()
 
         lifecycleScope.launch {
+            // ✅ Initialize repository for offline state management
+            goodsReturntoWarehouseViewModel.initRepository(this@GoodsReturnToWarehouseActivity)
+
             storeid =
                 LoginSession.getInstance(this@GoodsReturnToWarehouseActivity).getStoreID().first()
+
+            // ✅ Load from local DB first (instant, works offline!)
+            val cachedReasons = goodsReturntoWarehouseViewModel.getReturnReasonsFromCache()
+            if (cachedReasons != null) {
+                returnReasonList = cachedReasons.data.filter { it.status == 1 }.toMutableList()
+            }
+
+            val cachedStock = goodsReturntoWarehouseViewModel.getStockListFromCache(storeid.toInt())
+            if (cachedStock != null) {
+                // Update UI with cached stock immediately
+                updateStockUI(cachedStock)
+            }
+
+            // ✅ Refresh from API
             goodsReturntoWarehouseViewModel.callStockListApi(
                 storeid,
                 this@GoodsReturnToWarehouseActivity
@@ -372,6 +394,15 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
             goodsReturntoWarehouseViewModel.callSaleReturnReasonApi(
                 this@GoodsReturnToWarehouseActivity
             )
+
+            // ✅ Auto-sync pending returns if online
+            if (com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this@GoodsReturnToWarehouseActivity)) {
+                val pendingCount = goodsReturntoWarehouseViewModel.getPendingCount()
+                if (pendingCount > 0) {
+                    Log.d("WarehouseSync", "🔄 Found $pendingCount pending returns, syncing...")
+                    goodsReturntoWarehouseViewModel.syncPendingReturns(this@GoodsReturnToWarehouseActivity)
+                }
+            }
         }
 
         binding.relativeLayout.setOnClickListener {
@@ -414,7 +445,20 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
                 items = selectedItems
             )
 
-            goodsReturntoWarehouseViewModel.submitStockReturn(request, this)
+            if (com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this@GoodsReturnToWarehouseActivity)) {
+                Log.d("WarehouseSubmit", "📡 Online - submitting immediately")
+                goodsReturntoWarehouseViewModel.submitStockReturn(request, this)
+            } else {
+                Log.d("WarehouseSubmit", "📴 Offline - queuing for later sync")
+                lifecycleScope.launch {
+                    val queueId = goodsReturntoWarehouseViewModel.queueReturnRequest(request)
+                    if (queueId > 0) {
+                        showOfflineSuccessDialog()
+                    } else {
+                        showMessage("Failed to queue return request")
+                    }
+                }
+            }
         }
 
         goodsReturntoWarehouseViewModel.loadingLiveData.observe(this) {
@@ -430,38 +474,7 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
 
         goodsReturntoWarehouseViewModel.stockListLiveData.observe(this) { response ->
             if (response.status == 1) {
-                // 🔧 FIXED: use new map structure (Map<String, ReturnedItemDetails>)
-                val filteredProducts =
-                    response.data.flatMap { it.products }.filter { product ->
-                        product.distribution_pack_data.any { pack ->
-                            val stock = pack.stock_quatity
-
-                            val returnedQtySum = pack.returned_items
-                                ?.values
-                                ?.sumOf { detailsMap ->
-                                    detailsMap["total_quantity"]
-                                        ?: detailsMap.values.sum()
-                                } ?: 0
-
-                            val goodReturnedQtySum = pack.good_returned_items
-                                ?.values
-                                ?.sumOf { detailsMap ->
-                                    detailsMap["total_quantity"]
-                                        ?: detailsMap.values.sum()
-                                } ?: 0
-
-                            // Include product only if there’s any quantity
-                            stock > 0 || returnedQtySum > 0 || goodReturnedQtySum > 0
-                        }
-                    }
-
-                val reasonNames = returnReasonList.map { it.reason_name }
-                stockListAdapter = StockListAdapter(filteredProducts, reasonNames)
-                Log.d("ReturnreasonList", returnReasonList.toString())
-
-                binding.productAlertRcv.layoutManager =
-                    LinearLayoutManager(this)
-                binding.productAlertRcv.adapter = stockListAdapter
+                updateStockUI(response)
             }
         }
 
@@ -475,8 +488,6 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
         prepareProductAlertRCV()
         showToolbarImage()
 
-
-
         goodsReturntoWarehouseViewModel.stockReturnSubmitLiveData.observe(this) { response ->
             if (response.status == "success") {
                 Toast.makeText(this, response.message, Toast.LENGTH_SHORT).show()
@@ -488,6 +499,38 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun updateStockUI(response: StockListResponse) {
+        val filteredProducts = response.data.flatMap { it.products }.filter { product ->
+            product.distribution_pack_data.any { pack ->
+                val stock = pack.stock_quatity
+
+                val returnedQtySum = pack.returned_items
+                    ?.values
+                    ?.sumOf { detailsMap ->
+                        detailsMap["total_quantity"]
+                            ?: detailsMap.values.sum()
+                    } ?: 0
+
+                val goodReturnedQtySum = pack.good_returned_items
+                    ?.values
+                    ?.sumOf { detailsMap ->
+                        detailsMap["total_quantity"]
+                            ?: detailsMap.values.sum()
+                    } ?: 0
+
+                // Include product only if there’s any quantity
+                stock > 0 || returnedQtySum > 0 || goodReturnedQtySum > 0
+            }
+        }
+
+        val reasonNames = returnReasonList.map { it.reason_name }
+        stockListAdapter = StockListAdapter(filteredProducts, reasonNames)
+        Log.d("ReturnreasonList", returnReasonList.toString())
+
+        binding.productAlertRcv.layoutManager = LinearLayoutManager(this)
+        binding.productAlertRcv.adapter = stockListAdapter
     }
 
 
@@ -572,6 +615,31 @@ class GoodsReturnToWarehouseActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
+    }
+
+    private fun showOfflineSuccessDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.pos_sucess_dialog)
+        dialog.setCancelable(false)
+        dialog.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val confirm = dialog.findViewById<MaterialButton>(R.id.prefer_confirm)
+        val logoutMsg = dialog.findViewById<TextView>(R.id.logout_msg)
+        val print_receipt = dialog.findViewById<MaterialButton>(R.id.print_receipt)
+
+        logoutMsg.text = "Return request saved offline.\nIt will be submitted when internet is available."
+        logoutMsg.textSize = 16F
+        print_receipt.isVisible = false
+
+        confirm.setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+        dialog.show()
     }
 
     private fun showMessage(msg: String) {

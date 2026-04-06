@@ -62,6 +62,11 @@ class SalesAndPaymentActivity : AppCompatActivity() {
 
     var showFromdate = ""
     var showTodate = ""
+    // Store current date range for refresh
+    private var currentFromDate: String = ""
+    private var currentToDate: String = ""
+    private var currentStartTimeMillis: Long = 0
+    private var currentEndTimeMillis: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +102,7 @@ class SalesAndPaymentActivity : AppCompatActivity() {
                 set(Calendar.MILLISECOND, 0)
             }
             val startDate = calendar.time // This is today's date at 12:00 AM
+            currentStartTimeMillis = startDate.time
 
 // Set the end date to today's date at 11:59 PM
             calendar.apply {
@@ -106,6 +112,7 @@ class SalesAndPaymentActivity : AppCompatActivity() {
                 set(Calendar.MILLISECOND, 999)
             }
             val endDate = calendar.time // This is today's date at 11:59 PM
+            currentEndTimeMillis = endDate.time
 
 // Format the dates
             val firstFormattedDate = secondDateFormat.format(startDate)
@@ -114,45 +121,29 @@ class SalesAndPaymentActivity : AppCompatActivity() {
             // ✅ Initialize repository for offline support
             viewmodel.initRepository(this@SalesAndPaymentActivity)
 
-            // ✅ NEW: Load offline sales first (instant, always available)
-            val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt())
-            Log.d("SalesAndPayment", "📴 Found ${offlineSales.size} offline sales")
+            // ✅ NEW: Load offline sales and cancelled sales first (instant, always available)
+            // Restricted to today's sales only!
+            val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt(), currentStartTimeMillis, currentEndTimeMillis)
+            val cancelledSales = viewmodel.getCancelledSalesAsNegativeSale(this@SalesAndPaymentActivity, currentStartTimeMillis, currentEndTimeMillis)
+            Log.d("SalesAndPayment", "📴 Found ${offlineSales.size} offline sales and ${cancelledSales.size} cancelled sales for today")
             
             // ✅ Load from local cache first (instant, works offline!)
             val cachedInvoice = viewmodel.getCachedInvoice(storeid.toInt(), firstFormattedDate, secondFormattedDate)
             if (cachedInvoice != null) {
                 Log.d("SalesAndPayment", "✅ Loaded ${cachedInvoice.data.sales.size} sales from local cache")
-                // ✅ NEW: Merge cached sales with offline sales
-                val mergedSales = mergeWithOfflineSales(cachedInvoice, offlineSales)
+                // ✅ NEW: Merge cached sales with offline sales and cancelled sales
+                val mergedSales = mergeWithOfflineAndCancelledSales(cachedInvoice, offlineSales, cancelledSales)
                 displayInvoiceData(mergedSales)
-            } else {
-                // If no cache for exact date range, try to get latest cached
-                val latestCached = viewmodel.getLatestCachedInvoice(storeid.toInt())
-                if (latestCached != null) {
-                    Log.d("SalesAndPayment", "✅ Loaded ${latestCached.data.sales.size} sales from latest cache (different date range)")
-                    // ✅ NEW: Merge latest cached with offline sales
-                    val mergedSales = mergeWithOfflineSales(latestCached, offlineSales)
-                    displayInvoiceData(mergedSales)
-                } else if (offlineSales.isNotEmpty()) {
-                    // ✅ NEW: If no cached data but have offline sales, show only offline sales
-                    Log.d("SalesAndPayment", "📴 Showing only offline sales (${offlineSales.size})")
-                    displayOfflineSalesOnly(offlineSales)
-                }
+            } else if (offlineSales.isNotEmpty() || cancelledSales.isNotEmpty()) {
+                // ✅ NEW: If no cached data but have offline/cancelled sales, show them
+                Log.d("SalesAndPayment", "📴 Showing only offline/cancelled sales")
+                displayOfflineSalesOnly(offlineSales, cancelledSales)
             }
 
             // ✅ Then call API to refresh (works in background)
+            // Default to today only
             if (NetworkUtils.isInternetAvailable(this@SalesAndPaymentActivity)) {
                 viewmodel.callInvoiceApi(InvoiceReq(storeid.toInt(), firstFormattedDate, secondFormattedDate), this@SalesAndPaymentActivity)
-            } else {
-                Log.d("SalesAndPayment", "📴 Offline - showing cached data only")
-                // ✅ NEW: If offline and no cache, show offline sales
-                if (cachedInvoice == null && offlineSales.isEmpty()) {
-                    val latestCached = viewmodel.getLatestCachedInvoice(storeid.toInt())
-                    if (latestCached != null) {
-                        val mergedSales = mergeWithOfflineSales(latestCached, offlineSales)
-                        displayInvoiceData(mergedSales)
-                    }
-                }
             }
 
             // ✅ Cleanup old cached invoices (7+ days)
@@ -182,13 +173,15 @@ class SalesAndPaymentActivity : AppCompatActivity() {
             if(invoiceRes.status==1){
                 Log.d("SalesAndPayment", "✅ API response received with ${invoiceRes.data.sales.size} sales")
                 
-                // ✅ NEW: Get offline sales to merge
+                // ✅ NEW: Get offline sales and cancelled sales to merge
                 lifecycleScope.launch {
-                    val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt())
-                    Log.d("SalesAndPayment", "📴 Merging ${offlineSales.size} offline sales with ${invoiceRes.data.sales.size} API sales")
+                    val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt(), currentStartTimeMillis, currentEndTimeMillis)
+                    val cancelledSales = viewmodel.getCancelledSalesAsNegativeSale(this@SalesAndPaymentActivity, currentStartTimeMillis, currentEndTimeMillis)
+                    Log.d("OfflineCancelDebug", "🌐 API Response SUCCESS. From DB got: ${offlineSales.size} offline sales & ${cancelledSales.size} cancelled sales")
+                    Log.d("SalesAndPayment", "📴 Merging ${offlineSales.size} offline sales, ${cancelledSales.size} cancelled sales, and ${invoiceRes.data.sales.size} API sales")
                     
-                    // ✅ NEW: Merge API sales with offline sales
-                    val mergedSales = mergeWithOfflineSales(invoiceRes, offlineSales)
+                    // ✅ NEW: Merge API sales, offline sales, and cancelled sales
+                    val mergedSales = mergeWithOfflineAndCancelledSales(invoiceRes, offlineSales, cancelledSales)
                     
                     // ✅ Cache the merged response for offline use
                     viewmodel.cacheInvoiceResponse(
@@ -200,7 +193,7 @@ class SalesAndPaymentActivity : AppCompatActivity() {
                     )
                     
                     // ✅ NEW: Fetch and cache individual sale details for offline viewing (both API and offline)
-                    cacheSaleDetailsForAllSales(mergedSales)
+                    viewmodel.prefetchMissingSalesDetails(mergedSales.data.sales, this@SalesAndPaymentActivity)
                     
                     // Display the merged data
                     displayInvoiceData(mergedSales)
@@ -291,12 +284,27 @@ class SalesAndPaymentActivity : AppCompatActivity() {
             }else{
 
                 //showMessage(todate +" "+fromdate)
+                // Update current timestamp range for offline filtering
+                try {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    currentStartTimeMillis = sdf.parse(fromdate)?.time ?: 0
+                    currentEndTimeMillis = sdf.parse(todate)?.time ?: 0
+                } catch (e: Exception) {
+                    Log.e("SalesAndPayment", "Error parsing filter dates: ${e.message}")
+                }
+
                 // ✅ Updated: Check for cached data first
                 lifecycleScope.launch {
                     val cachedInvoice = viewmodel.getCachedInvoice(storeid.toInt(), fromdate, todate)
+                    val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt(), currentStartTimeMillis, currentEndTimeMillis)
+                    val cancelledSales = viewmodel.getCancelledSalesAsNegativeSale(this@SalesAndPaymentActivity, currentStartTimeMillis, currentEndTimeMillis)
+                    
                     if (cachedInvoice != null) {
                         Log.d("SalesAndPayment", "✅ Loaded filtered data from cache")
-                        displayInvoiceData(cachedInvoice)
+                        val mergedSales = mergeWithOfflineAndCancelledSales(cachedInvoice, offlineSales, cancelledSales)
+                        displayInvoiceData(mergedSales)
+                    } else if (offlineSales.isNotEmpty() || cancelledSales.isNotEmpty()) {
+                        displayOfflineSalesOnly(offlineSales, cancelledSales)
                     }
                     
                     // ✅ Then call API to refresh
@@ -304,36 +312,42 @@ class SalesAndPaymentActivity : AppCompatActivity() {
                         viewmodel.callInvoiceApi(InvoiceReq(storeid.toInt(),fromdate,todate),this@SalesAndPaymentActivity)
                     }
                 }
+                
                 binding.calenderTextx.text= "$showFromdate - $showTodate"
                 dialog.dismiss()
-
-
-                //viewmodel.callSalesListApi(SalesListReq(todate,fromdate,storeid),this@SalesAndPaymentActivity)
-
             }
         }
 
         d_binding.clearBtn.setOnClickListener {
+            // Reset to TODAY's date range instead of 'All'
+            val secondDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val todayStart = getTodayStartDate()
+            val todayEnd = getTodayEndDate()
+            
+            try {
+                currentStartTimeMillis = secondDateFormat.parse(todayStart)?.time ?: 0
+                currentEndTimeMillis = secondDateFormat.parse(todayEnd)?.time ?: Long.MAX_VALUE
+            } catch (e: Exception) {}
 
-           // val secondDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-           // val currentDate = secondDateFormat.format(Date())
-
-            // ✅ Updated: Check for latest cached data first
             lifecycleScope.launch {
-                val latestCached = viewmodel.getLatestCachedInvoice(storeid.toInt())
-                if (latestCached != null) {
-                    Log.d("SalesAndPayment", "✅ Loaded latest cached data for 'All Sales' view")
-                    displayInvoiceData(latestCached)
+                val cachedInvoice = viewmodel.getCachedInvoice(storeid.toInt(), todayStart, todayEnd)
+                val offlineSales = viewmodel.getOfflineSales(this@SalesAndPaymentActivity, storeid.toInt(), currentStartTimeMillis, currentEndTimeMillis)
+                val cancelledSales = viewmodel.getCancelledSalesAsNegativeSale(this@SalesAndPaymentActivity, currentStartTimeMillis, currentEndTimeMillis)
+                
+                if (cachedInvoice != null) {
+                    val mergedSales = mergeWithOfflineAndCancelledSales(cachedInvoice, offlineSales, cancelledSales)
+                    displayInvoiceData(mergedSales)
+                } else if (offlineSales.isNotEmpty() || cancelledSales.isNotEmpty()) {
+                    displayOfflineSalesOnly(offlineSales, cancelledSales)
                 }
                 
-                // ✅ Then call API to refresh
+                // ✅ Then call API for today only
                 if (NetworkUtils.isInternetAvailable(this@SalesAndPaymentActivity)) {
-                    viewmodel.callInvoiceApi(InvoiceReq(storeid.toInt(),"",""),this@SalesAndPaymentActivity)
+                    viewmodel.callInvoiceApi(InvoiceReq(storeid.toInt(), todayStart, todayEnd), this@SalesAndPaymentActivity)
                 }
             }
-            binding.calenderTextx.text = "All Sales & Payment"
+            binding.calenderTextx.text = "Today's Sales & Payment"
             dialog.dismiss()
-
         }
 
 
@@ -463,17 +477,79 @@ class SalesAndPaymentActivity : AppCompatActivity() {
     // ✅ NEW: OFFLINE SALES HELPER METHODS
 
     /**
-     * Merge API invoice response with offline sales
+     * Merge API invoice response with offline sales and cancelled sales
+     */
+    private fun mergeWithOfflineAndCancelledSales(invoiceRes: InvoiceRes, offlineSales: List<Sale>, cancelledSales: List<Sale>): InvoiceRes {
+        // Combine API sales, offline sales, and cancelled sales
+        val allSales = mutableListOf<Sale>()
+        
+        Log.d("OfflineCancelDebug", "🔀 Merging start: Adding ${cancelledSales.size} cancelled sales to unified list.")
+        
+        // Add API sales first (they have the correct server IDs)
+        allSales.addAll(invoiceRes.data.sales)
+        
+        // Group 2: Offline pending sales. Map IDs to a unique negative range (-1, -2, -3...) 
+        // to avoid collisions with API IDs and clearly flag them as offline to the ViewModel.
+        val apiInvoiceIdsOff = invoiceRes.data.sales.map { it.invoice_id }.toSet()
+        val offlineSalesToAdd = offlineSales
+            .filter { it.invoice_id !in apiInvoiceIdsOff }
+            .map { it.copy(id = -it.id) }
+        allSales.addAll(offlineSalesToAdd)
+        
+        // Group 3: Local cancellation requests. Map IDs to a different negative range (-1000001, -1000002...)
+        val apiInvoiceIdsCancel = invoiceRes.data.sales.map { it.invoice_id }.toSet()
+        val cancelledSalesToAdd = cancelledSales
+            .filter { it.invoice_id !in apiInvoiceIdsCancel }
+            .map { it.copy(id = -it.id) }
+        allSales.addAll(cancelledSalesToAdd)
+        
+        // Accurate totals from the unified list (DEDUPLICATED BY INVOICE_ID)
+        // Group by invoice_id to find the net balance for each unique invoice
+        val groupedSales = allSales.groupBy { it.invoice_id }
+        
+        // Count as "Paid" only those invoices that have a NET positive balance (not fully reversed)
+        val invoicesPaid = groupedSales.count { group -> 
+            group.value.sumOf { it.grand_total } > 0.1 // Small epsilon for floating point
+        }
+        
+        // Total Amount is the sum of ALL entries (positives minus reversals)
+        val netTotal = allSales.sumOf { it.grand_total }
+        
+        // Payments received matches net total in this view
+        val paymentsReceived = netTotal
+
+        // Create merged invoice data
+        val mergedInvoiceData = InvoiceData(
+            total_invoice_amount = netTotal,
+            invoices_paid = invoicesPaid,
+            invoices_unpaid = invoiceRes.data.invoices_unpaid,
+            payments_due = invoiceRes.data.payments_due,
+            payments_received = paymentsReceived,
+            sales = allSales.sortedByDescending { it.created_at }
+        )
+        
+//        Log.d("SalesAndPayment", "✅ Merged: ${offlineSales.size} offline + ${cancelledSales.size} cancelled + ${apiSalesNotInOffline.size} API = ${allSales.size} total sales")
+        
+        return InvoiceRes(
+            status = invoiceRes.status,
+            message = invoiceRes.message,
+            data = mergedInvoiceData
+        )
+    }
+
+    /**
+     * Merge API invoice response with offline sales (legacy method - kept for compatibility)
      */
     private fun mergeWithOfflineSales(invoiceRes: InvoiceRes, offlineSales: List<Sale>): InvoiceRes {
         // Combine API sales with offline sales
         val allSales = mutableListOf<Sale>()
         
-        // Add offline sales first (they appear at the top)
-        allSales.addAll(offlineSales)
+        // Use negative IDs for offline sales
+        val mappedOffline = offlineSales.map { it.copy(id = -it.id) }
+        allSales.addAll(mappedOffline)
         
         // Add API sales (avoid duplicates by checking invoice_id)
-        val offlineInvoiceIds = offlineSales.map { it.invoice_id }.toSet()
+        val offlineInvoiceIds = mappedOffline.map { it.invoice_id }.toSet()
         val apiSalesNotInOffline = invoiceRes.data.sales.filter { it.invoice_id !in offlineInvoiceIds }
         allSales.addAll(apiSalesNotInOffline)
         
@@ -506,23 +582,42 @@ class SalesAndPaymentActivity : AppCompatActivity() {
     /**
      * Display only offline sales (when no API/cached data available)
      */
-    private fun displayOfflineSalesOnly(offlineSales: List<Sale>) {
-        val offlineTotal = offlineSales.sumOf { it.grand_total }
+    private fun displayOfflineSalesOnly(offlineSales: List<Sale>, cancelledSales: List<Sale>) {
+        val totalList = mutableListOf<Sale>()
         
+        // Use negative IDs for list display to avoid collisions
+        val mappedOffline = offlineSales.map { it.copy(id = -it.id) }
+        val mappedCancelled = cancelledSales.map { it.copy(id = -it.id) }
+        
+        totalList.addAll(mappedCancelled)
+        totalList.addAll(mappedOffline)
+
+        // Group by invoice_id to find net balance (DEDUPLICATED)
+        val groupedSales = totalList.groupBy { it.invoice_id }
+        
+        // Count as "Paid" only those that have a net positive balance
+        val invoicesPaid = groupedSales.count { group ->
+            group.value.sumOf { it.grand_total } > 0.1
+        }
+        
+        // Net Total is sum of all positives and negatives
+        val netTotal = totalList.sumOf { it.grand_total }
+
         binding.apply {
-            invoiceText.text = NumberFormatter().formatPrice(offlineTotal.toString(), localizationData)
-            invoicePaidValue.text = offlineSales.size.toString()
+            invoiceText.text = NumberFormatter().formatPrice(netTotal.toString(), localizationData)
+            invoicePaidValue.text = invoicesPaid.toString()
             invoiceUnpaidValue.text = "0"
-            recivedvalue.text = NumberFormatter().formatPrice(offlineTotal.toString(), localizationData)
+            recivedvalue.text = NumberFormatter().formatPrice(netTotal.toString(), localizationData) 
             duevalue.text = NumberFormatter().formatPrice("0", localizationData)
         }
         
-        if (offlineSales.isNotEmpty()) {
-            sales_adapter = SalesPaymentAdapter(salesList = offlineSales, this@SalesAndPaymentActivity)
+        if (totalList.isNotEmpty()) {
+            val sortedList = totalList.sortedByDescending { it.created_at }
+            sales_adapter = SalesPaymentAdapter(salesList = sortedList, this@SalesAndPaymentActivity)
             binding.salespaymentRcv.adapter = sales_adapter
             binding.salespaymentRcv.isVisible = true
             binding.noDataFound.isVisible = false
-            Log.d("SalesAndPayment", "📴 Displaying ${offlineSales.size} offline sales")
+            Log.d("SalesAndPayment", "📴 Displaying ${totalList.size} offline & cancelled sales")
         } else {
             binding.salespaymentRcv.isVisible = false
             binding.noDataFound.isVisible = true

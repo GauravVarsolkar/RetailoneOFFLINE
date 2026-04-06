@@ -135,7 +135,7 @@ class HomeDashboardViewmodel:ViewModel() {
 
                         // 🔹 SAVE CUSTOMER FOR OFFLINE USE
                         customerRes.data?.let { customer ->
-                            localHelper.saveCustomers(listOf(customer))
+                            localHelper.saveCustomer(customer)
 
                             Log.d(
                                 "OFFLINE_SAVE",

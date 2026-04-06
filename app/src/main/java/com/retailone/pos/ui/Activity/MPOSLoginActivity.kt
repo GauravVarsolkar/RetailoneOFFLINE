@@ -24,6 +24,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.google.gson.Gson
+import com.retailone.pos.localstorage.RoomDB.PosDatabase
+import com.retailone.pos.localstorage.RoomDB.UserEntity
+import com.retailone.pos.localstorage.SharedPreference.ProfileAttendanceHelper
+import com.retailone.pos.models.UserProfileModels.UserProfileResponse
+import com.retailone.pos.utils.NetworkUtils
 //Rawanda Code
 class MPOSLoginActivity : AppCompatActivity() {
     lateinit var  binding :ActivityMposloginBinding
@@ -32,6 +38,8 @@ class MPOSLoginActivity : AppCompatActivity() {
     lateinit var  profileAttendanceViewmodel: ProfileAttendanceViewmodel
     private var loginResponse: LoginResponse? = null
     private var yourCoroutineJob: Job? = null
+    private var currentUserEmail: String = ""
+    private var currentUserPin: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,7 +104,7 @@ class MPOSLoginActivity : AppCompatActivity() {
 
         profileAttendanceViewmodel.userProfileLiveData.observe(this){
 
-          // if store id and login response is not null save the login session
+           // if store id and login response is not null save the login session
             CoroutineScope(Dispatchers.IO).launch {
                 val storeid = it.data.user_details.store_id
                 val store_manager_id = it.data.user_details.id
@@ -111,6 +119,18 @@ class MPOSLoginActivity : AppCompatActivity() {
                     loginSession.saveStoreID(storeid)
                     loginSession.saveStoreManagerID(store_manager_id.toString()) //storemanager_id
                     loginSession.storeLoginSession(loginResponse!!.data.token,true)
+
+                    // ✅ SAVE USER FOR OFFLINE LOGIN
+                    saveUserLocally(
+                        currentUserEmail,
+                        currentUserPin,
+                        loginResponse!!.data.token,
+                        storeid,
+                        store_manager_id.toString(),
+                        loginResponse!!.cashup_date_time.toString(),
+                        it // userProfileResponse
+                    )
+
                     showMessage("Login Sucessfull")
                    // navigateToActivity(FetchTOT::class.java,"USER_STATUS" ,"LoggedIn")
                     navigateToHomepage()
@@ -138,6 +158,9 @@ class MPOSLoginActivity : AppCompatActivity() {
         }*/
 
         binding.forgotpin.paintFlags = Paint.UNDERLINE_TEXT_FLAG
+
+        // Check if we came from a logout or session clear, but allow auto login if session exists?
+        // Actually, the requirement is to allow login in offline mode.
     }
 
     private fun navigateToHomepage() {
@@ -173,8 +196,65 @@ class MPOSLoginActivity : AppCompatActivity() {
        // val intent = Intent(this@MPOSLoginActivity,MPOSDashboardActivity::class.java)
         //startActivity(intent)
 
-        loginviewmodel.callLoginApi(this@MPOSLoginActivity,userid, pin,device_id)
+        currentUserEmail = userid
+        currentUserPin = pin
 
+        if (NetworkUtils.isInternetAvailable(this)) {
+            loginviewmodel.callLoginApi(this@MPOSLoginActivity,userid, pin,device_id)
+        } else {
+            // ✅ PERFORM OFFLINE LOGIN
+            lifecycleScope.launch(Dispatchers.IO) {
+                val db = PosDatabase.getDatabase(this@MPOSLoginActivity)
+                val user = db.userDao().getUserByCredentials(userid, pin)
+
+                if (user != null) {
+                    // Restore session from local data
+                    loginSession.saveStoreID(user.storeId)
+                    loginSession.saveStoreManagerID(user.storeManagerId)
+                    loginSession.storeCashupDateTime(user.cashupDateTime)
+                    loginSession.storeLoginSession(user.token, true)
+
+                    // Restore user profile in helper for other components
+                    val profileHelper = ProfileAttendanceHelper(this@MPOSLoginActivity)
+                    val gson = Gson()
+                    val profileResponse = gson.fromJson(user.userProfileJson, UserProfileResponse::class.java)
+                    profileHelper.saveUserProfile(profileResponse)
+
+                    launch(Dispatchers.Main) {
+                        showMessage("Offline Login Successful")
+                        navigateToHomepage()
+                    }
+                } else {
+                    launch(Dispatchers.Main) {
+                        showMessage("Incorrect credentials or no offline data found for this user.")
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun saveUserLocally(
+        email: String,
+        pin: String,
+        token: String,
+        storeId: String,
+        storeManagerId: String,
+        cashupTime: String,
+        profileResponse: UserProfileResponse
+    ) {
+        val db = PosDatabase.getDatabase(this)
+        val userProfileJson = Gson().toJson(profileResponse)
+        val userEntity = UserEntity(
+            email = email,
+            pin = pin,
+            token = token,
+            storeId = storeId,
+            storeManagerId = storeManagerId,
+            cashupDateTime = cashupTime,
+            userProfileJson = userProfileJson
+        )
+        db.userDao().insertOrUpdate(userEntity)
+        Log.d("OfflineLogin", "User saved for offline login: $email")
     }
 
     private fun navigateToActivity(activityClass: Class<*>) {

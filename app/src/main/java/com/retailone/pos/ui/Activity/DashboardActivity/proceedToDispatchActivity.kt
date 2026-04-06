@@ -5,6 +5,7 @@ package com.retailone.pos.ui.Activity.DashboardActivity
 import ReturnedProduct
 import StockReturn
 import StockReturnAdapter
+import StockReturnResponse
 import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -58,9 +59,26 @@ class proceedToDispatchActivity : AppCompatActivity() {
         enableBackButton()
 
         viewModel = ViewModelProvider(this)[StockReturnViewModel::class.java]
-        binding.dispatchRcv.layoutManager = LinearLayoutManager(this)
+        
+        lifecycleScope.launch {
+            // ✅ Initialize repository for offline support
+            viewModel.initRepository(this@proceedToDispatchActivity)
+            
+            val loginSession = LoginSession.getInstance(this@proceedToDispatchActivity)
+            storeid = loginSession.getStoreID().first()
+            
+            // ✅ Load from local DB first (instant, works offline!)
+            val cachedReturns = viewModel.getStockReturnsFromCache(storeid.toInt())
+            if (cachedReturns != null) {
+                // Update UI with cached data immediately
+                updateDispatchUI(cachedReturns)
+            }
 
-        viewModel.fetchStockReturns(this)
+            // ✅ Refresh from API
+            viewModel.fetchStockReturns(this@proceedToDispatchActivity)
+        }
+
+        binding.dispatchRcv.layoutManager = LinearLayoutManager(this)
 
 
       /*  viewModel.stockReturns.observe(this) {
@@ -77,47 +95,35 @@ class proceedToDispatchActivity : AppCompatActivity() {
             binding.progressBar.isVisible = it
         }
         viewModel.stockReturns.observe(this) {
-            val approvedList = it.data
-            val adapter = StockReturnAdapter(
-                approvedList,
-                onDispatchClicked = { selectedItem ->
-                    val intent = Intent(this, ConfirmReturnReceiptActivity::class.java)
-                    intent.putExtra("return_id", selectedItem.id)
-                    intent.putExtra("status", selectedItem.status)
-                    intent.putExtra("date", selectedItem.requested_date)
-                    intent.putExtra("seal_no", selectedItem.products[0].seal_no)
-                    intent.putParcelableArrayListExtra("product_list", ArrayList(selectedItem.products))
-                    startActivity(intent)
-                },
-                /*onItemClicked = { selectedItem ->
-                    showProductListBottomSheet(selectedItem.products)
-                }*/
-                onItemClicked = { selectedItem ->
-                    showProductListBottomSheet(selectedItem) // ✅ pass whole selectedItem
-                }
-
-            )
-            binding.dispatchRcv.adapter = adapter
-
-           /* val adapter = StockReturnAdapter(approvedList) { selectedItem ->
-                val intent = Intent(this, ConfirmReturnReceiptActivity::class.java)
-                intent.putExtra("return_id", selectedItem.id)
-                intent.putExtra("status",selectedItem.status)
-                intent.putExtra("date",selectedItem.requested_date)
-                intent.putParcelableArrayListExtra("product_list", ArrayList(selectedItem.products))
-                startActivity(intent)
-            }*/
-           // binding.dispatchRcv.adapter = adapter
+            updateDispatchUI(it)
         }
 
         binding.relativeLayout.setOnClickListener {
             val intent = Intent(this@proceedToDispatchActivity,GoodsReturnToWarehouseActivity::class.java)
-            //intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
 
             startActivity(intent)
         }
+    }
 
+    private fun updateDispatchUI(it: StockReturnResponse) {
+        val approvedList = it.data
+        val adapter = StockReturnAdapter(
+            approvedList,
+            onDispatchClicked = { selectedItem ->
+                val intent = Intent(this, ConfirmReturnReceiptActivity::class.java)
+                intent.putExtra("return_id", selectedItem.id)
+                intent.putExtra("status", selectedItem.status)
+                intent.putExtra("date", selectedItem.requested_date)
+                intent.putExtra("seal_no", selectedItem.products[0].seal_no)
+                intent.putParcelableArrayListExtra("product_list", ArrayList(selectedItem.products))
+                startActivity(intent)
+            },
+            onItemClicked = { selectedItem ->
+                showProductListBottomSheet(selectedItem) // ✅ pass whole selectedItem
+            }
+        )
+        binding.dispatchRcv.adapter = adapter
     }
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()

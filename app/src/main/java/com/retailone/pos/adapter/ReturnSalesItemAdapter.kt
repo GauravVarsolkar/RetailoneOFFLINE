@@ -70,12 +70,12 @@ class ReturnSalesItemAdapter(
     override fun onBindViewHolder(holder: StockSearchViewHolder, position: Int) {
         //  val isInvoiceAlreadyReturned = returnitem[0].total_refunded_amount > 0
 
-        val productitem = returnitem[0].salesItems[position]
+        val productitem = returnitem[0].salesItems?.getOrNull(position) ?: return
         val isInvoiceAlreadyReturned = returnitem[0].total_refunded_amount > 0
-        val isLooseOil = FunUtils.isLooseOil(productitem.product.id, productitem.distribution_pack.product_description)
+        val isLooseOil = FunUtils.isLooseOil(productitem.product?.id ?: -1, productitem.distribution_pack?.product_description ?: "")
 
-        holder.binding.itemName.text = productitem.product.product_name
-        holder.binding.itemDesc.text = productitem.distribution_pack.product_description
+        holder.binding.itemName.text = productitem.product?.product_name ?: productitem.product_name ?: "Unknown Item"
+        holder.binding.itemDesc.text = productitem.distribution_pack?.product_description ?: productitem.distribution_pack_name ?: ""
         holder.binding.itemUnit.text = "Purchase -  " + FunUtils.DtoString(productitem.quantity)
 
         val formattedPrice = NumberFormatter().formatPrice(productitem.retail_price.toString() ?: "-", localizationData)
@@ -95,27 +95,54 @@ class ReturnSalesItemAdapter(
             holder.binding.quantEdit.isEnabled = false
             holder.binding.addcart.isVisible = false
             holder.binding.quantLayout.isVisible = false
-            // holder.binding.returnreason.isVisible = true
             holder.binding.batchRcv.isVisible = true
             holder.binding.batchLayouts.isVisible = true
             holder.binding.quantEdit.setText(returnQty.toString())
 
-            productitem.batches?.let {
+            // ✅ Enrich batch items with the parent item's return_quantity.
+            // When data comes from the API, batch objects have return_quantity=0 because the
+            // API stores return data in sales_returns (not in the batch list). The parent
+            // SalesItem.return_quantity is correctly populated by the offline restore logic.
+            val enrichedBatches = if (!productitem.batches.isNullOrEmpty()) {
+                productitem.batches.map { batch ->
+                    if ((batch.return_quantity ?: 0) == 0 && productitem.return_quantity > 0) {
+                        batch.copy(
+                            return_quantity = productitem.return_quantity,
+                            batch_return_quantity = productitem.return_quantity,
+                            sales_item_id = batch.sales_item_id?.takeIf { it > 0 } ?: productitem.id
+                        )
+                    } else batch
+                }
+            } else if (productitem.return_quantity > 0) {
+                // No batches at all but item was returned → synthesize one for display
+                listOf(BatchReturnItem(
+                    batch = null,
+                    quantity = productitem.quantity,
+                    retail_price = productitem.retail_price,
+                    tax_exclusive_price = productitem.tax_exclusive_price,
+                    subtotal = productitem.total_amount,
+                    product_id = productitem.product_id,
+                    distribution_pack_id = productitem.distribution_pack_id,
+                    sales_item_id = productitem.id,
+                    return_quantity = productitem.return_quantity,
+                    batch_return_quantity = productitem.return_quantity,
+                    return_reason = returnReasonName
+                ))
+            } else productitem.batches // null → ?.let won't fire below
+
+            enrichedBatches?.let {
                 holder.binding.batchRcv.apply {
                     layoutManager = LinearLayoutManager(holder.itemView.context, RecyclerView.VERTICAL, false)
                     setHasFixedSize(true)
                     adapter = ReturnSalesItemBatchAdapter(
                         returnitem,
                         context,
-                        productitem.batches,
+                        enrichedBatches,
                         isInvoiceAlreadyReturned,
                         returnReasonName
                     ) { updatedBatches ->
                         updateReceivedQuantityX(updatedBatches, position)
                     }
-                    // it,
-                    // onBatchChange = {} // Read-only, so no update needed
-
                 }
             }
 
@@ -161,7 +188,7 @@ class ReturnSalesItemAdapter(
 
 
     override fun getItemCount(): Int {
-        return returnitem[0].salesItems.size
+        return returnitem[0].salesItems?.size ?: 0
     }
 
 
@@ -184,7 +211,7 @@ class ReturnSalesItemAdapter(
                       (it.batch?.trim()?.lowercase() ?: "") == batchKey
           }
 
-          if (item.batch_return_quantity > 0) {
+          if ((item.batch_return_quantity ?: 0) > 0) {
               if (existingItemIndex != -1) {
                   returnbatchItemList[existingItemIndex] = item
               } else {
@@ -199,7 +226,7 @@ class ReturnSalesItemAdapter(
       }
 
       // Ensure only items with non-zero quantity are passed
-      val filteredList = returnbatchItemList.filter { it.batch_return_quantity > 0 }
+      val filteredList = returnbatchItemList.filter { (it.batch_return_quantity ?: 0) > 0 }
       Log.d("ReturnAdapter", "Final returnbatchItemList: ${filteredList.map { it.batch to it.batch_return_quantity }}")
 
       // ✅ This filtered list will only include valid return entries
