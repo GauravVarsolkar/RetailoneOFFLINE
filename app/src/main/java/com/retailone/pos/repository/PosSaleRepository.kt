@@ -89,11 +89,17 @@ class PosSaleRepository(private val context: Context) {
                 override fun onResponse(call: Call<PosSalesDetails>, response: Response<PosSalesDetails>) {
                     if (response.isSuccessful && response.body() != null) {
                         // ✅ API success
+                        val serverPayload = response.body()!!
+                        val serverInvoiceId = serverPayload.data?.invoice_id ?: saleReq.invoice_id
+
+                        // Copy with the real server invoice ID to prevent duplicates if also returned by API list
+                        val syncedSaleReq = saleReq.copy(invoice_id = serverInvoiceId)
+
                         // ✅ API success - ALSO save locally as SYNCED for offline records
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                            saveSaleLocally(saleReq, syncStatus = "SYNCED")
+                            saveSaleLocally(syncedSaleReq, syncStatus = "SYNCED")
                         }
-                        onSuccess(response.body()!!)
+                        onSuccess(serverPayload)
                     } else {
                         // ❌ API failed, save locally
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
@@ -418,9 +424,10 @@ class PosSaleRepository(private val context: Context) {
             val response = apiService.posSale(body).execute()
 
             return if (response.isSuccessful && response.body() != null) {
-                // Success - mark as synced
-                dao.markAsSynced(sale.id, System.currentTimeMillis())
-                Log.d(TAG, "Sale ${sale.invoice_id} synced successfully")
+                // Success - mark as synced and update invoice ID to the explicit one from server
+                val serverInvoiceId = response.body()!!.data?.invoice_id ?: sale.invoice_id
+                dao.markAsSyncedWithInvoiceId(sale.id, serverInvoiceId, System.currentTimeMillis())
+                Log.d(TAG, "Sale ${sale.invoice_id} synced successfully. New ID: $serverInvoiceId")
                 true
             } else {
                 // Failed - mark as failed with error

@@ -133,7 +133,9 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
             Log.d("SalesDetails", "  Raw JSON: $item")
         }
 
-        val formattedPrice = NumberFormatter().formatPrice(salesdata.grand_total.toString(),localizationData)
+        val formattedPrice = NumberFormatter().formatPrice(
+            java.math.BigDecimal(salesdata.grand_total.toString()).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(), localizationData
+        )
         val sum = salesdata.summary
         val subtotalValue = (sum?.total_sub_total ?: salesdata.sub_total)
         val taxValue      = (sum?.total_tax_amount ?: salesdata.tax_amount)

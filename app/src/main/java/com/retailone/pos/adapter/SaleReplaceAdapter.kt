@@ -42,7 +42,7 @@ class SaleReplaceAdapter(
 
         holder.invoiceId.text = item.invoice_id
         holder.saleDate.text = item.sale_date_time
-        holder.totalAmount.text = "RWF${item.grand_total}"
+        holder.totalAmount.text = "RWF${String.format(java.util.Locale.US, "%.2f", java.math.BigDecimal.valueOf(item.grand_total).setScale(0, java.math.RoundingMode.HALF_UP).toDouble())}"
         holder.paymentType.text = item.payment_type
 
         // Parse amounts

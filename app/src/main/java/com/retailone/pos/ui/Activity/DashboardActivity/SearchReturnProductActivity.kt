@@ -407,7 +407,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
             binding.taxAmount.setText(roundedTax.toPlainString())
             binding.alltotalAmount.setText(
-                NumberFormatter().formatPrice(grandValue.toString(), localizationData)
+                NumberFormatter().formatPrice(java.math.BigDecimal.valueOf(grandValue).setScale(0, RoundingMode.HALF_UP).toPlainString(), localizationData)
             )
 
             // ✅ Show spot discount label in tax field area if applicable

@@ -192,7 +192,7 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                 posAddToCartRes.discount_amount.toString(), localizationData
             )
             alltotalAmount.text = NumberFormatter().formatPrice(
-                posAddToCartRes.grand_total.toString(), localizationData
+                java.math.BigDecimal(posAddToCartRes.grand_total.toString()).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(), localizationData
             )
         }
 

@@ -1443,7 +1443,7 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         val grandTotal = subtotal
         binding.subtotal.setText(String.format(Locale.US, "%.2f", subtotal))
         binding.taxAmount.setText(String.format(Locale.US, "%.2f", taxAmount))
-        binding.alltotalAmount.setText(String.format(Locale.US, "%.2f", grandTotal))
+        binding.alltotalAmount.setText(String.format(Locale.US, "%.2f", java.math.BigDecimal.valueOf(grandTotal).setScale(0, java.math.RoundingMode.HALF_UP).toDouble()))
     }
 
     private fun showSucessDialog(msg: String, returnSaleRes: ReturnSaleRes) {

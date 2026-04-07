@@ -320,7 +320,7 @@ class ReplacedSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener
         returnItemList[position].refund_amount = newQuantity * returnItemList[position].retail_price
         var refundTotal = 0.0
         returnItemList.forEach { if (it.refund_amount != 0.0) refundTotal += it.refund_amount }
-        binding.rlPrice2.text = NumberFormatter().formatPrice(refundTotal.toString(), localizationData)
+        binding.rlPrice2.text = NumberFormatter().formatPrice(java.math.BigDecimal.valueOf(refundTotal).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(), localizationData)
     }
 
     private fun showSucessDialog(msg: String, returnSaleRes: ReturnSaleRes) {

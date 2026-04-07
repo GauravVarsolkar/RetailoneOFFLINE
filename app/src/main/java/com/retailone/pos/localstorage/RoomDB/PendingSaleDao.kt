@@ -65,6 +65,17 @@ interface PendingSaleDao {
     """)
     suspend fun markAsSynced(saleId: Int, timestamp: Long)
 
+    // Mark sale as synced and update its invoice ID to the server's invoice ID
+    @Query("""
+        UPDATE pending_sales 
+        SET sync_status = 'SYNCED', 
+            synced_at = :timestamp,
+            error_message = NULL,
+            invoice_id = :serverInvoiceId
+        WHERE id = :saleId
+    """)
+    suspend fun markAsSyncedWithInvoiceId(saleId: Int, serverInvoiceId: String, timestamp: Long)
+
     // Delete synced sales older than X days (cleanup)
     @Query("DELETE FROM pending_sales WHERE sync_status = 'SYNCED' AND synced_at < :timestamp")
     suspend fun deleteSyncedSalesOlderThan(timestamp: Long)

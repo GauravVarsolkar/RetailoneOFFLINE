@@ -604,10 +604,10 @@ class SalesAndPaymentActivity : AppCompatActivity() {
         val netTotal = totalList.sumOf { it.grand_total }
 
         binding.apply {
-            invoiceText.text = NumberFormatter().formatPrice(netTotal.toString(), localizationData)
+            invoiceText.text = NumberFormatter().formatPrice(java.math.BigDecimal.valueOf(netTotal).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(), localizationData)
             invoicePaidValue.text = invoicesPaid.toString()
             invoiceUnpaidValue.text = "0"
-            recivedvalue.text = NumberFormatter().formatPrice(netTotal.toString(), localizationData) 
+            recivedvalue.text = NumberFormatter().formatPrice(java.math.BigDecimal.valueOf(netTotal).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(), localizationData) 
             duevalue.text = NumberFormatter().formatPrice("0", localizationData)
         }
         
@@ -635,11 +635,11 @@ class SalesAndPaymentActivity : AppCompatActivity() {
         val paymentdue = invoiceRes.data.payments_due.toString()
 
         binding.apply{
-            invoiceText.text = NumberFormatter().formatPrice(invoicevalue,localizationData)
+            invoiceText.text = NumberFormatter().formatPrice(java.math.BigDecimal(invoicevalue).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(),localizationData)
             invoicePaidValue.text = invoicepaid
             invoiceUnpaidValue.text = invoiceunpaid
-            recivedvalue.text = NumberFormatter().formatPrice(paymentrcvd,localizationData)
-            duevalue.text = NumberFormatter().formatPrice(paymentdue,localizationData)
+            recivedvalue.text = NumberFormatter().formatPrice(java.math.BigDecimal(paymentrcvd).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(),localizationData)
+            duevalue.text = NumberFormatter().formatPrice(java.math.BigDecimal(paymentdue).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString(),localizationData)
         }
         
         val salelist = invoiceRes.data.sales
