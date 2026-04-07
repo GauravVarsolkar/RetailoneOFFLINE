@@ -48,6 +48,20 @@
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Copy Receipt Button -->
+    <Button
+        android:id="@+id/btnCopyReceipt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Copy Receipt"
+        android:textColor="@android:color/white"
+        android:background="@color/primary"
+        app:layout_constraintTop_toBottomOf="@id/appbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Fixed bottom action -->
     <Button
         android:id="@+id/btnConfirmcancel"
@@ -61,7 +75,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Scrollable content sits BETWEEN appbar and bottom button -->
+    <!-- Scrollable content sits BETWEEN Copy Receipt button and bottom button -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/nested"
         android:layout_width="0dp"
@@ -70,7 +84,7 @@
         android:isScrollContainer="true"
         android:clipToPadding="false"
         android:paddingBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/appbar"
+        app:layout_constraintTop_toBottomOf="@id/btnCopyReceipt"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btnConfirmcancel">
@@ -180,6 +194,31 @@
                         android:textSize="14dp" />
 
                     <TextView
+                        android:id="@+id/spot_discount_percent_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="Spot Discount"
+                        android:textColor="@color/colorgreytwo"
+                        android:textSize="14dp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/spot_discount_amount_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="@font/avenirnextltpro_medium"
+                        android:text="Spot Discount Amount"
+                        android:textColor="@color/colorgreytwo"
+                        android:textSize="14dp"
+                        android:visibility="gone" />
+
+
+                    <TextView
                         android:id="@+id/paymenttype"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -268,7 +307,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- 📌 Summary card shown AFTER the list -->
+            <!-- Summary card shown AFTER the list -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/summaryCard"
                 android:layout_width="0dp"
@@ -404,302 +443,303 @@
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
+
     <!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--    xmlns:tools="http://schemas.android.com/tools"-->
-<!--    android:layout_width="match_parent"-->
-<!--    android:layout_height="match_parent"-->
-<!--    tools:context=".ui.Activity.DashboardActivity.PointOfSaleActivity">-->
+    <!--<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
+    <!--    xmlns:tools="http://schemas.android.com/tools"-->
+    <!--    android:layout_width="match_parent"-->
+    <!--    android:layout_height="match_parent"-->
+    <!--    tools:context=".ui.Activity.DashboardActivity.PointOfSaleActivity">-->
 
-<!--    <com.google.android.material.appbar.AppBarLayout-->
-<!--        android:id="@+id/appbar"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        app:elevation="1dp"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent">-->
+    <!--    <com.google.android.material.appbar.AppBarLayout-->
+    <!--        android:id="@+id/appbar"-->
+    <!--        android:layout_width="0dp"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        app:elevation="1dp"-->
+    <!--        app:layout_constraintTop_toTopOf="parent"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent">-->
 
-<!--        <com.google.android.material.appbar.MaterialToolbar-->
-<!--            android:id="@+id/toolbar"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="?attr/actionBarSize"-->
-<!--            android:background="@color/primary"-->
-<!--            android:minHeight="?attr/actionBarSize"-->
-<!--            android:theme="?attr/actionBarTheme">-->
+    <!--        <com.google.android.material.appbar.MaterialToolbar-->
+    <!--            android:id="@+id/toolbar"-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="?attr/actionBarSize"-->
+    <!--            android:background="@color/primary"-->
+    <!--            android:minHeight="?attr/actionBarSize"-->
+    <!--            android:theme="?attr/actionBarTheme">-->
 
-<!--            <LinearLayout-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="center_horizontal"-->
-<!--                android:gravity="center_horizontal"-->
-<!--                android:orientation="horizontal"-->
-<!--                android:weightSum="1">-->
+    <!--            <LinearLayout-->
+    <!--                android:layout_width="match_parent"-->
+    <!--                android:layout_height="wrap_content"-->
+    <!--                android:layout_gravity="center_horizontal"-->
+    <!--                android:gravity="center_horizontal"-->
+    <!--                android:orientation="horizontal"-->
+    <!--                android:weightSum="1">-->
 
-<!--                <ImageView-->
-<!--                    android:id="@+id/image"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_gravity="center"-->
-<!--                    android:layout_marginVertical="5dp"-->
-<!--                    android:layout_marginEnd="56dp"-->
-<!--                    android:layout_weight="0.5"-->
-<!--                    android:adjustViewBounds="true"-->
-<!--                    android:backgroundTint="#fff"-->
-<!--                    android:padding="4dp"-->
-<!--                    android:src="@drawable/mlogo" />-->
-<!--            </LinearLayout>-->
+    <!--                <ImageView-->
+    <!--                    android:id="@+id/image"-->
+    <!--                    android:layout_width="wrap_content"-->
+    <!--                    android:layout_height="wrap_content"-->
+    <!--                    android:layout_gravity="center"-->
+    <!--                    android:layout_marginVertical="5dp"-->
+    <!--                    android:layout_marginEnd="56dp"-->
+    <!--                    android:layout_weight="0.5"-->
+    <!--                    android:adjustViewBounds="true"-->
+    <!--                    android:backgroundTint="#fff"-->
+    <!--                    android:padding="4dp"-->
+    <!--                    android:src="@drawable/mlogo" />-->
+    <!--            </LinearLayout>-->
 
-<!--        </com.google.android.material.appbar.MaterialToolbar>-->
-<!--    </com.google.android.material.appbar.AppBarLayout>-->
+    <!--        </com.google.android.material.appbar.MaterialToolbar>-->
+    <!--    </com.google.android.material.appbar.AppBarLayout>-->
 
-<!--    &lt;!&ndash; Fixed bottom action &ndash;&gt;-->
-<!--    <Button-->
-<!--        android:id="@+id/btnConfirmcancel"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="Cancellation"-->
-<!--        android:textColor="@android:color/white"-->
-<!--        android:background="@color/primary"-->
-<!--        android:visibility="gone"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent" />-->
+    <!--    &lt;!&ndash; Fixed bottom action &ndash;&gt;-->
+    <!--    <Button-->
+    <!--        android:id="@+id/btnConfirmcancel"-->
+    <!--        android:layout_width="0dp"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:text="Cancellation"-->
+    <!--        android:textColor="@android:color/white"-->
+    <!--        android:background="@color/primary"-->
+    <!--        android:visibility="gone"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintBottom_toBottomOf="parent" />-->
 
-<!--    &lt;!&ndash; Scrollable content sits BETWEEN appbar (top) and button (bottom) &ndash;&gt;-->
-<!--    <androidx.core.widget.NestedScrollView-->
-<!--        android:id="@+id/nested"-->
-<!--        android:layout_width="0dp"-->
-<!--        android:layout_height="0dp"-->
-<!--        android:fillViewport="true"-->
-<!--        android:isScrollContainer="true"-->
-<!--        android:clipToPadding="false"-->
-<!--        android:paddingBottom="8dp"-->
-<!--        app:layout_constraintTop_toBottomOf="@id/appbar"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintBottom_toTopOf="@id/btnConfirmcancel">-->
+    <!--    &lt;!&ndash; Scrollable content sits BETWEEN appbar (top) and button (bottom) &ndash;&gt;-->
+    <!--    <androidx.core.widget.NestedScrollView-->
+    <!--        android:id="@+id/nested"-->
+    <!--        android:layout_width="0dp"-->
+    <!--        android:layout_height="0dp"-->
+    <!--        android:fillViewport="true"-->
+    <!--        android:isScrollContainer="true"-->
+    <!--        android:clipToPadding="false"-->
+    <!--        android:paddingBottom="8dp"-->
+    <!--        app:layout_constraintTop_toBottomOf="@id/appbar"-->
+    <!--        app:layout_constraintStart_toStartOf="parent"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintBottom_toTopOf="@id/btnConfirmcancel">-->
 
-<!--        <androidx.constraintlayout.widget.ConstraintLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:paddingBottom="8dp">-->
+    <!--        <androidx.constraintlayout.widget.ConstraintLayout-->
+    <!--            android:layout_width="match_parent"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:paddingBottom="8dp">-->
 
-<!--            <com.google.android.material.card.MaterialCardView-->
-<!--                android:id="@+id/barcodecard"-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginStart="16dp"-->
-<!--                android:layout_marginTop="16dp"-->
-<!--                android:layout_marginEnd="16dp"-->
-<!--                android:visibility="gone"-->
-<!--                app:layout_constraintTop_toTopOf="parent"-->
-<!--                app:layout_constraintStart_toStartOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent">-->
+    <!--            <com.google.android.material.card.MaterialCardView-->
+    <!--                android:id="@+id/barcodecard"-->
+    <!--                android:layout_width="0dp"-->
+    <!--                android:layout_height="wrap_content"-->
+    <!--                android:layout_marginStart="16dp"-->
+    <!--                android:layout_marginTop="16dp"-->
+    <!--                android:layout_marginEnd="16dp"-->
+    <!--                android:visibility="gone"-->
+    <!--                app:layout_constraintTop_toTopOf="parent"-->
+    <!--                app:layout_constraintStart_toStartOf="parent"-->
+    <!--                app:layout_constraintEnd_toEndOf="parent">-->
 
-<!--                <androidx.constraintlayout.widget.ConstraintLayout-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="55dp"-->
-<!--                    android:background="@color/white">-->
+    <!--                <androidx.constraintlayout.widget.ConstraintLayout-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="55dp"-->
+    <!--                    android:background="@color/white">-->
 
-<!--                    <com.google.android.material.textfield.TextInputLayout-->
-<!--                        android:id="@+id/mobile_layout"-->
-<!--                        android:layout_width="0dp"-->
-<!--                        android:layout_height="match_parent"-->
-<!--                        android:hint="Find or scan barcode"-->
-<!--                        android:paddingTop="8dp"-->
-<!--                        android:paddingBottom="14dp"-->
-<!--                        app:boxBackgroundMode="none"-->
-<!--                        app:endIconMode="clear_text"-->
-<!--                        app:layout_constraintTop_toTopOf="parent"-->
-<!--                        app:layout_constraintStart_toStartOf="parent"-->
-<!--                        app:layout_constraintEnd_toEndOf="parent">-->
+    <!--                    <com.google.android.material.textfield.TextInputLayout-->
+    <!--                        android:id="@+id/mobile_layout"-->
+    <!--                        android:layout_width="0dp"-->
+    <!--                        android:layout_height="match_parent"-->
+    <!--                        android:hint="Find or scan barcode"-->
+    <!--                        android:paddingTop="8dp"-->
+    <!--                        android:paddingBottom="14dp"-->
+    <!--                        app:boxBackgroundMode="none"-->
+    <!--                        app:endIconMode="clear_text"-->
+    <!--                        app:layout_constraintTop_toTopOf="parent"-->
+    <!--                        app:layout_constraintStart_toStartOf="parent"-->
+    <!--                        app:layout_constraintEnd_toEndOf="parent">-->
 
-<!--                        <com.google.android.material.textfield.TextInputEditText-->
-<!--                            android:id="@+id/mobileedit"-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="match_parent"-->
-<!--                            android:layout_marginHorizontal="4dp"-->
-<!--                            android:background="#00000000"-->
-<!--                            android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                            android:inputType="text|number"-->
-<!--                            android:padding="0dp"-->
-<!--                            android:singleLine="true"-->
-<!--                            android:textColor="@color/black"-->
-<!--                            android:textSize="17dp"-->
-<!--                            android:textStyle="normal" />-->
-<!--                    </com.google.android.material.textfield.TextInputLayout>-->
-<!--                </androidx.constraintlayout.widget.ConstraintLayout>-->
-<!--            </com.google.android.material.card.MaterialCardView>-->
+    <!--                        <com.google.android.material.textfield.TextInputEditText-->
+    <!--                            android:id="@+id/mobileedit"-->
+    <!--                            android:layout_width="match_parent"-->
+    <!--                            android:layout_height="match_parent"-->
+    <!--                            android:layout_marginHorizontal="4dp"-->
+    <!--                            android:background="#00000000"-->
+    <!--                            android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                            android:inputType="text|number"-->
+    <!--                            android:padding="0dp"-->
+    <!--                            android:singleLine="true"-->
+    <!--                            android:textColor="@color/black"-->
+    <!--                            android:textSize="17dp"-->
+    <!--                            android:textStyle="normal" />-->
+    <!--                    </com.google.android.material.textfield.TextInputLayout>-->
+    <!--                </androidx.constraintlayout.widget.ConstraintLayout>-->
+    <!--            </com.google.android.material.card.MaterialCardView>-->
 
-<!--            <LinearLayout-->
-<!--                android:id="@+id/linearbar"-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginTop="8dp"-->
-<!--                android:orientation="vertical"-->
-<!--                app:layout_constraintTop_toBottomOf="@id/barcodecard"-->
-<!--                app:layout_constraintStart_toStartOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent">-->
+    <!--            <LinearLayout-->
+    <!--                android:id="@+id/linearbar"-->
+    <!--                android:layout_width="0dp"-->
+    <!--                android:layout_height="wrap_content"-->
+    <!--                android:layout_marginTop="8dp"-->
+    <!--                android:orientation="vertical"-->
+    <!--                app:layout_constraintTop_toBottomOf="@id/barcodecard"-->
+    <!--                app:layout_constraintStart_toStartOf="parent"-->
+    <!--                app:layout_constraintEnd_toEndOf="parent">-->
 
-<!--                <LinearLayout-->
-<!--                    android:id="@+id/order_layout"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginHorizontal="8dp"-->
-<!--                    android:background="@drawable/shape_curve_grey_small"-->
-<!--                    android:backgroundTint="@color/white"-->
-<!--                    android:orientation="vertical"-->
-<!--                    android:paddingVertical="6dp">-->
+    <!--                <LinearLayout-->
+    <!--                    android:id="@+id/order_layout"-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="wrap_content"-->
+    <!--                    android:layout_marginHorizontal="8dp"-->
+    <!--                    android:background="@drawable/shape_curve_grey_small"-->
+    <!--                    android:backgroundTint="@color/white"-->
+    <!--                    android:orientation="vertical"-->
+    <!--                    android:paddingVertical="6dp">-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/order_id"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="OrderID"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="15dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/order_id"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="OrderID"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="15dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/date"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Date"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/date"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Date"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/grandtotal"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Grand total"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/grandtotal"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Grand total"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/paymenttype"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Payment type"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/paymenttype"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Payment type"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/customername"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Customer name"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/customername"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Customer name"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/storename"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Store name"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/storename"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Store name"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/vat"-->
-<!--                        android:visibility="gone"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginStart="8dp"-->
-<!--                        android:layout_marginTop="4dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="VAT"-->
-<!--                        android:textColor="@color/colorgreytwo"-->
-<!--                        android:textSize="14dp" />-->
-<!--                </LinearLayout>-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/vat"-->
+    <!--                        android:visibility="gone"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_marginStart="8dp"-->
+    <!--                        android:layout_marginTop="4dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="VAT"-->
+    <!--                        android:textColor="@color/colorgreytwo"-->
+    <!--                        android:textSize="14dp" />-->
+    <!--                </LinearLayout>-->
 
-<!--                <RelativeLayout-->
-<!--                    android:id="@+id/rl1"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginTop="10dp">-->
+    <!--                <RelativeLayout-->
+    <!--                    android:id="@+id/rl1"-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="wrap_content"-->
+    <!--                    android:layout_marginTop="10dp">-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/leftTextView"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_alignParentStart="true"-->
-<!--                        android:layout_marginStart="16dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Sales Items"-->
-<!--                        android:textColor="@color/textdark"-->
-<!--                        android:textSize="17dp" />-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/leftTextView"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_alignParentStart="true"-->
+    <!--                        android:layout_marginStart="16dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Sales Items"-->
+    <!--                        android:textColor="@color/textdark"-->
+    <!--                        android:textSize="17dp" />-->
 
-<!--                    <TextView-->
-<!--                        android:id="@+id/rightTextView"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_alignParentEnd="true"-->
-<!--                        android:layout_marginEnd="16dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text="Received Qty"-->
-<!--                        android:textColor="@color/primary"-->
-<!--                        android:textSize="17dp"-->
-<!--                        android:visibility="gone" />-->
-<!--                </RelativeLayout>-->
-<!--            </LinearLayout>-->
+    <!--                    <TextView-->
+    <!--                        android:id="@+id/rightTextView"-->
+    <!--                        android:layout_width="wrap_content"-->
+    <!--                        android:layout_height="wrap_content"-->
+    <!--                        android:layout_alignParentEnd="true"-->
+    <!--                        android:layout_marginEnd="16dp"-->
+    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+    <!--                        android:text="Received Qty"-->
+    <!--                        android:textColor="@color/primary"-->
+    <!--                        android:textSize="17dp"-->
+    <!--                        android:visibility="gone" />-->
+    <!--                </RelativeLayout>-->
+    <!--            </LinearLayout>-->
 
-<!--            &lt;!&ndash; Let RecyclerView grow; it will be inside the NestedScrollView &ndash;&gt;-->
-<!--            <androidx.recyclerview.widget.RecyclerView-->
-<!--                android:id="@+id/items_rcv"-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginStart="8dp"-->
-<!--                android:layout_marginTop="2dp"-->
-<!--                android:layout_marginEnd="8dp"-->
-<!--                app:layout_constraintTop_toBottomOf="@id/linearbar"-->
-<!--                app:layout_constraintStart_toStartOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent" />-->
+    <!--            &lt;!&ndash; Let RecyclerView grow; it will be inside the NestedScrollView &ndash;&gt;-->
+    <!--            <androidx.recyclerview.widget.RecyclerView-->
+    <!--                android:id="@+id/items_rcv"-->
+    <!--                android:layout_width="0dp"-->
+    <!--                android:layout_height="wrap_content"-->
+    <!--                android:layout_marginStart="8dp"-->
+    <!--                android:layout_marginTop="2dp"-->
+    <!--                android:layout_marginEnd="8dp"-->
+    <!--                app:layout_constraintTop_toBottomOf="@id/linearbar"-->
+    <!--                app:layout_constraintStart_toStartOf="parent"-->
+    <!--                app:layout_constraintEnd_toEndOf="parent" />-->
 
 
-<!--            <androidx.cardview.widget.CardView-->
-<!--                android:id="@+id/progress"-->
-<!--                android:layout_width="50dp"-->
-<!--                android:layout_height="50dp"-->
-<!--                android:visibility="gone"-->
-<!--                app:cardBackgroundColor="@color/background_color"-->
-<!--                app:cardCornerRadius="50dp"-->
-<!--                app:layout_constraintTop_toTopOf="parent"-->
-<!--                app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                app:layout_constraintStart_toStartOf="parent"-->
-<!--                app:layout_constraintEnd_toEndOf="parent">-->
+    <!--            <androidx.cardview.widget.CardView-->
+    <!--                android:id="@+id/progress"-->
+    <!--                android:layout_width="50dp"-->
+    <!--                android:layout_height="50dp"-->
+    <!--                android:visibility="gone"-->
+    <!--                app:cardBackgroundColor="@color/background_color"-->
+    <!--                app:cardCornerRadius="50dp"-->
+    <!--                app:layout_constraintTop_toTopOf="parent"-->
+    <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--                app:layout_constraintStart_toStartOf="parent"-->
+    <!--                app:layout_constraintEnd_toEndOf="parent">-->
 
-<!--                <ProgressBar-->
-<!--                    style="?android:attr/progressBarStyleLarge"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="match_parent"-->
-<!--                    android:layout_margin="5dp"-->
-<!--                    android:indeterminate="true"-->
-<!--                    android:indeterminateDrawable="@drawable/custom_progress"-->
-<!--                    android:indeterminateDuration="800" />-->
-<!--            </androidx.cardview.widget.CardView>-->
+    <!--                <ProgressBar-->
+    <!--                    style="?android:attr/progressBarStyleLarge"-->
+    <!--                    android:layout_width="match_parent"-->
+    <!--                    android:layout_height="match_parent"-->
+    <!--                    android:layout_margin="5dp"-->
+    <!--                    android:indeterminate="true"-->
+    <!--                    android:indeterminateDrawable="@drawable/custom_progress"-->
+    <!--                    android:indeterminateDuration="800" />-->
+    <!--            </androidx.cardview.widget.CardView>-->
 
-<!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
-<!--    </androidx.core.widget.NestedScrollView>-->
+    <!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
+    <!--    </androidx.core.widget.NestedScrollView>-->
 
-<!--</androidx.constraintlayout.widget.ConstraintLayout>-->
+    <!--</androidx.constraintlayout.widget.ConstraintLayout>-->
 
-<!-- -->
+    <!-- -->

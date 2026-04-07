@@ -187,7 +187,9 @@ object OfflineCartCalculator {
             sub_total = subTotalRounded,
             sub_total_after_discount = subTotalRounded - grandDiscount,
             tax = "@${maxTaxRate}%",
-            tax_amount = taxRounded.toString()
+            tax_amount = taxRounded.toString(),
+            spot_discount_percentage = "0",
+            spot_discount_amount = "0"
         )
     }
 }

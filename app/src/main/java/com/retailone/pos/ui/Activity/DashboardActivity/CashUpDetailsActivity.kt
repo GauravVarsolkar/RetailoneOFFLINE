@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import com.retailone.pos.utils.FeatureManager
 import java.util.Locale
 import java.util.TimeZone
 //Rwanda for this code enabled
@@ -627,11 +628,19 @@ class CashUpDetailsActivity : AppCompatActivity(), IRSReaderListener {
                     petty_cash_out = strToDouble(binding.r3tv2.text.toString()),
                     pettycash_expected = strToDouble(pettycashval),
                     petty_cash_closing_balance_entered = strToDouble(pettycashedit),
+                    startTotalizer_value = 0.0,
+                    startTotalizer_mode = "",
+                    endTotalizer_value = "",
+                    endTotalizer_mode = ""
                 )
 
                 // Log.d("cashup", Gson().toJson(cashupSubmitReq).toString())
 
-                showConfirmCashupDialog(cashupSubmitReq,this)
+                if(FeatureManager.isEnabled("totalizer")){
+                    showConfirmEndTotValue()
+                }else{
+                    showConfirmCashupDialog(cashupSubmitReq,this)
+                }
             }
 
         }
@@ -771,10 +780,10 @@ class CashUpDetailsActivity : AppCompatActivity(), IRSReaderListener {
                         petty_cash_out = strToDouble(binding.r3tv2.text.toString()),
                         pettycash_expected = strToDouble(pettycashval),
                         petty_cash_closing_balance_entered = strToDouble(pettycashedit),
-                       /* startTotalizer_value = strToDouble(startTotalizer.toString()),
+                        startTotalizer_value = strToDouble(startTotalizer.toString()),
                         startTotalizer_mode = str_mode.toString(),
                         endTotalizer_value = endTOTValue,
-                        endTotalizer_mode = mode.toString()*/
+                        endTotalizer_mode = mode.toString()
                     )
                     val editor = sharedPreferences.edit()
                     editor.clear()

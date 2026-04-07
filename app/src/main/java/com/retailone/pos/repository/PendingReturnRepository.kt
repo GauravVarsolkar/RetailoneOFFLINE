@@ -247,7 +247,7 @@ class PendingReturnRepository(private val context: Context) {
                     val saleDetails = detailedSaleRepo.getDetailedSaleByInvoiceId(invoiceId)
 
                     if (saleDetails != null) {
-                        val grandTotal = (saleDetails.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+                        val grandTotal = saleDetails.grand_total
                         val reasonId = returnRequest.reason_id ?: -1
                         detailedSaleRepo.updateRefundedAmount(invoiceId, grandTotal, reasonId)
                         Log.d("OFFLINE_SYNC_DEBUG", "💾 [CACHE] Updated local cache for $invoiceId")

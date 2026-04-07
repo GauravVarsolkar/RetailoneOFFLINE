@@ -1,23 +1,24 @@
 package com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel
 
+import com.retailone.pos.models.PosSalesDetailsModel.TaxSummary
 import com.retailone.pos.models.PosSalesDetailsModel.VsdcReceipt
 
 
 data class Data(
-    val returned_items: List<ReturnedItem>,
+    val returned_items: List<ReturnedItem>?,
 
 // totals & invoice
-    val total: Double,
-    val returned_invoice_id: String,
-    val grand_total: String?, // "796.55"
+    val total: Double?,
+    val returned_invoice_id: String?,
+//    val grand_total: String?, // "796.55"
 
 // tax block
     val tax: String?, // "16.00"
-    val tax_amount: String?, // "96.55"
+    val tax_amount: Double?, // Changed from Int? to Double?
     val tax_ex: String?, // "0.00"
 
 // store + meta
-    val store: Store,
+    val store: Store?,
 
 // optional meta fields (can be empty or omitted)
     val vat_no: String?,
@@ -29,15 +30,19 @@ data class Data(
     val receipt_no: String?,
     val internal_data: String?,
     val receipt_sign: String?,
-    val rcptType: String,
-    val subtal: String,
+    val rcptType: String?,
+    val subtal: String?,
+    val sub_total: Double?, // Changed from Int to Double?
+    val grand_total: Double?,
+    val tax_summery: List<TaxSummary>?,
+    val ogRcpt_no: Double?,
 
 // NOTE: not present in your sample; keep it nullable if backend may send later
     val returned_date: String? = null,
 
 // customer (nullable in payload)
     val customer_name: String?,
-    val vsdc_reciept: VsdcReceipt?,
+    val vsdc_reciept: List<VsdcReceipt>?,
     val customer_mob_no: String?
 )
 

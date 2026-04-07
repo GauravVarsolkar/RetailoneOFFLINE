@@ -25,5 +25,12 @@ data class UserDetails(
     val updated_at: String,
     val user_type: Any,
     val username: Any,
-    val store_name: String?
+    val store_name: String?,
+    val organization: OrganizationDetails? = null  // ✅ NEW
+)
+
+data class OrganizationDetails(
+    val id: Int,
+    val name: String,
+    val modules: List<String> = emptyList()
 )

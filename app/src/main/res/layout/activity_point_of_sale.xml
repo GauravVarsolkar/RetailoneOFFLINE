@@ -93,8 +93,7 @@
                             android:text="Enter product name or scan"
                             android:textSize="17dp"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            tools:layout_editor_absoluteX="8dp"
-                            android:paddingHorizontal="8sp"/>
+                            tools:layout_editor_absoluteX="8dp" />
 
                         <ImageView
                             android:id="@+id/barcodeimage"
@@ -110,6 +109,100 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/spotDiscountCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/barcodecard">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp">
+
+                        <!-- Question Row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/spotDiscountQuestion"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:text="Do you want to apply on-spot discount?"
+                                android:textColor="@color/black"
+                                android:textSize="13sp" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <CheckBox
+                                    android:id="@+id/checkboxYes"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:button="@null"
+                                    android:text="Yes"
+                                    android:drawableEnd="@null"
+                                    android:fontFamily="@font/poppins_regular"
+                                    android:textSize="13sp"
+                                    android:paddingStart="4dp" />
+
+                                <CheckBox
+                                    android:id="@+id/checkboxNo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:button="@null"
+                                    android:text="No"
+                                    android:fontFamily="@font/poppins_regular"
+                                    android:textSize="13sp"
+                                    android:layout_marginStart="12dp"
+                                    android:paddingStart="4dp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Discount Input — hidden by default -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/spotDiscountInputLayout"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="Enter on spot discount (%)"
+                            android:visibility="gone">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/spotDiscountInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:maxLines="1"
+                                android:fontFamily="@font/poppins_regular"
+                                android:textSize="14sp" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+
                 <!-- CART LIST (items already added to cart) -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/positem_rcv"
@@ -121,7 +214,7 @@
                     android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/barcodecard" />
+                    app:layout_constraintTop_toBottomOf="@+id/spotDiscountCard" />
 
                 <!-- AVAILABLE PRODUCT LIST (shown initially instead of "Select Product" placeholder) -->
 
@@ -138,7 +231,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/barcodecard"
+                    app:layout_constraintTop_toBottomOf="@+id/spotDiscountCard"
                     app:layout_constraintVertical_bias="0.0" />
 
                 <com.google.android.material.card.MaterialCardView
@@ -192,6 +285,44 @@
                                 android:textColor="@color/goodgrey"
                                 android:textSize="14sp" />
                         </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/spotDiscountRow"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/shape_curve_grey_small"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
+                            android:visibility="gone"
+                            android:weightSum="1">
+
+                            <TextView
+                                android:id="@+id/spotDiscountPercentField"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/poppins_regular"
+                                android:gravity="left"
+                                android:text="Spot Discount"
+                                android:textAppearance="?android:attr/textAppearanceSmall"
+                                android:textColor="#000" />
+
+                            <TextView
+                                android:id="@+id/spotDiscountAmountValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_regular"
+                                android:gravity="right"
+                                android:text="-"
+                                android:textColor="@color/goodgrey"
+                                android:textSize="14sp" />
+
+                        </LinearLayout>
+
 
                         <LinearLayout
                             android:id="@+id/taxLayout"

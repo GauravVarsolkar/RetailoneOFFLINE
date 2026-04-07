@@ -32,6 +32,10 @@ object Constants {
      //const val BASE_URL = "https://retailone.ahirentals.com/api/"
      //const val IMAGE_URL = "https://retailone.ahirentals.com/"
 
+    // zra
+    const val BASE_URL = "https://zra.ahirentals.com/api/"
+    const val IMAGE_URL = "https://zra.ahirentals.com/"
+
 //live working
      //const val BASE_URL = "https://retail-uat.mountmerugroup.com/api/"
      //const val IMAGE_URL = " https://retail-uat.mountmerugroup.com/"
@@ -41,8 +45,8 @@ object Constants {
 
 
     //csiuat//work
-   const val BASE_URL = "https://csiuat.ahirentals.com/api/"
-   const val IMAGE_URL = "https://csiuat.ahirentals.com/"
+//   const val BASE_URL = "https://csiuat.ahirentals.com/api/"
+//   const val IMAGE_URL = "https://csiuat.ahirentals.com/"
 
     //pre-prod
 //    const val BASE_URL = "https://retail-preprod.mountmerugroup.com/api/"

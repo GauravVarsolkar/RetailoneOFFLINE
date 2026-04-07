@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import com.retailone.pos.ui.Activity.DashboardActivity.*
 import com.retailone.pos.utils.CrashHandler
+import com.retailone.pos.utils.FeatureManager
 import com.retailone.pos.utils.NetworkUtils
 import com.retailone.pos.viewmodels.DashboardViewodel.HomeDashboardViewmodel
 import com.retailone.pos.viewmodels.MPOSLoginViewmodel
@@ -151,6 +152,11 @@ class MPOSDashboardActivity : AppCompatActivity() {
 
             viewmodel.callLocalizationApi(storeid, this@MPOSDashboardActivity)
             viewmodel.callOrganizationDetailsApi(storeid, this@MPOSDashboardActivity)
+            val isFreshLogin = loginSession.getFreshLogin().first()
+            if (isFreshLogin) {
+                viewmodel.callNoticesApi("20231120191141", this@MPOSDashboardActivity)
+                loginSession.setFreshLogin(false) // ✅ Consume the flag immediately
+            }
         }
 
         viewmodel.localization_liveData.observe(this) {
@@ -189,16 +195,34 @@ class MPOSDashboardActivity : AppCompatActivity() {
         }
 
         binding.returncard.setOnClickListener {
-            startActivity(Intent(this, ReturnSaleActivity::class.java))
-        }
+            val canReturn = FeatureManager.isEnabled("sales return")
+            val canReplace = FeatureManager.isEnabled("sales replacement")
+
+            when {
+                canReturn -> {
+                    // covers "only sales return" AND "both enabled" cases
+                    // ReturnSaleActivity has left/right switch inside for replacement
+                    startActivity(Intent(this@MPOSDashboardActivity, ReturnSaleActivity::class.java))
+                }
+                canReplace -> {
+                    // only sales replacement enabled — go directly
+                    startActivity(Intent(this@MPOSDashboardActivity, ReplacedSaleActivity::class.java))
+                }
+                else -> {
+                    // safe fallback — card should already be hidden
+                    showMessage("This feature is not enabled for your organization")
+                }
+            }        }
 
         binding.goodsRWcard.setOnClickListener {
-            startActivity(Intent(this, proceedToDispatchActivity::class.java))
+            val intent = Intent(this@MPOSDashboardActivity, proceedToDispatchActivity::class.java)
+            startActivity(intent)
         }
 
         binding.stockcard.setOnClickListener {
             sharedPrefHelper.clearStockList()
-            startActivity(Intent(this, StockRequisitionActivity::class.java))
+            val intent = Intent(this@MPOSDashboardActivity, StockRequisitionActivity::class.java)
+            startActivity(intent)
         }
 
         binding.materialrcvCard.setOnClickListener {
@@ -257,6 +281,20 @@ class MPOSDashboardActivity : AppCompatActivity() {
             .placeholder(R.drawable.mlogo)
             .error(R.drawable.mlogo)
             .into(headerImageView)
+        applyFeatureVisibility()
+    }
+    // ✅ Controls which cards show based on org modules
+    private fun applyFeatureVisibility() {
+        // Return Product card — show if either is enabled
+        binding.row6linear?.isVisible = FeatureManager.isEnabled("sales return")
+                || FeatureManager.isEnabled("sales replacement")
+        // Sales & Payment — mapped to cancel sales
+        // Sales & Payment — default true
+        binding.salesPaymentCard?.isVisible = true
+        // Expense
+        binding.expensecard?.isVisible = FeatureManager.isEnabled("expense")
+        // Goods Return to Warehouse
+        binding.goodsRWcard?.isVisible = FeatureManager.isEnabled("stock return")
     }
 
     // ✅ ENHANCED SYNC BUTTON SETUP

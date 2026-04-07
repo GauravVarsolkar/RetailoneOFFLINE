@@ -24,9 +24,10 @@ import androidx.room.TypeConverters
         StockReturnEntity::class,             // ✅ ADDED for stock return list offline support
         UserEntity::class,                    // ✅ ADDED for offline login support
         PendingExpenseEntity::class,           // ✅ ADDED for offline expense support
-        CustomerDiscountEntity::class          // ✅ ADDED for offline customer discounts
+        CustomerDiscountEntity::class,         // ✅ ADDED for offline customer discounts
+        ReceiptTypeEntity::class               // ✅ ADDED for offline receipt types support
     ],
-    version = 16,                          // ✅ INCREMENTED from 15 to 16
+    version = 20,                          // ✅ INCREMENTED from 19 to 20
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -49,6 +50,7 @@ abstract class PosDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao                            // ✅ ADDED for offline login support
     abstract fun pendingExpenseDao(): PendingExpenseDao        // ✅ ADDED for expense offline support
     abstract fun customerDiscountDao(): CustomerDiscountDao    // ✅ ADDED for offline customer discounts
+    abstract fun receiptTypeDao(): ReceiptTypeDao              // ✅ ADDED for offline receipt types
 
     companion object {
         @Volatile

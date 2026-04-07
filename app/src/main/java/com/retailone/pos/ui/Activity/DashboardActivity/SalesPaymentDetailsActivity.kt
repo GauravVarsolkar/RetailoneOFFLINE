@@ -23,6 +23,7 @@ import com.retailone.pos.models.SalesPaymentModel.InvoicePayment.CancelSaleitemR
 import com.retailone.pos.models.SalesPaymentModel.SalesDetails.SalesDetailsReq
 import com.retailone.pos.models.SalesPaymentModel.SalesDetails.SalesDetailsRes
 import com.retailone.pos.utils.DateTimeFormatting
+import com.retailone.pos.utils.FeatureManager
 import com.retailone.pos.utils.NetworkUtils
 import com.retailone.pos.viewmodels.DashboardViewodel.SalesPaymentViewmodel
 import kotlinx.coroutines.launch
@@ -142,18 +143,31 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
         binding.apply {
             orderId.text = "ID: "+salesdata?.invoice_id?.toString()
             date.text = "Date: "+DateTimeFormatting.formatGlobalTime(salesdata.created_at,localizationData.timezone)
+            val spotPercent = salesdata.spot_discount_percentage?.toDoubleOrNull() ?: 0.0
+            val spotAmount = salesdata.spot_discount_amount?.toDoubleOrNull() ?: 0.0
+            if (spotPercent > 0.0 || spotAmount > 0.0) {
+                val discountPercent = if (spotPercent % 1.0 == 0.0) spotPercent.toInt().toString() else spotPercent.toString()
+                spotDiscountPercentText.isVisible = true
+                spotDiscountAmountText.isVisible = true
+                spotDiscountPercentText.text = "Spot Discount: $discountPercent%"
+                spotDiscountAmountText.text = "Spot Discount Amount: " + NumberFormatter().formatPrice(salesdata.spot_discount_amount.toString(), localizationData)
+            } else {
+                spotDiscountPercentText.isVisible = false
+                spotDiscountAmountText.isVisible = false
+            }
             grandtotal.text = "Grand total: $formattedPrice"
             paymenttype.text = "Payment type: "+salesdata.payment_type.toString()
             storename.text = "Store name: "+(salesdata.store_details.store_name ?: "")
             //  vat.text = "(+) Tax @"+(salesdata.tax?:"")+"%"+":   "+"ZWL"+(salesdata.tax_amount?:"")
             //customername.text = "Customer name: "+(salesdata.customer.customer_name?:"")
             customername.text = "Customer name: " + (salesdata.customer?.customer_name ?: "N/A")
+            val isCancelFeatureEnabled = FeatureManager.isEnabled("cancel sales")
             // binding.btnConfirmcancel.isVisible = salesdata.grand_total >= 0
             
             lifecycleScope.launch {
                 val isQueued = viewmodel.isCancelQueued(salesdata.invoice_id, this@SalesPaymentDetailsActivity)
                 binding.btnConfirmcancel.isVisible =
-                    salesdata.grand_total >= 0 && salesdata.total_refunded_amount <= 0.0 && !isQueued
+                    isCancelFeatureEnabled && salesdata.grand_total >= 0 && salesdata.total_refunded_amount <= 0.0 && !isQueued
                 
                 if (isQueued) {
                     binding.btnConfirmcancel.text = "Cancellation Pending"

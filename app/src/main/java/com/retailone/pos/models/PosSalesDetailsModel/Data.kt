@@ -30,5 +30,8 @@ data class Data(
     val receipt_sign: String,
     val receipt_no: String,
     val rcptType: String,
-    val vsdc_reciept: VsdcReceipt?
+    val vsdc_reciept: List<VsdcReceipt>?,
+    val trxn_code: String,
+    val tax_details: TaxDetails?,
+    val tax_summery: List<TaxSummary>?,
 )

@@ -20,7 +20,12 @@ import com.retailone.pos.models.CommonModel.StroreProduct.PosSaleBatch
 import com.retailone.pos.models.CommonModel.StroreProduct.StoreProData
 import com.retailone.pos.network.Constants
 import com.retailone.pos.utils.BatchUtils
+import android.content.Intent
 import com.retailone.pos.utils.FunUtils
+import android.util.Log
+import com.retailone.pos.ui.Activity.RSSerialActivity
+import android.app.Activity
+import com.retailone.pos.utils.FeatureManager
 
 class PointofsaleItemAdapter(
     val context: Context,
@@ -118,20 +123,45 @@ class PointofsaleItemAdapter(
             .into(holder.binding.productimg)
 
         // Dispense UI (unchanged logic)
-        if (item.dispense_status == 2) {
-            holder.binding.dispancelayout.visibility = View.VISIBLE
-            holder.binding.dispancelayout.isEnabled = false
-            holder.binding.distext.visibility = View.GONE
-            holder.binding.discomplete.visibility = View.VISIBLE
-            holder.binding.quantEdit.isEnabled = false
-            holder.binding.delete1.visibility = View.GONE
-        } else if (item.dispense_status == 1) {
-            holder.binding.dispancelayout.visibility = View.VISIBLE
-            holder.binding.dispancelayout.isEnabled = true
-            holder.binding.distext.visibility = View.VISIBLE
-            holder.binding.discomplete.visibility = View.GONE
-            holder.binding.quantEdit.isEnabled = true
-            holder.binding.delete1.isEnabled = true
+        // Dispense UI (respecting FeatureManager)
+        val isTotalizerEnabled = FeatureManager.isEnabled("totalizer")
+
+        if (isTotalizerEnabled && isLooseoil) {
+            holder.binding.dispancelayout.setOnClickListener {
+                var batch_quantity_input = 0.0
+                var price = 0.0
+
+                if (item.batch.isNotEmpty()) {
+                    batch_quantity_input = item.batch[0].batch_cart_quantity
+                    price = item.batch[0].price
+                }
+
+                val intent = Intent(context, RSSerialActivity::class.java)
+                Log.d("MyApp", "price:$price")
+                intent.putExtra("price", price)
+                intent.putExtra("pro_id", item.product_id)
+                intent.putExtra("dis_id", item.distribution_pack_id)
+                val activity = context as Activity
+                activity.startActivityForResult(intent, 200)
+            }
+
+            if (item.dispense_status == 2) {
+                holder.binding.dispancelayout.visibility = View.VISIBLE
+                holder.binding.dispancelayout.isEnabled = false
+                holder.binding.distext.visibility = View.GONE
+                holder.binding.discomplete.visibility = View.VISIBLE
+                holder.binding.quantEdit.isEnabled = false
+                holder.binding.delete1.visibility = View.GONE
+            } else if (item.dispense_status == 1) {
+                holder.binding.dispancelayout.visibility = View.VISIBLE
+                holder.binding.dispancelayout.isEnabled = true
+                holder.binding.distext.visibility = View.VISIBLE
+                holder.binding.discomplete.visibility = View.GONE
+                holder.binding.quantEdit.isEnabled = true
+                holder.binding.delete1.isEnabled = true
+            } else {
+                holder.binding.dispancelayout.visibility = View.GONE
+            }
         } else {
             holder.binding.dispancelayout.visibility = View.GONE
         }

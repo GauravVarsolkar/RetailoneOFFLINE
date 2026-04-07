@@ -23,9 +23,9 @@ data class CashupSubmitReq(
     val petty_cash_in: Double,
     val petty_cash_out: Double,
     val pettycash_expected: Double,
-   /* val startTotalizer_value: Double,
+    val startTotalizer_value: Double,
     val startTotalizer_mode: String,
     val endTotalizer_value: String,
-    val endTotalizer_mode: String*/
+    val endTotalizer_mode: String
 
     )

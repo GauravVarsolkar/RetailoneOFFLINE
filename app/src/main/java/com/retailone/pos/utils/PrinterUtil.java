@@ -5,11 +5,17 @@ import static android.provider.MediaStore.Images.Media.getBitmap;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+
+import com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem;
+import com.retailone.pos.models.PosSalesDetailsModel.CopyReceiptRes;
+import com.retailone.pos.models.PosSalesDetailsModel.ReceiptType;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -22,7 +28,6 @@ import android.text.Spanned;
 import android.util.Log;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.Toast;
-import com.retailone.pos.models.PosSalesDetailsModel.VsdcReceipt;
 
 import androidx.core.content.ContextCompat;
 
@@ -37,19 +42,28 @@ import com.retailone.pos.localstorage.SharedPreference.LocalizationHelper;
 import com.retailone.pos.models.LocalizationModel.LocalizationData;
 import com.retailone.pos.models.PosSalesDetailsModel.PosSalesDetails;
 import com.retailone.pos.models.PosSalesDetailsModel.SalesItem;
+import com.retailone.pos.models.PosSalesDetailsModel.TaxSummary;
 import com.retailone.pos.models.PrinterModel.ReceiptData;
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.ReturnSaleRes;
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.ReturnedItem;
+import com.retailone.pos.models.PosSalesDetailsModel.SaleReceiptRes;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 
-
 import org.jetbrains.annotations.NotNull;
 
+import com.retailone.pos.models.PosSalesDetailsModel.VsdcReceipt;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+
 
 public class PrinterUtil {
 
@@ -347,8 +361,11 @@ public class PrinterUtil {
         }
     }
 
-    private void printReturnType(ReturnSaleRes details) {
+    public void printReturnType(ReturnSaleRes details) {
         try {
+            // â”€â”€ Resolve rcptType once, safely â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String rcptType = (details.getData().getRcptType() != null)
+                    ? details.getData().getRcptType() : "";
 
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
@@ -359,14 +376,26 @@ public class PrinterUtil {
             mUsbThermalPrinter.setBold(false);
             mUsbThermalPrinter.addString("*** START OF LEGAL RECEIPT ***");
             mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.addString("CIS Version : 1.0.1");
+            mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(3);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+            Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.image22);
+            logoBitmap = Bitmap.createScaledBitmap(logoBitmap, 400, 200, true);
+            mUsbThermalPrinter.printLogo(logoBitmap, false);
+            mUsbThermalPrinter.walkPaper(1);
 
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
             mUsbThermalPrinter.setTextSize(32);
             mUsbThermalPrinter.setGray(6);
             mUsbThermalPrinter.setBold(true);
-
             mUsbThermalPrinter.addString(details.getData().getStore().getStore_name().toString().toUpperCase());
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
@@ -380,101 +409,151 @@ public class PrinterUtil {
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
 
-            //gaurav
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
             mUsbThermalPrinter.setTextSize(24);
             mUsbThermalPrinter.setGray(6);
-            mUsbThermalPrinter.addString("TIN N0:" +details.getData().getTpin_no());
+            mUsbThermalPrinter.addString("TIN NO:" + details.getData().getTpin_no());
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-            String rcptType = "";
-            if (details.getData() != null && details.getData().getRcptType() != null) {
-                rcptType = details.getData().getRcptType();
-            }else {
-                rcptType = "Proforma";
+
+            // â”€â”€ TOP: rcptType label (matches printSaleType pattern) â”€â”€â”€â”€â”€â”€
+            if (rcptType.equalsIgnoreCase("P") || rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("PROFORMA");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("T") || rcptType.equalsIgnoreCase("Training")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("TRAINING MODE");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("C") || rcptType.equalsIgnoreCase("Copy")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("COPY");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else {
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
             }
-
             mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.addString("Receipt Type: " + rcptType);
+
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(23);
+            mUsbThermalPrinter.addString("REFUND");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+
+            String refLabel = "Ref. Normal Receipt:";
+            String refValue = String.valueOf((long) Double.parseDouble(String.valueOf(details.getData().getOgRcpt_no())));
+            mUsbThermalPrinter.addString(refLabel + padLeft(refValue, TSIZE22 - refLabel.length()));
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.addString( "Original Invoice ID: " +details.getData().getReturned_invoice_id());
-            mUsbThermalPrinter.printString();
 
-//            mUsbThermalPrinter.addString("CREDIT NOTE");
-//            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.addString("REFUND IS APPROVED ONLY FOR ORIGINAL SALES RECEIPT");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
 
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
             mUsbThermalPrinter.setTextSize(22);
-           /* mUsbThermalPrinter.setGray(6);
-            mUsbThermalPrinter.addString("VAT NO:" + padLeft(details.getData().getVat_no(), TSIZE22-7));
-            mUsbThermalPrinter.printString();*/
-
             mUsbThermalPrinter.setGray(6);
-            //mUsbThermalPrinter.addString("DATE:" + padLeft(DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getReturned_date(),zone), TSIZE22-7));
-            ///mUsbThermalPrinter.addString("DATE:" + padLeft(DateTimeFormatting.Companion.formatReturndate(details.getData().getReturned_date(),zone), TSIZE22-7));
-            mUsbThermalPrinter.addString("DATE:" + details.getData().getReturned_date());  //add
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
 
-//            mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("SDC ID/RECEIPT NO:" + padLeft(details.getData().getReturned_invoice_id(), TSIZE22-11));
-//            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setGray(6);
             String buyerName = details.getData() != null && details.getData().getCustomer_name() != null
-                    ? details.getData().getCustomer_name()
-                    : "";
-
-            mUsbThermalPrinter.addString("BUYERâ€™S NAME: " + buyerName);
+                    ? details.getData().getCustomer_name() : "";
+            String buyerNameLabel = "BUYER'S NAME:";
+            mUsbThermalPrinter.addString(buyerNameLabel + padLeft(buyerName, TSIZE22 - buyerNameLabel.length()));
             mUsbThermalPrinter.printString();
 
-            mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("BUYERâ€™S TIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13));
-//            mUsbThermalPrinter.printString();
-
-            String buyerTin = "";
-            if (details.getData() != null && details.getData().getBuyers_tpin() != null) {
-                buyerTin = details.getData().getBuyers_tpin();
-            }
-
-            mUsbThermalPrinter.addString("BUYERâ€™S TIN: " + buyerTin);
+            String buyerTin = (details.getData() != null && details.getData().getBuyers_tpin() != null)
+                    ? details.getData().getBuyers_tpin() : "";
+            String buyerTinLabel = "BUYER'S TIN:";
+            mUsbThermalPrinter.addString(buyerTinLabel + padLeft(buyerTin, TSIZE22 - buyerTinLabel.length()));
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
 
-            mUsbThermalPrinter.setGray(6);
-            mUsbThermalPrinter.setBold(true);
-            mUsbThermalPrinter.setTextSize(22);
-            mUsbThermalPrinter.addString("Description: Qty X Rate");
+            String buyerContact = (details.getData() != null && details.getData().getCustomer_mob_no() != null)
+                    ? details.getData().getCustomer_mob_no() : "";
+            String buyerContactLabel = "BUYER'S CONTACT:";
+            mUsbThermalPrinter.addString(buyerContactLabel + padLeft(buyerContact, TSIZE22 - buyerContactLabel.length()));
             mUsbThermalPrinter.printString();
-//            mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.addString("(Inclusive of Tax)          Amount");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.walkPaper(1);
+
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
+            mUsbThermalPrinter.walkPaper(1);
 
-            for (ReturnedItem item : details.getData().getReturned_items()){
+            // â”€â”€ Items loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            for (ReturnedItem item : details.getData().getReturned_items()) {
                 productname = item.getProduct_name();
-                if (productname.toLowerCase().startsWith("bulk oil")){
+                looseOil = productname.toLowerCase().startsWith("bulk oil");
 
-                }
                 mUsbThermalPrinter.setTextSize(24);
                 mUsbThermalPrinter.setGray(6);
                 mUsbThermalPrinter.setBold(true);
                 mUsbThermalPrinter.addString(item.getProduct_name());
                 mUsbThermalPrinter.printString();
                 mUsbThermalPrinter.setBold(false);
-
                 mUsbThermalPrinter.setTextSize(22);
-                String qtyRate = FunUtils.INSTANCE.DtoString(item.getReturn_quantity()) + " X " + FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getRetail_price()));
-                String amount = FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getTotal_returned_amount()));
-                String Line2 = qtyRate + padLeft(amount, TSIZE22 - (qtyRate.length()));
-                mUsbThermalPrinter.addString(qtyRate);
+
+                String taxCode = "";
+                if (item.getTax_details() != null && item.getTax_details().getCode() != null) {
+                    taxCode = item.getTax_details().getCode();
+                }
+
+                String rateCol   = FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getRetail_price())) + "x";
+                String qtyCol    = FunUtils.INSTANCE.DtoString(item.getReturn_quantity());
+                String amountCol = "-" + FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getTotal_amount())) + taxCode;
+
+                int totalWidth    = TSIZE22;
+                int rightColWidth = 10;
+                int midColWidth   = 8;
+                int leftColWidth  = totalWidth - midColWidth - rightColWidth;
+
+                String line2 = String.format(
+                        "%-" + leftColWidth + "s%" + midColWidth + "s%" + rightColWidth + "s",
+                        rateCol, qtyCol, amountCol
+                );
+                mUsbThermalPrinter.addString(line2);
                 mUsbThermalPrinter.printString();
+
+                Double discount    = item.getDiscount();
+                Double totalAmount = item.getTotal_amount();
+                if (discount != null && discount > 0 && totalAmount != null && totalAmount > 0) {
+                    Double discountPercent = (discount / totalAmount) * 100.0;
+                    String discountText    = "discount -" + FunUtils.INSTANCE.DtoString(discountPercent) + "%";
+                    double finalAmount     = totalAmount - discount;
+                    String discountAmountStr = FunUtils.INSTANCE.formatPrintPrice(Double.toString(finalAmount));
+                    String discountLine = String.format(
+                            "%-" + (totalWidth - rightColWidth) + "s%" + rightColWidth + "s",
+                            discountText, discountAmountStr
+                    );
+                    mUsbThermalPrinter.addString(discountLine);
+                    mUsbThermalPrinter.printString();
+                }
                 mUsbThermalPrinter.walkPaper(1);
             }
 
@@ -482,58 +561,152 @@ public class PrinterUtil {
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-            Log.d("Printer", "sbtal=" + details.getData().getSubtal());
 
+            // â”€â”€ "THIS IS NOT AN OFFICIAL RECEIPT" (fixed: uses equalsIgnoreCase) â”€â”€
+            if (rcptType.equalsIgnoreCase("P") || rcptType.equalsIgnoreCase("Proforma") ||
+                    rcptType.equalsIgnoreCase("T") || rcptType.equalsIgnoreCase("Training") ||
+                    rcptType.equalsIgnoreCase("C") || rcptType.equalsIgnoreCase("Copy")) {
+                mUsbThermalPrinter.setGray(6);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(23);
+                mUsbThermalPrinter.addString("THIS IS NOT AN OFFICIAL RECEIPT");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            }
 
+            // â”€â”€ TOTAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             mUsbThermalPrinter.setTextSize(26);
             mUsbThermalPrinter.setBold(true);
-
-            String label = "SUB-TOTAL (" + currency + ") :";
-            String value = FunUtils.INSTANCE.formatPrintPrice(details.getData().getSubtal());
-
-            int padding = TSIZE26 - label.length();
-
+            String label   = "TOTAL(" + currency + "):";
+            String value   = FunUtils.INSTANCE.formatPrintPrice(String.valueOf(details.getData().getGrand_total()));
+            int padding    = TSIZE26 - label.length();
             mUsbThermalPrinter.addString(label + padLeft(value, padding));
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setBold(false);
-            mUsbThermalPrinter.walkPaper(2);
             mUsbThermalPrinter.setTextSize(22);
-            mUsbThermalPrinter.addString("Items:" + padLeft(Integer.toString(details.getData().getReturned_items().size()), TSIZE22 - 6 ));
-            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
 
-            mUsbThermalPrinter.addString("TAX EX:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex()), TSIZE22 - 7 ));
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("TAX VAT @" + padLeft(details.getData().getTax()+"%", TSIZE22 - 9 ));
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setBold(true);
-            mUsbThermalPrinter.addString("TOTAL VAT:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()), TSIZE22 - 10 ));
-            mUsbThermalPrinter.printString();
+            List<TaxSummary> taxSummaryList = details.getData().getTax_summery();
+            if (taxSummaryList != null && !taxSummaryList.isEmpty()) {
+                for (TaxSummary taxSummary : taxSummaryList) {
+                    String code         = taxSummary.getCode();
+                    Double taxableValue = taxSummary.getTaxable_value();
+                    if (code != null) {
+                        String taxLabel = "TOTAL " + taxSummary.getCode_name();
+                        mUsbThermalPrinter.addString(taxLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxableValue)),
+                                TSIZE22 - taxLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+                for (TaxSummary taxSummary : taxSummaryList) {
+                    String code = taxSummary.getCode();
+                    Double taxAmount  = taxSummary.getTax_amount();
+                    if (taxAmount != null && taxAmount < 0) {
+                        String taxAmountLabel = "TOTAL TAX " + code;
+                        mUsbThermalPrinter.addString(taxAmountLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxAmount)),
+                                TSIZE22 - taxAmountLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+                Double totalTaxAmountVal = details.getData().getTax_amount();
+                if (totalTaxAmountVal != null && totalTaxAmountVal != 0.0) {
+                    String totalTaxLabel = "TOTAL TAX AMOUNT";
+                    mUsbThermalPrinter.addString(totalTaxLabel + padLeft(
+                            FunUtils.INSTANCE.formatPrintPrice(String.valueOf(totalTaxAmountVal)),
+                            TSIZE22 - totalTaxLabel.length()
+                    ));
+                    mUsbThermalPrinter.printString();
+                }
+            }
+
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.setTextSize(26);
-            mUsbThermalPrinter.addString("PAYABLE:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()), TSIZE26-8));
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.setBold(false);
-            mUsbThermalPrinter.setTextSize(22);
-//        String cashAmt = details.getData().getPayment_type().trim().toUpperCase().equals("CASH") ?
-//                FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "";
-//        mUsbThermalPrinter.addString("CASH:" + padLeft(cashAmt, TSIZE20 - 5));
-//        mUsbThermalPrinter.printString();
-//        String nonCashAmt = details.getData().getPayment_type().trim().toUpperCase().equals("CARD") ||
-//                details.getData().getPayment_type().trim().toUpperCase().equals("M-MONEY") ?
-//                FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "";
-//        mUsbThermalPrinter.addString("M-MONEY:" + padLeft(nonCashAmt, TSIZE20 - 8));
-//        mUsbThermalPrinter.printString();
-//        mUsbThermalPrinter.setTextSize(20);
-            mUsbThermalPrinter.addString("----------------------------------");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
+            // â”€â”€ MID-BOTTOM: rcptType label (matches printSaleType pattern) â”€â”€
+            if (rcptType.equalsIgnoreCase("P") || rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.setGray(6);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(23);
+                mUsbThermalPrinter.addString("PROFORMA");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            } else if (rcptType.equalsIgnoreCase("T") || rcptType.equalsIgnoreCase("Training")) {
+                mUsbThermalPrinter.setGray(6);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(23);
+                mUsbThermalPrinter.addString("TRAINING MODE");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            } else if (rcptType.equalsIgnoreCase("C") || rcptType.equalsIgnoreCase("Copy")) {
+                mUsbThermalPrinter.setGray(6);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(23);
+                mUsbThermalPrinter.addString("COPY");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            } else {
+                mUsbThermalPrinter.walkPaper(1);
+            }
 
+            // â”€â”€ Payment / Items count (skip for Proforma) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (!rcptType.equalsIgnoreCase("P") && !rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.setTextSize(22);
+                String grandTotal = FunUtils.INSTANCE.formatPrintPrice(String.valueOf(details.getData().getGrand_total()));
+                String paymentLabel = "CASH:";
+                mUsbThermalPrinter.addString(paymentLabel + padLeft(grandTotal, TSIZE22 - paymentLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("Items:" + padLeft(
+                        Integer.toString(details.getData().getReturned_items().size()), TSIZE22 - 6
+                ));
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            } else {
+                mUsbThermalPrinter.walkPaper(1); // maintain spacing
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            }
+
+
+            // â”€â”€ SDC INFORMATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             mUsbThermalPrinter.setAlgin(1);
             mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(22);
             mUsbThermalPrinter.addString("SDC INFORMATION");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
@@ -541,99 +714,167 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(6);
             mUsbThermalPrinter.setBold(false);
             mUsbThermalPrinter.setAlgin(0);
-//            mUsbThermalPrinter.addString("SDC ID/RECEIPT NO:" + padLeft(details.getData().getInvoice_id(), TSIZE22-11));
-//            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("SDC ID:  " + details.getData().getVsdc_reciept().getSdcId());  //gaurav
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("RECEIPT NO:  " + details.getData().getVsdc_reciept().getRcptNo());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("MRC NO.:  " + details.getData().getVsdc_reciept().getMrcNo());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("SALES TYPE CODE:  " +details.getData().getVsdc_reciept().getSales_type());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("RECEIPT TYPE CODE:  " +details.getData().getVsdc_reciept().getRec_type());
+
+            VsdcReceipt vsdc = (details.getData().getVsdc_reciept() != null && !details.getData().getVsdc_reciept().isEmpty())
+                    ? details.getData().getVsdc_reciept().get(0) : null;
+
+            String rawDateTime = (vsdc != null) ? vsdc.getVsdcRcptPbctDate() : "";
+            String formattedDate = "", formattedTime = "";
+            if (rawDateTime != null && !rawDateTime.isEmpty()) {
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+                    Date parsedDate = inputFormat.parse(rawDateTime);
+                    if (parsedDate != null) {
+                        formattedDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedDate);
+                        formattedTime = new SimpleDateFormat("HH:mm:ss",    Locale.getDefault()).format(parsedDate);
+                    }
+                } catch (ParseException e) {
+                    Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                    formattedDate = rawDateTime;
+                }
+            }
+
+            String dateLabel = "DATE: " + formattedDate;
+            String timeLabel = "TIME: " + formattedTime;
+            int spaces = TSIZE22 - dateLabel.length() - timeLabel.length();
+            if (spaces < 1) spaces = 1;
+            StringBuilder dateLine = new StringBuilder(dateLabel);
+            for (int i = 0; i < spaces; i++) dateLine.append(" ");
+            dateLine.append(timeLabel);
+            mUsbThermalPrinter.addString(dateLine.toString());
             mUsbThermalPrinter.printString();
 
-            mUsbThermalPrinter.setAlgin(1);
-            mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + details.getData().getVsdc_reciept().getRcptSign());
+            String sdcIdLabel = "SDC ID:";
+            String sdcIdValue = (vsdc != null && vsdc.getSdcId() != null)
+                    ? vsdc.getSdcId() : "";
+            mUsbThermalPrinter.addString(sdcIdLabel + padLeft(sdcIdValue, TSIZE22 - sdcIdLabel.length()));
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("INTERNAL DATA:  " + details.getData().getVsdc_reciept().getIntrlData());
+
+            // Build receipttype code
+            String rcptTypeValue = details.getData().getRcptType() != null ? details.getData().getRcptType() : "N";
+            String receipttype;
+            if      (rcptTypeValue.equalsIgnoreCase("N") || rcptTypeValue.equalsIgnoreCase("Normal"))   receipttype = "N";
+            else if (rcptTypeValue.equalsIgnoreCase("P") || rcptTypeValue.equalsIgnoreCase("Proforma")) receipttype = "P";
+            else if (rcptTypeValue.equalsIgnoreCase("T") || rcptTypeValue.equalsIgnoreCase("Training")) receipttype = "T";
+            else if (rcptTypeValue.equalsIgnoreCase("C") || rcptTypeValue.equalsIgnoreCase("Copy"))     receipttype = "C";
+            else receipttype = rcptTypeValue;
+
+            String sdcRcptLabel = "RECEIPT NUMBER:";
+            String sdcRcptValue = (details.getData().getReturned_invoice_id() != null
+                    ? details.getData().getReturned_invoice_id() : "")
+                    + "/" + (vsdc != null ? vsdc.getTotRcptNo() : "")
+                    + " " + receipttype + "R";
+            mUsbThermalPrinter.addString(sdcRcptLabel + padLeft(sdcRcptValue, TSIZE22 - sdcRcptLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            // â”€â”€ Internal Data + Signature + QR: SKIP for Proforma & Training â”€â”€
+            if (!rcptType.equalsIgnoreCase("T") && !rcptType.equalsIgnoreCase("Training") &&
+                    !rcptType.equalsIgnoreCase("P") && !rcptType.equalsIgnoreCase("Proforma")) {
+
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.addString("INTERNAL DATA:  " + (vsdc != null ? vsdc.getIntrlData() : ""));
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + (vsdc != null ? vsdc.getRcptSign() : ""));
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+
+                try {
+                    if (vsdc != null &&
+                            vsdc.getQrCodeUrl() != null &&
+                            !vsdc.getQrCodeUrl().isEmpty()) {
+
+                        mUsbThermalPrinter.reset();
+                        mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+                        String qrData   = vsdc.getQrCodeUrl();
+                        Bitmap qrBitmap = generateQRCodeBitmap(qrData, 250, 250);
+
+                        if (qrBitmap != null) {
+                            mUsbThermalPrinter.setGray(6);
+                            mUsbThermalPrinter.printLogo(qrBitmap, false);
+                            mUsbThermalPrinter.walkPaper(2);
+                        } else {
+                            Log.w("PrinterUtil", "QR code bitmap is null");
+                        }
+                    } else {
+                        Log.w("PrinterUtil", "No QR code URL available - skipping QR code");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.e("PrinterUtil", "Exception in QR code section: " + e.getMessage());
+                }
+            } // END skip block for Proforma / Training
+
+            mUsbThermalPrinter.setAlgin(0);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
+
+            String rcptNumLabel = "RECEIPT NUMBER:";
+            String receiptNum   = (details.getData().getReturned_invoice_id() != null)
+                    ? details.getData().getReturned_invoice_id() : "";
+            mUsbThermalPrinter.addString(rcptNumLabel + padLeft(receiptNum, TSIZE22 - rcptNumLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String rawReturnDateTime = (details.getData().getReturned_date() != null)
+                    ? details.getData().getReturned_date() : "";
+            String formattedReturnDate = "", formattedReturnTime = "";
+            try {
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+                Date parsedDate = inputFormat.parse(rawReturnDateTime);
+                if (parsedDate != null) {
+                    formattedReturnDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedDate);
+                    formattedReturnTime = new SimpleDateFormat("HH:mm:ss",    Locale.getDefault()).format(parsedDate);
+                }
+            } catch (ParseException e) {
+                Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                formattedReturnDate = rawReturnDateTime;
+            }
+
+            String returnDateLabel = "DATE: " + formattedReturnDate;
+            String returnTimeLabel = "TIME: " + formattedReturnTime;
+            int returnSpaces = TSIZE22 - returnDateLabel.length() - returnTimeLabel.length();
+            if (returnSpaces < 1) returnSpaces = 1;
+            StringBuilder returnDateLine = new StringBuilder(returnDateLabel);
+            for (int i = 0; i < returnSpaces; i++) returnDateLine.append(" ");
+            returnDateLine.append(returnTimeLabel);
+            mUsbThermalPrinter.addString(returnDateLine.toString());
+            mUsbThermalPrinter.printString();
+
+            String mrcLabel = "MRC NO.:";
+            String mrcValue = (vsdc != null && vsdc.getMrcNo() != null)
+                    ? vsdc.getMrcNo() + "." : ".";
+            mUsbThermalPrinter.addString(mrcLabel + padLeft(mrcValue, TSIZE22 - mrcLabel.length()));
+            mUsbThermalPrinter.printString();
 
             mUsbThermalPrinter.setAlgin(0);
             mUsbThermalPrinter.setTextSize(22);
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(7);
 
-
-// GENERATE AND PRINT QR CODE HERE â¬‡ï¸
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
-//            mUsbThermalPrinter.walkPaper(2);
-
-// Just the URL - nothing else
-            String qrData = details.getData().getVsdc_reciept().getQrCodeUrl();  //gaurav
-
-// Generate QR code bitmap (200x200 pixels)
-            Bitmap qrBitmap = generateQRCodeBitmap(qrData, 250, 250);
-
-            if (qrBitmap != null) {
-                try {
-                    mUsbThermalPrinter.setGray(6);
-                    mUsbThermalPrinter.printLogo(qrBitmap, false);
-                    mUsbThermalPrinter.walkPaper(2);
-
-                    mUsbThermalPrinter.reset();
-                    mUsbThermalPrinter.setAlgin(1);
-                    mUsbThermalPrinter.setBold(false);
-                    mUsbThermalPrinter.setTextSize(22);
-                    mUsbThermalPrinter.addString("THANK YOU!");
-                    mUsbThermalPrinter.printString();
-                    mUsbThermalPrinter.walkPaper(1);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Log.e("PrinterUtil", "Error printing QR code: " + e.getMessage());
-                }
-            }else {
-                mUsbThermalPrinter.reset();
-                mUsbThermalPrinter.setAlgin(1);
-                mUsbThermalPrinter.setBold(false);
-                mUsbThermalPrinter.setTextSize(22);
-                mUsbThermalPrinter.addString("THANK YOU!");
-                mUsbThermalPrinter.printString();
-                mUsbThermalPrinter.walkPaper(1);
-            }
-// END OF QR CODE PRINTING â¬†ï¸
-
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.addString("THANK YOU");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(3);
 
             mUsbThermalPrinter.setAlgin(1);
-            mUsbThermalPrinter.setLineSpace(3);
-            mUsbThermalPrinter.setTextSize(20);
-
-            mUsbThermalPrinter.addString("*** END ***");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(15);
-            mUsbThermalPrinter.reset();
-
-//            mUsbThermalPrinter.setTextSize(24);
-//            mUsbThermalPrinter.addString("Sign/Stamp_____________________");
-//            mUsbThermalPrinter.printString();
-//            mUsbThermalPrinter.walkPaper(4);
-
-            mUsbThermalPrinter.setLeftIndent(1);
-            mUsbThermalPrinter.setLineSpace(3);
             mUsbThermalPrinter.setTextSize(20);
             mUsbThermalPrinter.addString("*** END ***");
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(15);
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.addString(" ");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
             mUsbThermalPrinter.reset();
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.toString());
-
             Result = e.toString();
             if (Result.contains("NoPaperException")) {
                 nopaper = true;
@@ -642,15 +883,16 @@ public class PrinterUtil {
             } else {
                 handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
             }
-        }finally {
+        } finally {
             handler.sendMessage(handler.obtainMessage(CANCELPROMPT, 1, 0, null));
             if (nopaper) {
                 handler.sendMessage(handler.obtainMessage(NOPAPER, 1, 0, null));
                 nopaper = false;
-                return;
             }
         }
     }
+
+
 
     /// for debug invoice print
    /* private void printReturnType(ReturnSaleRes   details) {
@@ -676,10 +918,10 @@ public class PrinterUtil {
 
             printStr = "RECEIPT NO:" + padLeft(details.getData().getReturned_invoice_id(), TSIZE22-11);
             Log.d("Line 1", printStr);
-            printStr = "BUYERâ€™S NAME:" + padLeft(details.getData() != null && details.getData().getCustomer_name() != null ? details.getData().getCustomer_name() : "", TSIZE22-13);
+            printStr = "BUYERÃ¢â‚¬â„¢S NAME:" + padLeft(details.getData() != null && details.getData().getCustomer_name() != null ? details.getData().getCustomer_name() : "", TSIZE22-13);
             Log.d("Line 1", printStr);
 
-            printStr = "BUYERâ€™S TPIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13);
+            printStr = "BUYERÃ¢â‚¬â„¢S TPIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13);
             Log.d("Line 1", printStr);
 
             printStr = "Description";
@@ -802,10 +1044,10 @@ public class PrinterUtil {
 
             printStr = "RECEIPT NO:" + padLeft(details.getData().getInvoice_id(), TSIZE22-11);
             Log.d("Line 1", printStr);
-            printStr = "BUYERâ€™S NAME:" + padLeft(details.getData() != null && details.getData().getCustomer_name() != null ? details.getData().getCustomer_name() : "", TSIZE22-13);
+            printStr = "BUYERÃ¢â‚¬â„¢S NAME:" + padLeft(details.getData() != null && details.getData().getCustomer_name() != null ? details.getData().getCustomer_name() : "", TSIZE22-13);
             Log.d("Line 1", printStr);
 
-            printStr = "BUYERâ€™S TPIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13);
+            printStr = "BUYERÃ¢â‚¬â„¢S TPIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13);
             Log.d("Line 1", printStr);
 
             printStr = "Description";
@@ -924,6 +1166,12 @@ public class PrinterUtil {
     private void printSaleType(PosSalesDetails details) {
 
         try {
+            String rcptType = "";
+            if (details.getData() != null && details.getData().getRcptType() != null) {
+                rcptType = details.getData().getRcptType();
+            }else {
+                rcptType = "Proforma";
+            }
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
             mUsbThermalPrinter.setLeftIndent(1);
@@ -931,9 +1179,37 @@ public class PrinterUtil {
             mUsbThermalPrinter.setTextSize(20);
             mUsbThermalPrinter.setGray(6);
             mUsbThermalPrinter.setBold(false);
-            mUsbThermalPrinter.addString("*** START OF LEGEAL RECEIPT ***");
+            mUsbThermalPrinter.addString("*** START OF LEGAL RECEIPT ***");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setGray(6);
+
+            mUsbThermalPrinter.addString("CIS Version : 1.0.1");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(3);
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+            // Load logo bitmap
+            Bitmap logoBitmap = BitmapFactory.decodeResource(
+                    context.getResources(),
+                    R.drawable.image22
+            );
+
+// Optional: resize logo for printer
+            logoBitmap = Bitmap.createScaledBitmap(
+                    logoBitmap,
+                    400,   // width (safe for 58mm)
+                    200,    // height
+                    true
+            );
+
+            mUsbThermalPrinter.printLogo(logoBitmap, false);
+            mUsbThermalPrinter.walkPaper(1);
+
 
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
@@ -960,141 +1236,204 @@ public class PrinterUtil {
             mUsbThermalPrinter.setTextSize(24);
             mUsbThermalPrinter.setGray(6);
 
-            mUsbThermalPrinter.addString("TIN N0:" +details.getData().getTpin_no());
+            mUsbThermalPrinter.addString("TIN NO:" +details.getData().getTpin_no());
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-            String rcptType = "";
-            if (details.getData() != null && details.getData().getRcptType() != null) {
-                rcptType = details.getData().getRcptType();
-            }else {
-                rcptType = "Proforma";
+            if (rcptType.equalsIgnoreCase("P" ) || rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString(details.getData().getRcptType() );
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("T")|| rcptType.equalsIgnoreCase("Training")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString(details.getData().getRcptType() + " MODE");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("C") || rcptType.equalsIgnoreCase("Copy")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString(details.getData().getRcptType());
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
             }
-
-            mUsbThermalPrinter.addString("Receipt Type: " + rcptType);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setGray(6);
+            if (rcptType == null){
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            }
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.addString("Welcome to our shop");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-
-
-            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setGray(6);
             mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
-            mUsbThermalPrinter.setTextSize(22);
 
-
-//            mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("VAT NO:" + padLeft(details.getData().getVat_no(), TSIZE22-7));
-//            mUsbThermalPrinter.printString();
-
-            mUsbThermalPrinter.walkPaper(2);
-            mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("DATE:" + padLeft(DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getPurchase_date_time(),zone), TSIZE22-7));
-//            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("DATE:" + padLeft(
-                    DateTimeFormatting.Companion.formatSaleReturndate(
-                            details.getData().getPurchase_date_time(), zone
-                    ), TSIZE22 - 5));
-            mUsbThermalPrinter.printString();
-
-// ADD THESE NEW LINES BELOW DATE
-            mUsbThermalPrinter.setGray(6);
-
-// Extract vsdc_reciept data with null safety
-//            String mrcNo = "";
-//            String rcptSign = "";
-//            String sdcId = "";
-//            String intrlData = "";
-//
-//            if (details.getData().getVsdc_reciept() != null) {
-//                mrcNo = details.getData().getVsdc_reciept().getMrcNo() != null ?
-//                        details.getData().getVsdc_reciept().getMrcNo() : "";
-//                rcptSign = details.getData().getVsdc_reciept().getRcptSign() != null ?
-//                        details.getData().getVsdc_reciept().getRcptSign() : "";
-//                sdcId = details.getData().getVsdc_reciept().getSdcId() != null ?
-//                        details.getData().getVsdc_reciept().getSdcId() : "";
-//                intrlData = details.getData().getVsdc_reciept().getIntrlData() != null ?
-//                        details.getData().getVsdc_reciept().getIntrlData() : "";
-//            }
-
-
-
-// Continue with walkPaper
-            mUsbThermalPrinter.walkPaper(2);
-
-            mUsbThermalPrinter.printString();
-
-//            mUsbThermalPrinter.walkPaper(2);
-
-
-            mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("BUYERâ€™S NAME:" + padLeft(details.getData() != null && details.getData().getCustomer_name() != null ? details.getData().getCustomer_name() : "", TSIZE22-13));
-//            mUsbThermalPrinter.printString();
             String buyerName = details.getData() != null && details.getData().getCustomer_name() != null
                     ? details.getData().getCustomer_name()
                     : "";
 
-            mUsbThermalPrinter.addString("BUYERâ€™S NAME: " + buyerName);
+            // â”€â”€ CHANGED: Buyer info with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String buyerNameLabel = "BUYER'S NAME:";
+            mUsbThermalPrinter.addString(buyerNameLabel + padLeft(buyerName, TSIZE22 - buyerNameLabel.length()));
             mUsbThermalPrinter.printString();
 
             mUsbThermalPrinter.setGray(6);
-//            mUsbThermalPrinter.addString("BUYERâ€™S TIN:" + padLeft(details.getData().getBuyers_tpin(), TSIZE22-13));
-//            mUsbThermalPrinter.printString();
 
             String buyerTin = "";
             if (details.getData() != null && details.getData().getBuyers_tpin() != null) {
                 buyerTin = details.getData().getBuyers_tpin();
             }
-
-            mUsbThermalPrinter.addString("BUYERâ€™S TIN: " + buyerTin);
+            String buyerTinLabel = "BUYER'S TIN:";
+            mUsbThermalPrinter.addString(buyerTinLabel + padLeft(buyerTin, TSIZE22 - buyerTinLabel.length()));
             mUsbThermalPrinter.printString();
 
-            mUsbThermalPrinter.walkPaper(2);
+            String buyerContact = "";
+            if (details.getData() != null && details.getData().getCustomer_mob_no() != null) {
+                buyerContact = details.getData().getCustomer_mob_no();
+            }
+            String buyerContactLabel = "BUYER'S CONTACT:";
+            mUsbThermalPrinter.addString(buyerContactLabel + padLeft(buyerContact, TSIZE22 - buyerContactLabel.length()));
+            mUsbThermalPrinter.printString();
 
-            mUsbThermalPrinter.setGray(6);
-            mUsbThermalPrinter.setBold(true);
-            mUsbThermalPrinter.setTextSize(22);
-            mUsbThermalPrinter.addString("Description: Qty X Rate");
-            mUsbThermalPrinter.printString();
-//            mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.addString("(Inclusive of Tax)          Amount");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.walkPaper(1);
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(2);
 
-            for (SalesItem item : details.getData().getSalesItem()){
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+            mUsbThermalPrinter.setTextSize(22);
+
+            mUsbThermalPrinter.setGray(6);
+
+            mUsbThermalPrinter.setGray(6);
+
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.printString();
+
+            mUsbThermalPrinter.setGray(6);
+
+            for (SalesItem item : details.getData().getSalesItem()) {
                 productname = item.getProduct_name();
                 numberOfItems++;
-                if (productname.toLowerCase().startsWith("bulk oil") ){
+                if (productname.toLowerCase().startsWith("bulk oil")) {
                     looseOil = true;
-                }else {
+                } else {
                     looseOil = false;
                 }
+
+                // Line 1: Product Name (bold)
                 mUsbThermalPrinter.setTextSize(24);
                 mUsbThermalPrinter.setGray(6);
                 mUsbThermalPrinter.setBold(true);
                 mUsbThermalPrinter.addString(item.getProduct_name());
                 mUsbThermalPrinter.printString();
                 mUsbThermalPrinter.setBold(false);
-
                 mUsbThermalPrinter.setTextSize(22);
-                String qtyRate = FunUtils.INSTANCE.DtoString(Double.parseDouble(item.getQuantity())) + " (" + item.getUom()+ ") X " + FunUtils.INSTANCE.formatPrintPrice(item.getTax_inclusive_price());
-                String amount = FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getTotal_amount()));
-                String Line2 = qtyRate + padLeft(amount, TSIZE22 - (qtyRate.length()));
-                mUsbThermalPrinter.addString(qtyRate);  //GAURAV
+
+                // --- Build 3-column line: [rate x]   [qty]   [amount taxCode] ---
+                String taxCode = "";
+                if (item.getTax_details() != null && item.getTax_details().getCode() != null) {
+                    taxCode = item.getTax_details().getCode();
+                }
+
+                // Left: "33600.00x"
+                String rateCol = FunUtils.INSTANCE.formatPrintPrice(item.getTax_inclusive_price()) + "x";
+
+                // Middle: "0.200 (KG)"  or just quantity + UOM
+                String qtyCol = FunUtils.INSTANCE.DtoString(Double.parseDouble(item.getQuantity()));
+
+                // Right: "6720.00B"
+                String amountCol = FunUtils.INSTANCE.formatPrintPrice(Double.toString(item.getTotal_amount())) + taxCode;
+
+                // Total line width for textSize 22 (34 chars for 58mm printer)
+                int totalWidth = TSIZE22; // e.g. 34
+
+                // Right column occupies fixed 10 chars from right
+                int rightColWidth = 10;
+                // Middle column occupies fixed 6 chars
+                int midColWidth = 8;
+                // Left col gets remaining
+                int leftColWidth = totalWidth - midColWidth - rightColWidth;
+
+                // Format: left-pad qty to midColWidth, right-pad amount to rightColWidth
+                String line2 = String.format(
+                        "%-" + leftColWidth + "s%" + midColWidth + "s%" + rightColWidth + "s",
+                        rateCol,
+                        qtyCol,
+                        amountCol
+                );
+
+                mUsbThermalPrinter.addString(line2);
                 mUsbThermalPrinter.printString();
+
+                // Discount line (if applicable)
+                if (item.getDiscount_rate() < 0) {
+                    String discountText = "discount " + item.getDiscount_rate() + "%";
+
+                    double discountedTotal = item.getTotal_amount()
+                            + (item.getTotal_amount() * item.getDiscount_rate() / 100);
+
+                    String discountAmountStr = FunUtils.INSTANCE.formatPrintPrice(String.valueOf(discountedTotal));
+
+                    // Left: "discount -25%"   Right: "5040.00" right-aligned
+                    String discountLine = String.format(
+                            "%-" + (totalWidth - rightColWidth) + "s%" + rightColWidth + "s",
+                            discountText,
+                            discountAmountStr
+                    );
+
+                    mUsbThermalPrinter.addString(discountLine);
+                    mUsbThermalPrinter.printString();
+                }
+
                 mUsbThermalPrinter.walkPaper(1);
             }
+
 
             mUsbThermalPrinter.setTextSize(22);
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
+            // âœ… Check by receipt type code
+            if (rcptType.equalsIgnoreCase("P") ||
+                    rcptType.equalsIgnoreCase("T") ||
+                    rcptType.equalsIgnoreCase("C") ||
+                    rcptType.equalsIgnoreCase("Proforma") ||
+                    rcptType.equalsIgnoreCase("Training") ||
+                    rcptType.equalsIgnoreCase("Copy")) {
+
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.addString("THIS IS NOT AN OFFICIAL RECEIPT");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            }
 
             mUsbThermalPrinter.setTextSize(26);
             mUsbThermalPrinter.setBold(true);
-            //  mUsbThermalPrinter.addString("SUB TOTAL (" + currency + ") :" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getSub_total()), TSIZE26 - (("TOTAL (" + currency + ") :").length()) ));
-            String label = "SUB-TOTAL(" + currency + "):";
-            String value = FunUtils.INSTANCE.formatPrintPrice(details.getData().getSub_total());
+            String label = "TOTAL(" + currency + "):";
+            String value = FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total());
             // Right align the value using padLeft correctly
             int padding = TSIZE26 - label.length();
             mUsbThermalPrinter.addString(label + padLeft(value, padding));
@@ -1102,39 +1441,86 @@ public class PrinterUtil {
             mUsbThermalPrinter.setBold(false);
             mUsbThermalPrinter.walkPaper(2);
             mUsbThermalPrinter.setTextSize(22);
-            mUsbThermalPrinter.addString("Items:" + padLeft(Integer.toString(details.getData().getSalesItem().size()), TSIZE22 - 6 ));
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("TAX EX:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex()), TSIZE22 - 7 ));
-            mUsbThermalPrinter.printString();
-            if (looseOil && numberOfItems == 1){
-                mUsbThermalPrinter.addString("TAX VAT @" + padLeft("INC. 16%", TSIZE22 - 9 ));
-            }else {
-                mUsbThermalPrinter.addString("TAX VAT @" + padLeft(details.getData().getTax()+"%", TSIZE22 - 9 ));
-            }
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.setBold(true);
-            mUsbThermalPrinter.addString("TOTAL VAT:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()), TSIZE22 - 10 ));
-            mUsbThermalPrinter.printString();
 
-            mUsbThermalPrinter.addString("----------------------------------");
-            mUsbThermalPrinter.printString();
+            // Get tax summary list
+            List<TaxSummary> taxSummaryList = details.getData().getTax_summery();
+
+            if (taxSummaryList != null && !taxSummaryList.isEmpty()) {
+
+                for (TaxSummary taxSummary : taxSummaryList) {
+                    String code = taxSummary.getCode();
+                    Double taxableValue = taxSummary.getTaxable_value();
+
+                    if (code != null ) {
+                        String taxLabel = "TOTAL " + taxSummary.getCode_name();
+                        mUsbThermalPrinter.addString(taxLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxableValue)),
+                                TSIZE22 - taxLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                for (TaxSummary taxSummary : taxSummaryList) {
+                    String code = taxSummary.getCode();
+                    Double taxAmount = taxSummary.getTax_amount();
+
+                    if (taxAmount != null && taxAmount > 0) {
+                        String taxAmountLabel = "TOTAL TAX " + code;
+                        mUsbThermalPrinter.addString(taxAmountLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxAmount)),
+                                TSIZE22 - taxAmountLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                String totalTaxAmount = details.getData().getTax_amount();
+                if (totalTaxAmount != null && !totalTaxAmount.equals("0")) {
+                    String totalTaxLabel = "TOTAL TAX AMOUNT";
+                    mUsbThermalPrinter.addString(totalTaxLabel + padLeft(
+                            FunUtils.INSTANCE.formatPrintPrice(totalTaxAmount),
+                            TSIZE22 - totalTaxLabel.length()
+                    ));
+                    mUsbThermalPrinter.printString();
+                }
+            }
             mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.setTextSize(26);
-            mUsbThermalPrinter.addString("PAYABLE:" + padLeft(FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()), TSIZE26-8));
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(1);
+
+
 
             mUsbThermalPrinter.setBold(false);
             mUsbThermalPrinter.setTextSize(20);
-            String cashAmt = details.getData().getPayment_type().trim().toUpperCase().equals("CASH") ?
-                    FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "";
-            mUsbThermalPrinter.addString("CASH:" + padLeft(cashAmt, TSIZE20 - 4));
-            mUsbThermalPrinter.printString();
-            String nonCashAmt = details.getData().getPayment_type().trim().toUpperCase().equals("CARD") ||
-                    details.getData().getPayment_type().trim().toUpperCase().equals("M-MONEY") ?
-                    FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "";
-            mUsbThermalPrinter.addString("M-MONEY:" + padLeft(nonCashAmt, TSIZE20 - 5));
-            mUsbThermalPrinter.printString();
+            // â”€â”€ Payment / Items count (skip for Proforma) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (!rcptType.equalsIgnoreCase("P") && !rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                String paymentType = details.getData().getPayment_type().trim();
+                String grandTotal = FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total());
+
+                String paymentLabel = "";
+                if (paymentType.equals("01"))      paymentLabel = "CASH:";
+                else if (paymentType.equals("02")) paymentLabel = "CREDIT:";
+                else if (paymentType.equals("03")) paymentLabel = "CASH/CREDIT:";
+                else if (paymentType.equals("04")) paymentLabel = "BANK CHECK:";
+                else if (paymentType.equals("05")) paymentLabel = "DEBIT/CREDIT CARD:";
+                else if (paymentType.equals("06")) paymentLabel = "M-MONEY:";
+                else if (paymentType.equals("07")) paymentLabel = "OTHER:";
+
+                if (!paymentLabel.isEmpty()) {
+                    mUsbThermalPrinter.addString(paymentLabel + padLeft(grandTotal, TSIZE20 - paymentLabel.length()));
+                    mUsbThermalPrinter.printString();
+                }
+
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.addString("Items:" + padLeft(Integer.toString(details.getData().getSalesItem().size()), TSIZE22 - 6));
+                mUsbThermalPrinter.printString();
+            } else {
+                mUsbThermalPrinter.walkPaper(1); // maintain spacing for Proforma
+            }
+
 
             mUsbThermalPrinter.reset();
             mUsbThermalPrinter.setTextSize(22);
@@ -1143,83 +1529,215 @@ public class PrinterUtil {
             mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
-
-            mUsbThermalPrinter.setAlgin(1);
-            mUsbThermalPrinter.setBold(true);
-            mUsbThermalPrinter.addString("SDC INFORMATION");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(1);
-
-            mUsbThermalPrinter.setGray(6);
+            if (rcptType.equalsIgnoreCase("P" ) || rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.addString(details.getData().getRcptType() );
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("T")|| rcptType.equalsIgnoreCase("Training")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.addString(details.getData().getRcptType() + " Mode");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            } else if (rcptType.equalsIgnoreCase("C") || rcptType.equalsIgnoreCase("Copy")) {
+                mUsbThermalPrinter.setBold(true);
+                mUsbThermalPrinter.setTextSize(22);
+                mUsbThermalPrinter.setAlgin(1);
+                mUsbThermalPrinter.addString(details.getData().getRcptType());
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+                mUsbThermalPrinter.setBold(false);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+            }
             mUsbThermalPrinter.setBold(false);
-            mUsbThermalPrinter.setAlgin(0);
-//            mUsbThermalPrinter.addString("SDC ID/RECEIPT NO:" + padLeft(details.getData().getInvoice_id(), TSIZE22-11));
-//            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("SDC ID:  " + details.getData().getVsdc_reciept().getSdcId());  //gaurav
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("RECEIPT NO:  " + details.getData().getInvoice_id());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("MRC NO.:  " + details.getData().getVsdc_reciept().getMrcNo());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("SALES TYPE CODE:  " +details.getData().getVsdc_reciept().getSales_type());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("RECEIPT TYPE CODE:  " +details.getData().getVsdc_reciept().getRec_type());
-            mUsbThermalPrinter.printString();
-
-            mUsbThermalPrinter.setAlgin(1);
-            mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + details.getData().getVsdc_reciept().getRcptSign());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.addString("INTERNAL DATA:  " + details.getData().getVsdc_reciept().getIntrlData());
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(1);
-
-            mUsbThermalPrinter.setAlgin(0);
             mUsbThermalPrinter.setTextSize(22);
-            mUsbThermalPrinter.addString("----------------------------------");
-            mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(7);
+            mUsbThermalPrinter.setGray(6);
+            VsdcReceipt vsdc = (details.getData().getVsdc_reciept() != null && !details.getData().getVsdc_reciept().isEmpty())
+                    ? details.getData().getVsdc_reciept().get(0) : null;
 
+            String rawDateTime = (vsdc != null) ? vsdc.getVsdcRcptPbctDate() : "";
 
-// GENERATE AND PRINT QR CODE HERE â¬‡ï¸
-            mUsbThermalPrinter.reset();
-            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
-//            mUsbThermalPrinter.walkPaper(2);
-
-// Just the URL - nothing else
-            String qrData = details.getData().getVsdc_reciept().getQrCodeUrl();  //gaurav
-
-// Generate QR code bitmap (200x200 pixels)
-            Bitmap qrBitmap = generateQRCodeBitmap(qrData, 250, 250);
-
-            if (qrBitmap != null) {
+            String vsdcDate = "";
+            String vsdcTime = "";
+            if (rawDateTime != null && !rawDateTime.isEmpty()) {
                 try {
-                    mUsbThermalPrinter.setGray(6);
-                    mUsbThermalPrinter.printLogo(qrBitmap, false);
-                    mUsbThermalPrinter.walkPaper(2);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Log.e("PrinterUtil", "Error printing QR code: " + e.getMessage());
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+                    Date parsedDate = inputFormat.parse(rawDateTime);
+                    if (parsedDate != null) {
+                        vsdcDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedDate);
+                        vsdcTime = new SimpleDateFormat("HH:mm:ss",    Locale.getDefault()).format(parsedDate);
+                    }
+                } catch (ParseException e) {
+                    Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                    vsdcDate = rawDateTime; // fallback
                 }
             }
-// END OF QR CODE PRINTING â¬†ï¸
-            mUsbThermalPrinter.reset();
+
+            String dateLabel = "DATE: " + vsdcDate;
+            String timeLabel = "TIME: " + vsdcTime;
+            int spaces = TSIZE22 - dateLabel.length() - timeLabel.length();
+            if (spaces < 1) spaces = 1;
+            StringBuilder dateLine = new StringBuilder(dateLabel);
+            for (int i = 0; i < spaces; i++) dateLine.append(" ");
+            dateLine.append(timeLabel);
+
+            mUsbThermalPrinter.addString(dateLine.toString());
+            mUsbThermalPrinter.printString();
+
+            // â”€â”€ CHANGED: SDC ID with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String sdcIdLabel = "SDC ID:";
+            String sdcIdValue = (vsdc != null && vsdc.getSdcId() != null)
+                    ? vsdc.getSdcId() : "";
+            mUsbThermalPrinter.addString(sdcIdLabel + padLeft(sdcIdValue, TSIZE22 - sdcIdLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String rcptTypeValue = details.getData().getRcptType() != null ? details.getData().getRcptType() : "N";
+            String receipttype = (vsdc != null ? vsdc.getSales_type() : "") + "" + "S";
+
+            // â”€â”€ CHANGED: Receipt Number (SDC section) with padLeft â”€â”€â”€
+            String sdcRcptLabel = "RECEIPT NUMBER:";
+            String sdcRcptValue = (vsdc != null ? vsdc.getTotRcptNo() : "")
+                    + "/" + (vsdc != null ? vsdc.getTotRcptNo() : "")
+                    + " " + receipttype;
+            mUsbThermalPrinter.addString(sdcRcptLabel + padLeft(sdcRcptValue, TSIZE22 - sdcRcptLabel.length()));
+            mUsbThermalPrinter.printString();
+
             mUsbThermalPrinter.setAlgin(1);
-            mUsbThermalPrinter.setBold(false);
-            mUsbThermalPrinter.addString("THANK YOU!");
+            if (!rcptType.equalsIgnoreCase("T") && !rcptType.equalsIgnoreCase("Training") &&
+                    !rcptType.equalsIgnoreCase("P") && !rcptType.equalsIgnoreCase("Proforma")) {
+                mUsbThermalPrinter.addString("INTERNAL DATA:  " + (vsdc != null ? vsdc.getIntrlData() : ""));
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + (vsdc != null ? vsdc.getRcptSign() : ""));
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            }
+
+// GENERATE AND PRINT QR CODE HERE â¬‡ï¸
+            if (!rcptType.equalsIgnoreCase("T") && !rcptType.equalsIgnoreCase("Training") &&
+                    !rcptType.equalsIgnoreCase("P") && !rcptType.equalsIgnoreCase("Proforma")) {
+                try {
+                    if (vsdc != null &&
+                            vsdc.getQrCodeUrl() != null &&
+                            !vsdc.getQrCodeUrl().isEmpty()) {
+
+                        mUsbThermalPrinter.reset();
+                        mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+                        String qrData = vsdc.getQrCodeUrl();
+                        Bitmap qrBitmap = generateQRCodeBitmap(qrData, 250, 250);
+
+                        if (qrBitmap != null) {
+                            try {
+                                mUsbThermalPrinter.setGray(6);
+                                mUsbThermalPrinter.printLogo(qrBitmap, false);
+                                mUsbThermalPrinter.walkPaper(2);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Log.e("PrinterUtil", "Error printing QR code: " + e.getMessage());
+                            }
+                        } else {
+                            Log.w("PrinterUtil", "QR code bitmap is null");
+                        }
+                    } else {
+                        Log.w("PrinterUtil", "No QR code URL available - skipping QR code");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.e("PrinterUtil", "Exception in QR code section: " + e.getMessage());
+                }
+            } // END QR code condition
+
+            mUsbThermalPrinter.setAlgin(0);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.setAlgin(1);
+            // â”€â”€ CHANGED: Receipt Number (after QR) with padLeft â”€â”€â”€â”€â”€â”€
+
+
+            String rcptNumLabel = "RECEIPT NUMBER:";
+            String receiptNum = (details.getData().getInvoice_id() != null)
+                    ? details.getData().getInvoice_id() : "";
+            mUsbThermalPrinter.addString(rcptNumLabel + padLeft(receiptNum, TSIZE22 - rcptNumLabel.length()));
+            mUsbThermalPrinter.printString();
+
+
+            String rawDateTimee = details.getData().getPurchase_date_time();
+
+            String vsdcDate2 = "";
+            String vsdcTime2 = "";
+            try {
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+                Date parsedDate = inputFormat.parse(rawDateTimee);
+                if (parsedDate != null) {
+                    vsdcDate2 = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedDate);
+                    vsdcTime2 = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(parsedDate);
+                }
+            } catch (ParseException e) {
+                Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                vsdcDate2 = rawDateTimee; // fallback
+            }
+
+            String dateLabel2 = "DATE: " + vsdcDate2;
+            String timeLabel2 = "TIME: " + vsdcTime2;
+            int spaces2 = TSIZE22 - dateLabel2.length() - timeLabel2.length();
+            if (spaces2 < 1) spaces2 = 1;
+            StringBuilder dateLine2 = new StringBuilder(dateLabel2);
+            for (int i = 0; i < spaces2; i++) dateLine2.append(" ");
+            dateLine2.append(timeLabel2);
+
+            mUsbThermalPrinter.addString(dateLine2.toString());
+            mUsbThermalPrinter.printString();
+
+            // â”€â”€ CHANGED: MRC No with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String mrcLabel = "MRC NO.:";
+            String mrcValue = (vsdc != null && vsdc.getMrcNo() != null)
+                    ? vsdc.getMrcNo() + "." : ".";
+            mUsbThermalPrinter.addString(mrcLabel + padLeft(mrcValue, TSIZE22 - mrcLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            mUsbThermalPrinter.setAlgin(0);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+
+// âœ… IMPORTANT: Reset printer state after QR code attempt
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setGray(6);
+
+// Now print THANK YOU
+            mUsbThermalPrinter.addString("THANK YOU");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.addString("WE APPRECIATE YOUR BUSINESS");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
             mUsbThermalPrinter.setLineSpace(3);
             mUsbThermalPrinter.setTextSize(20);
 
             mUsbThermalPrinter.addString("*** END ***");
             mUsbThermalPrinter.printString();
-            mUsbThermalPrinter.walkPaper(15);
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.addString(" ");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
             mUsbThermalPrinter.reset();
-
-
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -1233,7 +1751,7 @@ public class PrinterUtil {
             } else {
                 handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
             }
-        }finally {
+        } finally {
             handler.sendMessage(handler.obtainMessage(CANCELPROMPT, 1, 0, null));
             if (nopaper) {
                 handler.sendMessage(handler.obtainMessage(NOPAPER, 1, 0, null));
@@ -1241,8 +1759,969 @@ public class PrinterUtil {
                 return;
             }
         }
-
     }
+
+
+    public void printCopyReceipt(CopyReceiptRes details) {
+        try {
+            if (details == null || details.getData() == null) {
+                Log.e("PrinterUtil", "Receipt data is null");
+                handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
+                return;
+            }
+
+            CopyReceiptRes.Data data = details.getData();
+
+            // â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setLeftIndent(1);
+            mUsbThermalPrinter.setLineSpace(3);
+            mUsbThermalPrinter.setTextSize(20);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.addString("*** START OF LEGAL RECEIPT ***");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("CIS Version : 1.0.1");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(3);
+
+            // Logo
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.image22);
+            logoBitmap = Bitmap.createScaledBitmap(logoBitmap, 400, 200, true);
+            mUsbThermalPrinter.printLogo(logoBitmap, false);
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ STORE INFO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(32);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(true);
+            String storeName = (data.getStore() != null && data.getStore().getStore_name() != null)
+                    ? data.getStore().getStore_name().toUpperCase() : "";
+            mUsbThermalPrinter.addString(storeName);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(26);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            String storeAddress = (data.getStore() != null && data.getStore().getAddress() != null)
+                    ? data.getStore().getAddress().toUpperCase() : "";
+            mUsbThermalPrinter.addString(storeAddress);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(24);
+            mUsbThermalPrinter.setGray(6);
+            String tpinNo = (data.getTpin_no() != null) ? data.getTpin_no() : "";
+            mUsbThermalPrinter.addString("TIN NO: " + tpinNo);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ RECEIPT TYPE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String rcptTypeRaw = "COPY";
+            mUsbThermalPrinter.setTextSize(24);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.addString(rcptTypeRaw);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ REFUND LABEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(23);
+            mUsbThermalPrinter.addString("REFUND");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+
+            // â”€â”€ CHANGED 1: Ref. Normal Receipt with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String returnedInvoiceId = (data.getReturned_invoice_id() != null)
+                    ? data.getReturned_invoice_id() : "";
+            String refLabel = "Ref. Normal Receipt:";
+            mUsbThermalPrinter.addString(refLabel + padLeft(returnedInvoiceId, TSIZE22 - refLabel.length()));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.addString("REFUND IS APPROVED ONLY FOR ORIGINAL SALES RECEIPT");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ CHANGED 2: Date parsed properly with yyyyMMddHHmmss â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setGray(6);
+
+            CopyReceiptRes.VsdcReceipt vsdcRef = (data.getVsdc_reciept() != null && !data.getVsdc_reciept().isEmpty())
+                    ? data.getVsdc_reciept().get(0) : null;
+
+            String rawVsdcDate = (vsdcRef != null && vsdcRef.getVsdcRcptPbctDate() != null)
+                    ? vsdcRef.getVsdcRcptPbctDate() : "";
+            String formattedDate = "";
+            String formattedTime = "";
+            try {
+                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+                Date parsedVsdcDate = inputFormat.parse(rawVsdcDate);
+                if (parsedVsdcDate != null) {
+                    formattedDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedVsdcDate);
+                    formattedTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(parsedVsdcDate);
+                }
+            } catch (ParseException e) {
+                Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                formattedDate = rawVsdcDate; // fallback
+            }
+
+            String vsdcDateLabel = "DATE: " + formattedDate;
+            String vsdcTimeLabel = "TIME: " + formattedTime;
+            int vsdcSpaces = TSIZE22 - vsdcDateLabel.length() - vsdcTimeLabel.length();
+            if (vsdcSpaces < 1) vsdcSpaces = 1;
+            StringBuilder vsdcDateLine = new StringBuilder(vsdcDateLabel);
+            for (int i = 0; i < vsdcSpaces; i++) vsdcDateLine.append(" ");
+            vsdcDateLine.append(vsdcTimeLabel);
+
+//            mUsbThermalPrinter.addString(vsdcDateLine.toString());
+//            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ CHANGED 1: Buyer info with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String buyerName = (data.getCustomer_name() != null) ? data.getCustomer_name() : "";
+            String buyerNameLabel = "BUYER'S NAME:";
+            mUsbThermalPrinter.addString(buyerNameLabel + padLeft(buyerName, TSIZE22 - buyerNameLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String buyerTin = (data.getBuyers_tpin() != null) ? data.getBuyers_tpin() : "";
+            String buyerTinLabel = "BUYER'S TIN:";
+            mUsbThermalPrinter.addString(buyerTinLabel + padLeft(buyerTin, TSIZE22 - buyerTinLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String buyerContact = (data.getCustomer_mob_no() != null) ? data.getCustomer_mob_no() : "";
+            String buyerContactLabel = "BUYER'S CONTACT:";
+            mUsbThermalPrinter.addString(buyerContactLabel + padLeft(buyerContact, TSIZE22 - buyerContactLabel.length()));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ ITEMS LOOP â€” uses returned_items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (data.getReturned_items() != null) {
+                for (CopyReceiptRes.ReturnedItem item : data.getReturned_items()) {
+                    if (item == null) continue;
+
+                    productname = (item.getProduct_name() != null) ? item.getProduct_name() : "";
+                    numberOfItems++;
+
+                    // Line 1: Product Name (bold)
+                    mUsbThermalPrinter.setTextSize(24);
+                    mUsbThermalPrinter.setGray(6);
+                    mUsbThermalPrinter.setBold(true);
+                    mUsbThermalPrinter.addString(productname);
+                    mUsbThermalPrinter.printString();
+                    mUsbThermalPrinter.setBold(false);
+                    mUsbThermalPrinter.setTextSize(22);
+
+                    String taxCode = "";
+                    if (item.getTax_details() != null && item.getTax_details().getCode() != null) {
+                        taxCode = item.getTax_details().getCode();
+                    }
+
+                    String rateCol = (item.getRetail_price() != null
+                            ? FunUtils.INSTANCE.formatPrintPrice(String.valueOf(item.getRetail_price()))
+                            : "0.00") + "x";
+
+                    String qtyCol = FunUtils.INSTANCE.DtoString(
+                            item.getReturn_quantity() != null
+                                    ? item.getReturn_quantity().doubleValue() : 0.0);
+
+                    String amountCol = "-" + (item.getTotal_amount() != null
+                            ? FunUtils.INSTANCE.formatPrintPrice(String.valueOf(item.getTotal_amount()))
+                            : "0.00") + taxCode;
+
+                    int totalWidth    = TSIZE22;
+                    int rightColWidth = 10;
+                    int midColWidth   = 8;
+                    int leftColWidth  = totalWidth - midColWidth - rightColWidth;
+
+                    String line2 = String.format(
+                            "%-" + leftColWidth + "s%" + midColWidth + "s%" + rightColWidth + "s",
+                            rateCol,
+                            qtyCol,
+                            amountCol
+                    );
+
+                    mUsbThermalPrinter.addString(line2);
+                    mUsbThermalPrinter.printString();
+
+                    Double discountRate    = item.getDiscount_rate();
+                    Double itemTotal       = item.getTotal_amount();
+                    Double discountedTotal = item.getDiscounted_total();
+
+                    if (discountRate != null && discountRate < 0
+                            && itemTotal != null && itemTotal > 0
+                            && discountedTotal != null) {
+
+                        String discountText = "Discount " + discountRate.intValue() + "%";
+
+                        String finalAmountStr = FunUtils.INSTANCE.formatPrintPrice(
+                                Double.toString(discountedTotal));
+
+                        String discountLine = String.format(
+                                "%-" + (totalWidth - rightColWidth) + "s%" + rightColWidth + "s",
+                                discountText,
+                                finalAmountStr
+                        );
+
+                        mUsbThermalPrinter.addString(discountLine);
+                        mUsbThermalPrinter.printString();
+                    }
+
+                    mUsbThermalPrinter.walkPaper(1);
+                }
+            }
+
+            // â”€â”€ TOTALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(23);
+            mUsbThermalPrinter.addString("THIS IS NOT AN OFFICIAL RECEIPT");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            String grandTotal = (data.getGrand_total() != null)
+                    ? FunUtils.INSTANCE.formatPrintPrice(data.getGrand_total()) : "0.00";
+
+            mUsbThermalPrinter.setTextSize(26);
+            mUsbThermalPrinter.setBold(true);
+            String totalLabel = "TOTAL(" + currency + "):";
+            mUsbThermalPrinter.addString(totalLabel + padLeft(grandTotal, TSIZE26 - totalLabel.length()));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+
+            // â”€â”€ TAX SUMMARY LOOP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            List<CopyReceiptRes.TaxSummery> taxSummaryList = data.getTax_summery();
+            if (taxSummaryList != null && !taxSummaryList.isEmpty()) {
+
+                for (CopyReceiptRes.TaxSummery taxSummary : taxSummaryList) {
+                    if (taxSummary.getCode() != null) {
+                        String taxLabel = "TOTAL " + taxSummary.getCode_name();
+                        double taxableValue = (taxSummary.getTaxable_value() != null)
+                                ? taxSummary.getTaxable_value() : 0.0;
+                        mUsbThermalPrinter.addString(taxLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxableValue)),
+                                TSIZE22 - taxLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                for (CopyReceiptRes.TaxSummery taxSummary : taxSummaryList) {
+                    Double taxAmt = taxSummary.getTax_amount();
+                    String code = taxSummary.getCode();
+                    if (taxAmt != null && taxAmt != 0.0 && code != null) {
+                        String taxAmountLabel = "TOTAL TAX " + code;
+                        mUsbThermalPrinter.addString(taxAmountLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxAmt)),
+                                TSIZE22 - taxAmountLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                String totalTaxAmount = data.getTax_amount();
+                if (totalTaxAmount != null && !totalTaxAmount.equals("0")
+                        && !totalTaxAmount.equals("0.00")) {
+                    String totalTaxLabel = "TOTAL TAX AMOUNT";
+                    mUsbThermalPrinter.addString(totalTaxLabel + padLeft(
+                            FunUtils.INSTANCE.formatPrintPrice(totalTaxAmount),
+                            TSIZE22 - totalTaxLabel.length()
+                    ));
+                    mUsbThermalPrinter.printString();
+                }
+            }
+
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            String grandTotall = FunUtils.INSTANCE.formatPrintPrice(String.valueOf(details.getData().getGrand_total()));
+            String paymentLabel = "CASH";
+
+            if (!paymentLabel.isEmpty()) {
+                mUsbThermalPrinter.addString(paymentLabel + padLeft(grandTotall, TSIZE22 - paymentLabel.length()));
+                mUsbThermalPrinter.printString();
+            }
+
+            // Items count
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            int itemsCount = (data.getReturned_items() != null)
+                    ? data.getReturned_items().size() : 0;
+            mUsbThermalPrinter.addString("Items:" + padLeft(Integer.toString(itemsCount), TSIZE22 - 6));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("COPY");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ SDC INFORMATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("SDC INFORMATION");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+
+            if (data.getVsdc_reciept() != null && !data.getVsdc_reciept().isEmpty()) {
+                CopyReceiptRes.VsdcReceipt vsdc = data.getVsdc_reciept().get(0);
+
+                // â”€â”€ CHANGED 2: Reuse properly parsed formattedDate/formattedTime â”€â”€
+                mUsbThermalPrinter.addString(vsdcDateLine.toString());
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: SDC ID with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String sdcId = (vsdc.getSdcId() != null) ? vsdc.getSdcId() : "";
+                String sdcIdLabel = "SDC ID:";
+                mUsbThermalPrinter.addString(sdcIdLabel + padLeft(sdcId, TSIZE22 - sdcIdLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: Receipt Number (SDC) with padLeft â”€â”€â”€â”€â”€
+                String rcptNo = (vsdc.getRcptNo() != null && vsdc.getRcptNo() != 0)
+                        ? String.valueOf(vsdc.getRcptNo()) : "";
+                String sdcRcptLabel = "RECEIPT NUMBER:";
+                String sdcRcptValue = rcptNo + "/" + vsdc.getTotRcptNo() + " CR";
+                mUsbThermalPrinter.addString(sdcRcptLabel + padLeft(sdcRcptValue, TSIZE22 - sdcRcptLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+                String intrlData = (vsdc.getIntrlData() != null) ? vsdc.getIntrlData() : "";
+                mUsbThermalPrinter.addString("INTERNAL DATA:  " + intrlData);
+                mUsbThermalPrinter.printString();
+
+                String rcptSign = (vsdc.getRcptSign() != null) ? vsdc.getRcptSign() : "";
+                mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + rcptSign);
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+
+                // â”€â”€ CHANGED 3: Receipt Number, Date/Time, MRC No after receipt signature â”€â”€
+                mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+
+                // Receipt Number
+                String invoiceId = (data.getReturned_invoice_id() != null)
+                        ? data.getReturned_invoice_id() : "";
+                String rcptNumLabel = "RECEIPT NUMBER:";
+                mUsbThermalPrinter.addString(rcptNumLabel + padLeft(invoiceId, TSIZE22 - rcptNumLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 2: Purchase date properly parsed â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String rawPurchaseDateTime = (data.getReturned_date() != null)
+                        ? data.getReturned_date() : "";
+                String purchaseDate = "";
+                String purchaseTime = "";
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+                    Date parsedPurchaseDate = inputFormat.parse(rawPurchaseDateTime);
+                    if (parsedPurchaseDate != null) {
+                        purchaseDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedPurchaseDate);
+                        purchaseTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(parsedPurchaseDate);
+                    }
+                } catch (ParseException e) {
+                    Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                    purchaseDate = rawPurchaseDateTime; // fallback
+                }
+
+                String purchaseDateLabel = "DATE: " + purchaseDate;
+                String purchaseTimeLabel = "TIME: " + purchaseTime;
+                int purchaseSpaces = TSIZE22 - purchaseDateLabel.length() - purchaseTimeLabel.length();
+                if (purchaseSpaces < 1) purchaseSpaces = 1;
+                StringBuilder purchaseDateLine = new StringBuilder(purchaseDateLabel);
+                for (int i = 0; i < purchaseSpaces; i++) purchaseDateLine.append(" ");
+                purchaseDateLine.append(purchaseTimeLabel);
+
+                mUsbThermalPrinter.addString(purchaseDateLine.toString());
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: MRC No with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String mrcLabel = "MRC NO.:";
+                String mrcValue = (vsdc.getMrcNo() != null) ? vsdc.getMrcNo() + "." : ".";
+                mUsbThermalPrinter.addString(mrcLabel + padLeft(mrcValue, TSIZE22 - mrcLabel.length()));
+                mUsbThermalPrinter.printString();
+            }
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.addString("THANK YOU");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.addString("WE APPRECIATE YOUR BUSINESS");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(3);
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(20);
+            mUsbThermalPrinter.addString("*** END ***");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.addString(" ");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.reset();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("PrinterUtil", "Print error: " + e.getMessage(), e);
+            Result = e.toString();
+            if (Result.contains("NoPaperException")) {
+                nopaper = true;
+            } else if (Result.contains("OverHeatException")) {
+                handler.sendMessage(handler.obtainMessage(OVERHEAT, 1, 0, null));
+            } else {
+                handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
+            }
+        } finally {
+            handler.sendMessage(handler.obtainMessage(CANCELPROMPT, 1, 0, null));
+            if (nopaper) {
+                handler.sendMessage(handler.obtainMessage(NOPAPER, 1, 0, null));
+                nopaper = false;
+                return;
+            }
+        }
+    }
+
+
+    public void printSaleReceipt(SaleReceiptRes details) {
+        try {
+            if (details == null || details.getData() == null) {
+                Log.e("PrinterUtil", "Sale receipt data is null");
+                handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
+                return;
+            }
+
+            SaleReceiptRes.Data data = details.getData();
+
+            // â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setLeftIndent(1);
+            mUsbThermalPrinter.setLineSpace(3);
+            mUsbThermalPrinter.setTextSize(20);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.addString("*** START OF LEGAL RECEIPT ***");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("CIS Version : 1.0.1");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(3);
+
+            // Logo
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            Bitmap logoBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.image22);
+            logoBitmap = Bitmap.createScaledBitmap(logoBitmap, 400, 200, true);
+            mUsbThermalPrinter.printLogo(logoBitmap, false);
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ STORE INFO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(32);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(true);
+            String storeName = (data.getStore() != null && data.getStore().getStore_name() != null)
+                    ? data.getStore().getStore_name().toUpperCase() : "";
+            mUsbThermalPrinter.addString(storeName);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(26);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            String storeAddress = (data.getStore() != null && data.getStore().getAddress() != null)
+                    ? data.getStore().getAddress().toUpperCase() : "";
+            mUsbThermalPrinter.addString(storeAddress);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(24);
+            mUsbThermalPrinter.setGray(6);
+            String tpinNo = (data.getTpin_no() != null) ? data.getTpin_no() : "";
+            mUsbThermalPrinter.addString("TIN NO: " + tpinNo);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ RECEIPT TYPE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setTextSize(24);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.addString("COPY");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+
+            mUsbThermalPrinter.setAlgin(0);
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ CHANGED 1: Buyer info with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            String buyerName = (data.getCustomer_name() != null) ? data.getCustomer_name() : "";
+            String buyerNameLabel = "BUYER'S NAME:";
+            mUsbThermalPrinter.addString(buyerNameLabel + padLeft(buyerName, TSIZE22 - buyerNameLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String buyerTin = (data.getBuyers_tpin() != null) ? data.getBuyers_tpin() : "";
+            String buyerTinLabel = "BUYER'S TIN:";
+            mUsbThermalPrinter.addString(buyerTinLabel + padLeft(buyerTin, TSIZE22 - buyerTinLabel.length()));
+            mUsbThermalPrinter.printString();
+
+            String buyerContact = (data.getCustomer_mob_no() != null) ? data.getCustomer_mob_no() : "";
+            String buyerContactLabel = "BUYER'S CONTACT:";
+            mUsbThermalPrinter.addString(buyerContactLabel + padLeft(buyerContact, TSIZE22 - buyerContactLabel.length()));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ ITEMS LOOP â€” uses salesItem â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (data.getSalesItem() != null) {
+                for (SaleReceiptRes.SalesItem item : data.getSalesItem()) {
+                    if (item == null) continue;
+
+                    String productName = (item.getProduct_name() != null)
+                            ? item.getProduct_name() : "";
+                    numberOfItems++;
+
+                    boolean looseOil = productName.toLowerCase().startsWith("bulk oil");
+
+                    // Line 1: Product Name (bold)
+                    mUsbThermalPrinter.setTextSize(24);
+                    mUsbThermalPrinter.setGray(6);
+                    mUsbThermalPrinter.setBold(true);
+                    mUsbThermalPrinter.addString(productName);
+                    mUsbThermalPrinter.printString();
+                    mUsbThermalPrinter.setBold(false);
+                    mUsbThermalPrinter.setTextSize(22);
+
+                    String taxCode = "";
+                    if (item.getTax_details() != null && item.getTax_details().getCode() != null) {
+                        taxCode = item.getTax_details().getCode();
+                    }
+
+                    String rateCol = FunUtils.INSTANCE.formatPrintPrice(
+                            item.getTax_inclusive_price() != null
+                                    ? String.valueOf(item.getTax_inclusive_price()) : "0.00") + "x";
+
+                    String qtyCol = FunUtils.INSTANCE.DtoString(
+                            item.getQuantity() != null ? item.getQuantity() : 0.0);
+
+                    String amountCol = FunUtils.INSTANCE.formatPrintPrice(
+                            item.getTotal_amount() != null
+                                    ? String.valueOf(item.getTotal_amount()) : "0.00") + taxCode;
+
+                    int totalWidth    = TSIZE22;
+                    int rightColWidth = 10;
+                    int midColWidth   = 8;
+                    int leftColWidth  = totalWidth - midColWidth - rightColWidth;
+
+                    String line2 = String.format(
+                            "%-" + leftColWidth + "s%" + midColWidth + "s%" + rightColWidth + "s",
+                            rateCol,
+                            qtyCol,
+                            amountCol
+                    );
+
+                    mUsbThermalPrinter.addString(line2);
+                    mUsbThermalPrinter.printString();
+
+                    Double discountRate = item.getDiscount_rate();
+                    Double totalAmount  = item.getTotal_amount();
+
+                    if (discountRate != null && discountRate < 0
+                            && totalAmount != null && totalAmount > 0) {
+
+                        String discountText = "Discount " + discountRate.intValue() + "%";
+
+                        double discountedTotal = totalAmount + (totalAmount * discountRate / 100);
+
+                        String discountAmountStr = FunUtils.INSTANCE.formatPrintPrice(
+                                String.valueOf(discountedTotal));
+
+                        String discountLine = String.format(
+                                "%-" + (totalWidth - rightColWidth) + "s%" + rightColWidth + "s",
+                                discountText,
+                                discountAmountStr
+                        );
+
+                        mUsbThermalPrinter.addString(discountLine);
+                        mUsbThermalPrinter.printString();
+                    }
+
+                    mUsbThermalPrinter.walkPaper(1);
+                }
+            }
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setAlgin(1);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(23);
+            mUsbThermalPrinter.addString("THIS IS NOT AN OFFICIAL RECEIPT");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+
+            // â”€â”€ TOTALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            String grandTotal = (data.getGrand_total() != null)
+                    ? FunUtils.INSTANCE.formatPrintPrice(data.getGrand_total()) : "0.00";
+            mUsbThermalPrinter.setTextSize(26);
+            mUsbThermalPrinter.setBold(true);
+            String totalLabel = "TOTAL(" + currency + "):";
+            mUsbThermalPrinter.addString(totalLabel + padLeft(grandTotal, TSIZE26 - totalLabel.length()));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+
+            // â”€â”€ TAX SUMMARY LOOP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            List<SaleReceiptRes.TaxSummery> taxSummaryList = data.getTax_summery();
+            if (taxSummaryList != null && !taxSummaryList.isEmpty()) {
+
+                for (SaleReceiptRes.TaxSummery taxSummary : taxSummaryList) {
+                    if (taxSummary.getCode() != null) {
+                        String taxLabel = "TOTAL " + taxSummary.getCode_name();
+                        double taxableValue = (taxSummary.getTaxable_value() != null)
+                                ? taxSummary.getTaxable_value() : 0.0;
+                        mUsbThermalPrinter.addString(taxLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxableValue)),
+                                TSIZE22 - taxLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                for (SaleReceiptRes.TaxSummery taxSummary : taxSummaryList) {
+                    Double taxAmt = taxSummary.getTax_amount();
+                    String code = taxSummary.getCode();
+                    if (taxAmt != null && taxAmt != 0.0 && code != null) {
+                        String taxAmountLabel = "TOTAL TAX " + code;
+                        mUsbThermalPrinter.addString(taxAmountLabel + padLeft(
+                                FunUtils.INSTANCE.formatPrintPrice(String.valueOf(taxAmt)),
+                                TSIZE22 - taxAmountLabel.length()
+                        ));
+                        mUsbThermalPrinter.printString();
+                    }
+                }
+
+                String totalTaxAmount = data.getTax_amount();
+                if (totalTaxAmount != null && !totalTaxAmount.equals("0")
+                        && !totalTaxAmount.equals("0.00")) {
+                    String totalTaxLabel = "TOTAL TAX AMOUNT";
+                    mUsbThermalPrinter.addString(totalTaxLabel + padLeft(
+                            FunUtils.INSTANCE.formatPrintPrice(totalTaxAmount),
+                            TSIZE22 - totalTaxLabel.length()
+                    ));
+                    mUsbThermalPrinter.printString();
+                }
+            }
+
+            mUsbThermalPrinter.walkPaper(1);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // Items count
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            int itemsCount = (data.getSalesItem() != null) ? data.getSalesItem().size() : 0;
+            mUsbThermalPrinter.addString("Items:" + padLeft(Integer.toString(itemsCount), TSIZE22 - 6));
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            String rcptTypeRaw = "COPY";
+            mUsbThermalPrinter.setTextSize(24);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.addString(rcptTypeRaw);
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ SDC INFORMATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setBold(true);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("SDC INFORMATION");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+
+            if (data.getVsdc_reciept() != null && !data.getVsdc_reciept().isEmpty()) {
+                SaleReceiptRes.VsdcReceipt vsdc = data.getVsdc_reciept().get(0);
+
+                // â”€â”€ CHANGED 2: Date parsed properly with yyyyMMddHHmmss â”€â”€
+                String vsdcRawDate = (vsdc.getVsdcRcptPbctDate() != null)
+                        ? vsdc.getVsdcRcptPbctDate() : "";
+                String vsdcDate = "";
+                String vsdcTime = "";
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
+                    Date parsedVsdcDate = inputFormat.parse(vsdcRawDate);
+                    if (parsedVsdcDate != null) {
+                        vsdcDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).format(parsedVsdcDate);
+                        vsdcTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(parsedVsdcDate);
+                    }
+                } catch (ParseException e) {
+                    Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                    vsdcDate = vsdcRawDate; // fallback
+                }
+
+                String vsdcDateLabel = "DATE: " + vsdcDate;
+                String vsdcTimeLabel = "TIME: " + vsdcTime;
+                int vsdcSpaces = TSIZE22 - vsdcDateLabel.length() - vsdcTimeLabel.length();
+                if (vsdcSpaces < 1) vsdcSpaces = 1;
+                StringBuilder vsdcDateLine = new StringBuilder(vsdcDateLabel);
+                for (int i = 0; i < vsdcSpaces; i++) vsdcDateLine.append(" ");
+                vsdcDateLine.append(vsdcTimeLabel);
+
+                mUsbThermalPrinter.addString(vsdcDateLine.toString());
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: SDC ID with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String sdcId = (vsdc.getSdcId() != null) ? vsdc.getSdcId() : "";
+                String sdcIdLabel = "SDC ID:";
+                mUsbThermalPrinter.addString(sdcIdLabel + padLeft(sdcId, TSIZE22 - sdcIdLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: Receipt Number (SDC) with padLeft â”€â”€â”€â”€â”€
+                String rcptNo = (vsdc.getRcptNo() != null && vsdc.getRcptNo() != 0)
+                        ? String.valueOf(vsdc.getRcptNo()) : "";
+                String sdcRcptLabel = "RECEIPT NUMBER:";
+                String sdcRcptValue = rcptNo + "/" + vsdc.getTotRcptNo() + " CS";
+                mUsbThermalPrinter.addString(sdcRcptLabel + padLeft(sdcRcptValue, TSIZE22 - sdcRcptLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+                String intrlData = (vsdc.getIntrlData() != null) ? vsdc.getIntrlData() : "";
+                mUsbThermalPrinter.addString("INTERNAL DATA:  " + intrlData);
+                mUsbThermalPrinter.printString();
+
+                String rcptSign = (vsdc.getRcptSign() != null) ? vsdc.getRcptSign() : "";
+                mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + rcptSign);
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+
+                // â”€â”€ RECEIPT NUMBER / DATE / MRC NO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+                mUsbThermalPrinter.addString("----------------------------------");
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+
+                // â”€â”€ CHANGED 1: Receipt Number with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String receiptNum = (data.getInvoice_id() != null) ? data.getInvoice_id() : "";
+                String rcptNumLabel = "RECEIPT NUMBER:";
+                mUsbThermalPrinter.addString(rcptNumLabel + padLeft(receiptNum, TSIZE22 - rcptNumLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 2: Purchase date properly parsed â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String rawPurchaseDateTime = (data.getPurchase_date_time() != null)
+                        ? data.getPurchase_date_time() : "";
+                String purchaseDate = "";
+                String purchaseTime = "";
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat(
+                            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+                    Date parsedDate = inputFormat.parse(rawPurchaseDateTime);
+                    if (parsedDate != null) {
+                        purchaseDate = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+                                .format(parsedDate);
+                        purchaseTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                                .format(parsedDate);
+                    }
+                } catch (ParseException e) {
+                    Log.e("DateFormat", "Parsing failed: " + e.getMessage());
+                    purchaseDate = rawPurchaseDateTime; // fallback
+                }
+
+                String purchaseDateLabel = "DATE: " + purchaseDate;
+                String purchaseTimeLabel = "TIME: " + purchaseTime;
+                int purchaseSpaces = TSIZE22 - purchaseDateLabel.length() - purchaseTimeLabel.length();
+                if (purchaseSpaces < 1) purchaseSpaces = 1;
+                StringBuilder purchaseDateLine = new StringBuilder(purchaseDateLabel);
+                for (int i = 0; i < purchaseSpaces; i++) purchaseDateLine.append(" ");
+                purchaseDateLine.append(purchaseTimeLabel);
+
+                mUsbThermalPrinter.addString(purchaseDateLine.toString());
+                mUsbThermalPrinter.printString();
+
+                // â”€â”€ CHANGED 1: MRC No with padLeft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                String mrcLabel = "MRC NO.:";
+                String mrcValue = (vsdc.getMrcNo() != null) ? vsdc.getMrcNo() + "." : ".";
+                mUsbThermalPrinter.addString(mrcLabel + padLeft(mrcValue, TSIZE22 - mrcLabel.length()));
+                mUsbThermalPrinter.printString();
+
+            } else {
+
+                String sdcId = (data.getSdc_id() != null) ? data.getSdc_id() : "";
+                String sdcIdLabel = "SDC ID:";
+                mUsbThermalPrinter.addString(sdcIdLabel + padLeft(sdcId, TSIZE22 - sdcIdLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                String receiptNo = (data.getReceipt_no() != null) ? data.getReceipt_no() : "";
+                String fallbackRcptLabel = "RECEIPT NUMBER:";
+                mUsbThermalPrinter.addString(fallbackRcptLabel + padLeft(receiptNo + " NS", TSIZE22 - fallbackRcptLabel.length()));
+                mUsbThermalPrinter.printString();
+
+                mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+
+                String internalData = (data.getInternal_data() != null) ? data.getInternal_data() : "";
+                mUsbThermalPrinter.addString("INTERNAL DATA:  " + internalData);
+                mUsbThermalPrinter.printString();
+
+                String receiptSign = (data.getReceipt_sign() != null) ? data.getReceipt_sign() : "";
+                mUsbThermalPrinter.addString("RECEIPT SIGNATURE:  " + receiptSign);
+                mUsbThermalPrinter.printString();
+                mUsbThermalPrinter.walkPaper(1);
+            }
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_LEFT);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.addString("----------------------------------");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(1);
+
+            // â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            mUsbThermalPrinter.reset();
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(22);
+            mUsbThermalPrinter.setBold(false);
+            mUsbThermalPrinter.setGray(6);
+            mUsbThermalPrinter.addString("THANK YOU");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.addString("WE APPRECIATE YOUR BUSINESS");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(3);
+
+            mUsbThermalPrinter.setAlgin(UsbThermalPrinter.ALGIN_MIDDLE);
+            mUsbThermalPrinter.setTextSize(20);
+            mUsbThermalPrinter.addString("*** END ***");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.addString(" ");
+            mUsbThermalPrinter.printString();
+            mUsbThermalPrinter.walkPaper(5);
+            mUsbThermalPrinter.reset();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("PrinterUtil", "Print error: " + e.getMessage(), e);
+            Result = e.toString();
+            if (Result.contains("NoPaperException")) {
+                nopaper = true;
+            } else if (Result.contains("OverHeatException")) {
+                handler.sendMessage(handler.obtainMessage(OVERHEAT, 1, 0, null));
+            } else {
+                handler.sendMessage(handler.obtainMessage(PRINTERR, 1, 0, null));
+            }
+        } finally {
+            handler.sendMessage(handler.obtainMessage(CANCELPROMPT, 1, 0, null));
+            if (nopaper) {
+                handler.sendMessage(handler.obtainMessage(NOPAPER, 1, 0, null));
+                nopaper = false;
+                return;
+            }
+        }
+    }
+
+
+
+
+
+
+
+
 
 
 //    private class contentPrintThread extends Thread {
@@ -1533,9 +3012,9 @@ public class PrinterUtil {
         StringBuilder printContent = new StringBuilder();
         printContent.append("\n             RetailOne\n")
                 .append("---------------------------\n")
-                .append("Dateï¼š2015-01-01 16:18:20\n")
-                .append("invoiceï¼š12378945664\n")
-                .append("idï¼š1001000000000529142\n")
+                .append("DateÃ¯Â¼Å¡2015-01-01 16:18:20\n")
+                .append("invoiceÃ¯Â¼Å¡12378945664\n")
+                .append("idÃ¯Â¼Å¡1001000000000529142\n")
                 .append("---------------------------\n")
                 .append("    item        quantity   Price  total\n");
 
@@ -1547,11 +3026,11 @@ public class PrinterUtil {
         }
 
         printContent.append("----------------------------\n")
-                .append(String.format(" taxï¼š%10.2f\n", 1000.00))
+                .append(String.format(" taxÃ¯Â¼Å¡%10.2f\n", 1000.00))
                 .append("----------------------------\n")
-                .append(String.format("paidï¼š%10.2f\n", 10000.00))
-                .append(String.format("tenderï¼š%10.2f\n", 1000.00))
-                .append(String.format("paidï¼š%10.2f\n", 9000.00))
+                .append(String.format("paidÃ¯Â¼Å¡%10.2f\n", 10000.00))
+                .append(String.format("tenderÃ¯Â¼Å¡%10.2f\n", 1000.00))
+                .append(String.format("paidÃ¯Â¼Å¡%10.2f\n", 9000.00))
                 .append("----------------------------\n")
                 .append(" Thanks for shopping with us\n")
                 .append("tel :1111111111\n");
@@ -2013,17 +3492,17 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(false);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"VAT NOï¼š",details.getData().getVat_no(),}, new int[]{3,6}, new int[]{0,1}, 22);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TPIN NOï¼š",details.getData().getTpin_no(),}, new int[]{3,6}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"VAT NOÃ¯Â¼Å¡",details.getData().getVat_no(),}, new int[]{3,6}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TPIN NOÃ¯Â¼Å¡",details.getData().getTpin_no(),}, new int[]{3,6}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.printColumnsString(new String[]{"DATEï¼š",DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getReturned_date(),zone),}, new int[]{3,6}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"DATEÃ¯Â¼Å¡",DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getReturned_date(),zone),}, new int[]{3,6}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(2);
-            mUsbThermalPrinter.printColumnsString(new String[]{"Credit Note Noï¼š",details.getData().getReturned_invoice_id(),}, new int[]{5,5}, new int[]{0,1}, 22);
-            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERâ€™S NAMEï¼š",details.getData().getCustomer_name(),}, new int[]{5,5}, new int[]{0,1}, 22);
-            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERâ€™S TPINï¼š",details.getData().getBuyers_tpin(),}, new int[]{5,5}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"Credit Note NoÃ¯Â¼Å¡",details.getData().getReturned_invoice_id(),}, new int[]{5,5}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERÃ¢â‚¬â„¢S NAMEÃ¯Â¼Å¡",details.getData().getCustomer_name(),}, new int[]{5,5}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERÃ¢â‚¬â„¢S TPINÃ¯Â¼Å¡",details.getData().getBuyers_tpin(),}, new int[]{5,5}, new int[]{0,1}, 22);
             mUsbThermalPrinter.walkPaper(2);
 
 
@@ -2071,7 +3550,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL ("+currency+") ï¼š",FunUtils.INSTANCE.formatPrintPrice(Double.toString(details.getData().getTotal())),}, new int[]{6,3}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL ("+currency+") Ã¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(Double.toString(details.getData().getTotal())),}, new int[]{6,3}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2081,7 +3560,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(false);
             //mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.printColumnsString(new String[]{"Itemsï¼š",Integer.toString(details.getData().getReturned_items().size())}, new int[]{6,3}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"ItemsÃ¯Â¼Å¡",Integer.toString(details.getData().getReturned_items().size())}, new int[]{6,3}, new int[]{0,1}, 22);
 
 
             mUsbThermalPrinter.addString("----------------------------");
@@ -2089,7 +3568,7 @@ public class PrinterUtil {
 
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.printColumnsString(new String[]{"TAX EXï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex())}, new int[]{6,3}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TAX EXÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex())}, new int[]{6,3}, new int[]{0,1}, 22);
             mUsbThermalPrinter.walkPaper(1);
 
             mUsbThermalPrinter.printColumnsString(new String[]{"TAX VAT@"+details.getData().getTax()+"% ",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount())}, new int[]{6,3}, new int[]{0,1}, 22);
@@ -2104,7 +3583,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL VATï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()),}, new int[]{6,3}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL VATÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()),}, new int[]{6,3}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2125,7 +3604,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"PAYABLEï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()),}, new int[]{6,3}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"PAYABLEÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()),}, new int[]{6,3}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2239,17 +3718,17 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(false);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"VAT NOï¼š",details.getData().getVat_no(),}, new int[]{3,6}, new int[]{0,1}, 20);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TPIN NOï¼š",details.getData().getTpin_no(),}, new int[]{3,6}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"VAT NOÃ¯Â¼Å¡",details.getData().getVat_no(),}, new int[]{3,6}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TPIN NOÃ¯Â¼Å¡",details.getData().getTpin_no(),}, new int[]{3,6}, new int[]{0,1}, 20);
 
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.printColumnsString(new String[]{"DATEï¼š",DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getPurchase_date_time(),zone),}, new int[]{3,6}, new int[]{0,1}, 22);
+            mUsbThermalPrinter.printColumnsString(new String[]{"DATEÃ¯Â¼Å¡",DateTimeFormatting.Companion.formatSaleReturndate(details.getData().getPurchase_date_time(),zone),}, new int[]{3,6}, new int[]{0,1}, 22);
 
             mUsbThermalPrinter.walkPaper(2);
-            mUsbThermalPrinter.printColumnsString(new String[]{"RECEIPT NOï¼š",details.getData().getInvoice_id(),}, new int[]{5,5}, new int[]{0,1}, 20);
-            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERâ€™S NAMEï¼š",details.getData().getCustomer_name(),}, new int[]{5,5}, new int[]{0,1}, 20);
-            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERâ€™S TPINï¼š",details.getData().getBuyers_tpin(),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"RECEIPT NOÃ¯Â¼Å¡",details.getData().getInvoice_id(),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERÃ¢â‚¬â„¢S NAMEÃ¯Â¼Å¡",details.getData().getCustomer_name(),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"BUYERÃ¢â‚¬â„¢S TPINÃ¯Â¼Å¡",details.getData().getBuyers_tpin(),}, new int[]{5,5}, new int[]{0,1}, 20);
             mUsbThermalPrinter.walkPaper(2);
 
 
@@ -2297,7 +3776,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL ("+currency+") ï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getSub_total()),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL ("+currency+") Ã¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getSub_total()),}, new int[]{5,5}, new int[]{0,1}, 20);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2307,7 +3786,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(false);
             //mUsbThermalPrinter.walkPaper(1);
-            mUsbThermalPrinter.printColumnsString(new String[]{"Itemsï¼š",Integer.toString(details.getData().getSalesItem().size())}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"ItemsÃ¯Â¼Å¡",Integer.toString(details.getData().getSalesItem().size())}, new int[]{5,5}, new int[]{0,1}, 20);
 
 
             mUsbThermalPrinter.addString("----------------------------");
@@ -2315,7 +3794,7 @@ public class PrinterUtil {
 
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.printColumnsString(new String[]{"TAX EXï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex())}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TAX EXÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_ex())}, new int[]{5,5}, new int[]{0,1}, 20);
             mUsbThermalPrinter.walkPaper(1);
 
             mUsbThermalPrinter.printColumnsString(new String[]{"TAX VAT@"+details.getData().getTax()+"% ",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount())}, new int[]{5,5}, new int[]{0,1}, 20);
@@ -2330,7 +3809,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL VATï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"TOTAL VATÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getTax_amount()),}, new int[]{5,5}, new int[]{0,1}, 20);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2351,7 +3830,7 @@ public class PrinterUtil {
             mUsbThermalPrinter.setGray(4);
             mUsbThermalPrinter.setBold(true);
             // mUsbThermalPrinter.setItalic(true);
-            mUsbThermalPrinter.printColumnsString(new String[]{"PAYABLEï¼š",FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()),}, new int[]{5,5}, new int[]{0,1}, 20);
+            mUsbThermalPrinter.printColumnsString(new String[]{"PAYABLEÃ¯Â¼Å¡",FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()),}, new int[]{5,5}, new int[]{0,1}, 20);
 
             mUsbThermalPrinter.walkPaper(1);
 
@@ -2366,9 +3845,9 @@ public class PrinterUtil {
             mUsbThermalPrinter.printString();
             mUsbThermalPrinter.walkPaper(1);
 
-            mUsbThermalPrinter.printColumnsString(new String[]{"CASHï¼š",details.getData().getPayment_type().trim().toUpperCase().equals("CASH") ?
+            mUsbThermalPrinter.printColumnsString(new String[]{"CASHÃ¯Â¼Å¡",details.getData().getPayment_type().trim().toUpperCase().equals("CASH") ?
                     FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "XXX"}, new int[]{5,5}, new int[]{0,1}, 20);
-            mUsbThermalPrinter.printColumnsString(new String[]{"CARD/M-MONEYï¼š",
+            mUsbThermalPrinter.printColumnsString(new String[]{"CARD/M-MONEYÃ¯Â¼Å¡",
                     details.getData().getPayment_type().trim().toUpperCase().equals("CARD") ||
                             details.getData().getPayment_type().trim().toUpperCase().equals("M-MONEY") ?
                             FunUtils.INSTANCE.formatPrintPrice(details.getData().getGrand_total()) : "xxx"}, new int[]{5,5}, new int[]{0,1}, 20);
@@ -2721,9 +4200,9 @@ public class PrinterUtil {
         StringBuilder printContent = new StringBuilder();
         printContent.append("\n             RetailOne\n")
                 .append("---------------------------\n")
-                .append("Dateï¼š2015-01-01 16:18:20\n")
-                .append("invoiceï¼š12378945664\n")
-                .append("idï¼š1001000000000529142\n")
+                .append("DateÃ¯Â¼Å¡2015-01-01 16:18:20\n")
+                .append("invoiceÃ¯Â¼Å¡12378945664\n")
+                .append("idÃ¯Â¼Å¡1001000000000529142\n")
                 .append("---------------------------\n")
                 .append("    item        quantity   Price  total\n");
 
@@ -2735,11 +4214,11 @@ public class PrinterUtil {
         }
 
         printContent.append("----------------------------\n")
-                .append(String.format(" taxï¼š%10.2f\n", 1000.00))
+                .append(String.format(" taxÃ¯Â¼Å¡%10.2f\n", 1000.00))
                 .append("----------------------------\n")
-                .append(String.format("paidï¼š%10.2f\n", 10000.00))
-                .append(String.format("tenderï¼š%10.2f\n", 1000.00))
-                .append(String.format("paidï¼š%10.2f\n", 9000.00))
+                .append(String.format("paidÃ¯Â¼Å¡%10.2f\n", 10000.00))
+                .append(String.format("tenderÃ¯Â¼Å¡%10.2f\n", 1000.00))
+                .append(String.format("paidÃ¯Â¼Å¡%10.2f\n", 9000.00))
                 .append("----------------------------\n")
                 .append(" Thanks for shopping with us\n")
                 .append("tel :1111111111\n");

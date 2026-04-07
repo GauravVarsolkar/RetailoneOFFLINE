@@ -378,7 +378,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                                 if (!invoiceId.isNullOrEmpty()) {
                                     val saleDetails = detailedSaleRepository?.getDetailedSaleByInvoiceId(invoiceId)
                                     if (saleDetails != null) {
-                                        val grandTotal = (saleDetails.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+                                        val grandTotal = saleDetails.grand_total
                                         detailedSaleRepository?.updateReplacedAmount(
                                             invoiceId,
                                             grandTotal,
@@ -442,7 +442,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                                     val saleDetails = detailedSaleRepository?.getDetailedSaleByInvoiceId(invoiceId)
 
                                     if (saleDetails != null) {
-                                        val grandTotal = (saleDetails.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+                                        val grandTotal = saleDetails.grand_total
                                         val reasonId = returnRequest.reason_id ?: -1
 
                                         Log.d("RETAILONE_DEBUG", "Updating cache for $invoiceId: amount=$grandTotal, reason=$reasonId")
@@ -505,7 +505,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 Log.d("OFFLINE_DEBUG_TAG", "Decorating $invoiceId: hasPendingReturn=$hasPendingReturn, hasPendingReplace=$hasPendingReplace")
 
                 if (hasPendingReturn && pendingReturnEntity != null) {
-                    val grandTotal = data.grand_total?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
+                    val grandTotal = data.grand_total
                     val req = pendingReturnRepository!!.entityToReturnRequest(pendingReturnEntity)
                     val reasonName = detailedSaleRepository?.getReasonNameById(req.reason_id ?: -1) ?: "Offline Return"
 
@@ -588,14 +588,14 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                         reason_id = req.reason_id ?: -1,
                         salesItems = restoredItems,
                         sales_items = restoredItemsDetailed,
-                        sub_total = data.sub_total ?: (grandTotal * 0.85),
-                        tax_amount = data.tax_amount ?: "0.0",
-                        grand_total = data.grand_total ?: grandTotal.toString()
+                        sub_total = data.sub_total,
+                        tax_amount = data.tax_amount,
+                        grand_total = data.grand_total
                     )
                     Log.d("OFFLINE_DEBUG_TAG", "   - AFTER: sub_total=${data.sub_total}, tax_amount=${data.tax_amount}, grand_total=${data.grand_total}, refunded=${data.total_refunded_amount}")
                 }
                 if (hasPendingReplace) {
-                    val grandTotal = data?.grand_total?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
+                    val grandTotal = data?.grand_total ?: 0.0
                     data = data?.copy(total_replaced_amount = grandTotal)
                 }
 
@@ -684,8 +684,8 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 updated_at = entity.sale_date_time,
                 status = 1
             ),
-            discount_amount = entity.discount_amount,
-            grand_total = entity.grand_total,
+            discount_amount = entity.discount_amount.toIntOrNull() ?: 0,
+            grand_total = entity.grand_total.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0,
             id = entity.id,
             invoice_id = entity.invoice_id,
             payment_type = entity.payment_type,
@@ -745,8 +745,10 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
             sub_total = entity.sub_total.toDoubleOrNull() ?: 0.0,
             subtotal_after_discount = entity.subtotal_after_discount.toDoubleOrNull() ?: 0.0,
             tax = entity.tax,
-            tax_amount = entity.tax_amount,
-            updated_at = entity.sale_date_time
+            tax_amount = entity.tax_amount.toDoubleOrNull() ?: 0.0,
+            updated_at = entity.sale_date_time,
+            spot_discount_amount = "0",
+            spot_discount_percentage = 0f
         )
     }
 
@@ -809,7 +811,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                         
                         dataToSave = incomingData.copy(
                             total_refunded_amount = if (incomingData.total_refunded_amount <= 0 && hasLocalReturn) {
-                                if (localRefunded > 0) localRefunded else (localData.grand_total?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0)
+                                if (localRefunded > 0) localRefunded else localData.grand_total
                             } else incomingData.total_refunded_amount,
                             
                             total_replaced_amount = if (incomingData.total_replaced_amount <= 0 && hasLocalReplace) localReplaced else incomingData.total_replaced_amount,

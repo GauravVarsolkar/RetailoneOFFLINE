@@ -48,20 +48,29 @@ class PosSaleRepository(private val context: Context) {
         onSuccess: (PosSalesDetails) -> Unit,
         onError: (String) -> Unit
     ) {
+        // ✅ NEW: If invoice_id is empty, generate a unique local ID (e.g., OFFLINE_timestamp)
+        // to avoid "already exists locally" error in database duplicate check.
+        val finalSaleReq = if (saleReq.invoice_id.isEmpty()) {
+            val localInvoiceId = "OFF_${System.currentTimeMillis()}"
+            saleReq.copy(invoice_id = localInvoiceId)
+        } else {
+            saleReq
+        }
+
         // Check for duplicate invoice
-        val existingSale = dao.getSaleByInvoice(saleReq.invoice_id, saleReq.store_id)
+        val existingSale = dao.getSaleByInvoice(finalSaleReq.invoice_id, finalSaleReq.store_id)
         if (existingSale != null) {
-            onError("Invoice ${saleReq.invoice_id} already exists locally")
+            onError("Invoice ${finalSaleReq.invoice_id} already exists locally")
             return
         }
 
         if (NetworkUtils.isInternetAvailable(context)) {
             // ✅ ONLINE: Try API first
-            submitToApiWithFallback(saleReq, onSuccess, onError)
+            submitToApiWithFallback(finalSaleReq, onSuccess, onError)
         } else {
             // ✅ OFFLINE: Save locally
-            saveSaleLocally(saleReq)
-            onSuccess(createOfflineSuccessResponse(saleReq))
+            saveSaleLocally(finalSaleReq)
+            onSuccess(createOfflineSuccessResponse(finalSaleReq))
         }
     }
 
@@ -142,6 +151,10 @@ class PosSaleRepository(private val context: Context) {
                 sale_date_time = saleReq.sale_date_time,
                 tin_tpin_no = saleReq.tin_tpin_no,
                 invoice_id = saleReq.invoice_id,
+                trxn_code = saleReq.trxn_code,
+                prc_no = saleReq.prc_no,
+                spot_discount_percentage = saleReq.spot_discount_percentage,
+                spot_discount_amount = saleReq.spot_discount_amount,
                 sync_status = syncStatus
             )
 
@@ -336,7 +349,10 @@ class PosSaleRepository(private val context: Context) {
                 receipt_no = "",
                 vsdc_reciept = null,
                 taxrate = saleReq.tax,
-                rcptType = ""
+                rcptType = "",
+                trxn_code = saleReq.trxn_code,
+                tax_details = saleReq.tax_details,
+                tax_summery = saleReq.tax_summery
             )
         )
     }
@@ -386,7 +402,15 @@ class PosSaleRepository(private val context: Context) {
                 amount_tendered = sale.amount_tendered,
                 sale_date_time = sale.sale_date_time,
                 tin_tpin_no = sale.tin_tpin_no,
-                invoice_id = sale.invoice_id
+                invoice_id = sale.invoice_id,
+                trxn_code = sale.trxn_code ?: "",
+                prc_no = sale.prc_no,
+                tax_details = null,
+                total_after_discount = 0,
+                tax_summery = null,
+                discount_rate = 0,
+                spot_discount_percentage = sale.spot_discount_percentage ?: 0.0,
+                spot_discount_amount = sale.spot_discount_amount ?: "0"
             )
 
             // Submit to API (synchronous for worker)

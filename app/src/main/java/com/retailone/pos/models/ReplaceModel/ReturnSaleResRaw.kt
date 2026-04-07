@@ -1,15 +1,12 @@
 package com.retailone.pos.models.ReplaceModel
 
 
-
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.retailone.pos.models.PosSalesDetailsModel.VsdcReceipt
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.Data
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.ReturnSaleRes
 import com.retailone.pos.models.ReturnSalesItemModel.ReturnSaleResModel.Store
-
-
 
 
 
@@ -40,10 +37,10 @@ object ReturnSaleResMapper {
         returned_items = emptyList(),
         total = 0.0,
         returned_invoice_id = "",
-        grand_total = null,
+        grand_total = 0.0,
 
         tax = null,
-        tax_amount = null,
+        tax_amount = 0.0,
         tax_ex = null,
 
         store = Store(
@@ -85,20 +82,9 @@ object ReturnSaleResMapper {
         customer_mob_no = null,
         rcptType = "",
         subtal = "",
-        vsdc_reciept = VsdcReceipt(
-            rcptNo = 0,
-            intrlData = "",
-            rcptSign = "",
-            totRcptNo = "",
-            vsdcRcptPbctDate = "",
-            sdcId = "",
-            mrcNo = "",
-            qrCodeUrl = "",
-            store_id = 0,
-            sales_id = 0,
-            sales_type = "",
-            rec_type = "",
-            created_at = ""
-        )
+        ogRcpt_no = 0.0,
+        sub_total = 0.0,
+        tax_summery = null,
+        vsdc_reciept = null,
     )
 }

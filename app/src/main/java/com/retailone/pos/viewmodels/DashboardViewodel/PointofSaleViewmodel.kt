@@ -38,8 +38,13 @@ import androidx.lifecycle.viewModelScope
 import com.retailone.pos.repository.PosSaleRepository
 import com.retailone.pos.localstorage.SharedPreference.OfflineLoginHelper
 import com.retailone.pos.models.GetCustomerModel.CustomerData
+import com.retailone.pos.models.PosSalesDetailsModel.ReceiptTypeResponse
+import com.retailone.pos.localstorage.RoomDB.ReceiptTypeEntity
+import com.retailone.pos.localstorage.RoomDB.PosDatabase
+import com.retailone.pos.models.PosSalesDetailsModel.ReceiptType
 import com.retailone.pos.repository.PosProductRepository
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 
 class PointofSaleViewmodel: ViewModel() {
@@ -102,6 +107,70 @@ class PointofSaleViewmodel: ViewModel() {
     fun updateCustomerData(customerData: getCustomerRes) {
         get_customerdata.value = customerData
     }
+
+    private val receiptTypeData = MutableLiveData<ReceiptTypeResponse>()
+    val receiptTypeLiveData: LiveData<ReceiptTypeResponse>
+        get() = receiptTypeData
+
+    // Helper function to extract error message from Response
+    private fun getErrorMessage(response: Response<*>): String {
+        return try {
+            val errorBody = response.errorBody()?.string()
+            if (errorBody.isNullOrEmpty()) return "Something went wrong"
+
+            val jsonObject = JSONObject(errorBody)
+
+            // Check for your custom error format with status = 0
+            val status = jsonObject.optInt("status", -1)
+            if (status == 0) {
+                // Try to get message first, fallback to data field
+                val message = jsonObject.optString("message", "")
+                val data = jsonObject.optString("data", "")
+
+                return when {
+                    message.isNotEmpty() && message != "null" -> message
+                    data.isNotEmpty() && data != "null" -> data
+                    else -> "An error occurred"
+                }
+            }
+
+            // Fallback to standard error message
+            jsonObject.optString("message", "Something went wrong")
+        } catch (e: Exception) {
+            Log.e("ErrorParsing", "Failed to parse error: ${e.message}")
+            "Something went wrong. Please try again."
+        }
+    }
+
+    // Overload for errorBody string
+    private fun getErrorMessage(errorBody: String?): String {
+        return try {
+            if (errorBody.isNullOrEmpty()) {
+                Log.e("ErrorParsing", "Error body is null or empty")
+                return "Something went wrong"
+            }
+
+            Log.d("ErrorParsing", "Parsing error body: $errorBody")
+            val jsonObject = JSONObject(errorBody)
+
+            // Try to parse as PosSalesDetails structure
+            val status = jsonObject.optInt("status", -1)
+            val message = jsonObject.optString("message", "")
+            val data = jsonObject.optString("data", "")
+
+            Log.d("ErrorParsing", "status=$status, message='$message', data='$data'")
+
+            when {
+                message.isNotEmpty() && message != "null" -> message
+                data.isNotEmpty() && data != "null" -> data
+                else -> "An error occurred"
+            }
+        } catch (e: Exception) {
+            Log.e("ErrorParsing", "Failed to parse error: ${e.message}", e)
+            "Something went wrong. Please try again."
+        }
+    }
+
 
 
     fun callSearchStoreProductApi(
@@ -389,4 +458,124 @@ class PointofSaleViewmodel: ViewModel() {
                 }
             })
     }
+    fun callGetReceiptTypesApi(context: Context) {
+        loading.postValue(ProgressData(isProgress = true))
+
+        val db = PosDatabase.getDatabase(context)
+        val dao = db.receiptTypeDao()
+
+        // =====================================================
+        // ✅ STEP 1: CHECK OFFLINE RECORDS FIRST IF NO INTERNET
+        // =====================================================
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            Log.d("ReceiptType_API", "Offline mode: Loading from local DB")
+            viewModelScope.launch {
+                val localTypes = dao.getAllReceiptTypes()
+                if (localTypes.isNotEmpty()) {
+                    val response = ReceiptTypeResponse(
+                        status = 1,
+                        message = "Loaded from offline cache",
+                        data = localTypes.map { 
+                            ReceiptType(it.id, it.code, it.name, it.useYn, it.created_at, it.updated_at) 
+                        }
+                    )
+                    receiptTypeData.postValue(response)
+                    loading.postValue(ProgressData(isProgress = false))
+                } else {
+                    loading.postValue(
+                        ProgressData(
+                            isProgress = false,
+                            isMessage = true,
+                            message = "No receipt types cached. Please connect and login once."
+                        )
+                    )
+                }
+            }
+            return
+        }
+
+        // =====================================================
+        // ✅ STEP 2: ONLINE FETCH & CACHE
+        // =====================================================
+        Log.d("ReceiptType_API", "Fetching receipt types from API...")
+
+        ApiClient().getApiService(context).getReceiptTypes()
+            .enqueue(object : Callback<ReceiptTypeResponse> {
+                override fun onResponse(
+                    call: Call<ReceiptTypeResponse>,
+                    response: Response<ReceiptTypeResponse>
+                ) {
+                    Log.d("ReceiptType_API", "Status Code: ${response.code()}")
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        receiptTypeData.postValue(body)
+                        loading.postValue(ProgressData(isProgress = false))
+
+                        // ✅ CACHE TO LOCAL DB
+                        viewModelScope.launch {
+                            val entities = body.data.map {
+                                ReceiptTypeEntity(it.id, it.code, it.name, it.useYn, it.created_at, it.updated_at)
+                            }
+                            dao.clearAll()
+                            dao.insertReceiptTypes(entities)
+                            Log.d("ReceiptType_API", "Cached ${entities.size} receipt types to local DB")
+                        }
+                    } else {
+                        // API failure, try loading from local DB as fallback
+                        viewModelScope.launch {
+                            val localTypes = dao.getAllReceiptTypes()
+                            if (localTypes.isNotEmpty()) {
+                                val fallbackResponse = ReceiptTypeResponse(
+                                    status = 1,
+                                    message = "API failed. Loaded from offline cache",
+                                    data = localTypes.map { 
+                                        ReceiptType(it.id, it.code, it.name, it.useYn, it.created_at, it.updated_at) 
+                                    }
+                                )
+                                receiptTypeData.postValue(fallbackResponse)
+                                loading.postValue(ProgressData(isProgress = false))
+                            } else {
+                                loading.postValue(
+                                    ProgressData(
+                                        isProgress = false,
+                                        isMessage = true,
+                                        message = "Failed to load receipt types"
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                override fun onFailure(call: Call<ReceiptTypeResponse>, t: Throwable) {
+                    Log.e("ReceiptType_API", "Failure: ${t.localizedMessage}")
+                    
+                    // Fallback to local DB on network failure
+                    viewModelScope.launch {
+                        val localTypes = dao.getAllReceiptTypes()
+                        if (localTypes.isNotEmpty()) {
+                            val fallbackResponse = ReceiptTypeResponse(
+                                status = 1,
+                                message = "Network error. Loaded from offline cache",
+                                data = localTypes.map { 
+                                    ReceiptType(it.id, it.code, it.name, it.useYn, it.created_at, it.updated_at) 
+                                }
+                            )
+                            receiptTypeData.postValue(fallbackResponse)
+                            loading.postValue(ProgressData(isProgress = false))
+                        } else {
+                            loading.postValue(
+                                ProgressData(
+                                    isProgress = false,
+                                    isMessage = true,
+                                    message = "Network error: ${t.localizedMessage}"
+                                )
+                            )
+                        }
+                    }
+                }
+            })
+    }
+
 }

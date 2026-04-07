@@ -17,5 +17,9 @@ data class SalesItem(
     val whole_sale_price: String?,
 
     val uom: String?,
-    val batchno: String?
+    val batchno: String?,
+
+    // printer fields
+    val tax_details: TaxDetails? = null,
+    val discount_rate: Double? = null
 )

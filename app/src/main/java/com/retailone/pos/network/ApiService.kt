@@ -36,6 +36,7 @@ import com.retailone.pos.models.GoodsToWarehouseModel.Stocklist.StockListRespons
 import com.retailone.pos.models.LocalizationModel.LocalizationRes
 import com.retailone.pos.models.LoginModels.LoginRequest
 import com.retailone.pos.models.LoginModels.LoginResponse
+import com.retailone.pos.models.LoginModels.NoticeResponse
 import com.retailone.pos.models.LogoutModel.LogoutReq
 import com.retailone.pos.models.LogoutModel.LogoutRes
 import com.retailone.pos.models.MaterialRcvModel.MaterialRcvInv.MatRcvInvReq
@@ -49,7 +50,11 @@ import com.retailone.pos.models.PointofsaleModel.SearchStoreProBarcodeModel.Sear
 import com.retailone.pos.models.PointofsaleModel.SearchStoreProBarcodeModel.SearchStoreProBarcodeRes
 import com.retailone.pos.models.PointofsaleModel.SearchStroreProModel.SearchStoreProReq
 import com.retailone.pos.models.PointofsaleModel.SearchStroreProModel.SearchStoreProRes
+import com.retailone.pos.models.PosSalesDetailsModel.CopyReceiptReq
+import com.retailone.pos.models.PosSalesDetailsModel.CopyReceiptRes
 import com.retailone.pos.models.PosSalesDetailsModel.PosSalesDetails
+import com.retailone.pos.models.PosSalesDetailsModel.ReceiptTypeResponse
+import com.retailone.pos.models.PosSalesDetailsModel.SaleReceiptRes
 import com.retailone.pos.models.ProductInventoryModel.InventoryUpdateReqModel.InventoryUpdateRequest
 import com.retailone.pos.models.ProductInventoryModel.InventoryUpdateResModel.InventoryUpdateResponse
 import com.retailone.pos.models.ProductInventoryModel.PiRequestModel.ProductInventoryRequest
@@ -264,6 +269,22 @@ interface ApiService {
         @Query("days") days: Int,
         @Body request: SalesListRequest
     ): Call<SalesListResponse>
+
+    @GET("vsdc/notices")
+    fun getNotices(
+        @Query("lastReqDt") lastReqDt: String
+    ): Call<NoticeResponse>
+
+    @GET("recipettypes")
+    fun getReceiptTypes(): Call<ReceiptTypeResponse>
+
+    @POST("copyreciept")
+    fun copyReceipt(@Body request: CopyReceiptReq): Call<CopyReceiptRes>
+
+    @POST("copyreciept")
+    fun copyReceiptSale(@Body request: CopyReceiptReq): Call<SaleReceiptRes>
+
+
 
 
 //    @Headers(

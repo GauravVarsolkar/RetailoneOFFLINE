@@ -17,6 +17,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import android.util.Log
 import com.retailone.pos.localstorage.SharedPreference.CustomerSessionHelper
+import com.retailone.pos.models.LoginModels.NoticeResponse
 
 
 class HomeDashboardViewmodel:ViewModel() {
@@ -33,6 +34,9 @@ class HomeDashboardViewmodel:ViewModel() {
     val loading = MutableLiveData<ProgressData>()
     val loadingLiveData : LiveData<ProgressData>
         get() = loading
+
+    val notices_liveData = MutableLiveData<NoticeResponse?>()
+
 
 
 //    val get_customerdata = MutableLiveData<getCustomerRes>()
@@ -73,6 +77,26 @@ class HomeDashboardViewmodel:ViewModel() {
 
                 override fun onFailure(call: Call<LocalizationRes>, t: Throwable) {
                     //loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                }
+            })
+    }
+    fun callNoticesApi(lastReqDt: String, context: Context) {
+        ApiClient().getApiService(context).getNotices(lastReqDt)
+            .enqueue(object : Callback<NoticeResponse> {
+                override fun onResponse(
+                    call: Call<NoticeResponse>,
+                    response: Response<NoticeResponse>
+                ) {
+                    if (response.isSuccessful && response.body() != null) {
+                        Log.d("NoticesAPI", "Response: ${response.body()}")
+                        notices_liveData.postValue(response.body())
+                    } else {
+                        Log.e("NoticesAPI", "Failed: ${response.errorBody()?.string()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<NoticeResponse>, t: Throwable) {
+                    Log.e("NoticesAPI", "Error: ${t.message}")
                 }
             })
     }

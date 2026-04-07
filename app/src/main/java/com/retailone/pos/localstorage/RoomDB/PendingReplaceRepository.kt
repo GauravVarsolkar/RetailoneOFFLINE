@@ -127,7 +127,7 @@ class PendingReplaceRepository(private val pendingReplaceDao: PendingReplaceDao)
                         val saleDetails = detailedSaleRepo.getDetailedSaleByInvoiceId(invoiceId)
 
                         if (saleDetails != null) {
-                            val grandTotal = (saleDetails.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+                            val grandTotal = saleDetails.grand_total
                             val reasonId = replaceRequest.reason_id ?: -1
                             detailedSaleRepo.updateReplacedAmount(invoiceId, grandTotal, reasonId)
                             Log.d("OFFLINE_SYNC_DEBUG", "💾 Updated local cache for $invoiceId")

@@ -36,6 +36,7 @@ import com.retailone.pos.models.PointofsaleModel.PosAddToCartModel.PosAddToCartR
 import com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSaleReq
 import com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem
 import com.retailone.pos.models.PosSalesDetailsModel.PosSalesDetails
+import com.retailone.pos.models.PosSalesDetailsModel.ReceiptType
 import com.retailone.pos.ui.Activity.MPOSDashboardActivity
 import com.retailone.pos.utils.FunUtils
 import com.retailone.pos.utils.PrinterUtil
@@ -79,10 +80,15 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
     var ctpinx = ""
     var cidx = 0
     var total_amountx = 0.0
+    var spotDiscountPercent = 0.0
 
     val SALE_LIMIT = 100000.0
 
     private var printerUtil: PrinterUtil? = null
+
+    private var receiptTypeList = mutableListOf<ReceiptType>()
+    private var selectedReceiptType: ReceiptType? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,6 +111,7 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
         cidx = intent.getIntExtra("c_id", 0)
         ctpinx = intent.getStringExtra("c_tpin").toString()
         total_amountx = intent.getDoubleExtra("total_amount", 0.0)
+        spotDiscountPercent = intent.getDoubleExtra("spot_discount_percent", 0.0)
 
         if (cidx != 0) {
             binding.apply {
@@ -167,6 +174,16 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
             subtotal.text = NumberFormatter().formatPrice(
                 posAddToCartRes.sub_total.toString(), localizationData
             )
+            val spotAmount = posAddToCartRes.spot_discount_amount.toDoubleOrNull() ?: 0.0
+            if (spotAmount > 0.0) {
+                spotDiscountRow.isVisible = true
+                spotDiscountPercentField.text = "(-) Spot discount ${posAddToCartRes.spot_discount_percentage}%"
+                spotDiscountAmountValue.text = NumberFormatter().formatPrice(
+                    posAddToCartRes.spot_discount_amount, localizationData
+                )
+            } else {
+                spotDiscountRow.isVisible = false
+            }
             taxfield.text = "(+) Tax ${posAddToCartRes.tax}"
             taxAmount.text = NumberFormatter().formatPrice(
                 posAddToCartRes.tax_amount.toString(), localizationData
@@ -225,6 +242,15 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                 Toast.makeText(this, pos_sale_data.message, Toast.LENGTH_SHORT).show()
             }
         }
+        pos_viewmodel.receiptTypeLiveData.observe(this) { response ->
+            if (response.status == 1) {
+                receiptTypeList.clear()
+                receiptTypeList.addAll(response.data ?: emptyList())
+                populateReceiptTypeDropdown()
+            } else {
+                showMessage("Failed to load receipt types")
+            }
+        }
 
         pos_viewmodel.addNewCustLivedata.observe(this) {
             // unchanged
@@ -259,6 +285,8 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
         }
 
         setToolbarImage()
+        fetchReceiptTypes()
+        setupReceiptTypeDropdown()
     }
 
     private fun isEligibleNewCustomer(totalAmountx: Double, cidx: Int): Boolean {
@@ -433,16 +461,20 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
             showMessage("Please Enter Payment Type")
         } else if (storeid == "") {
             showMessage("Could't fetch store info,Please try again..")
-        } else if (store_manager_id == "") {
+        }
+        else if (selectedReceiptType == null) {
+            showMessage("Please Select Receipt Type")
+        }
+        else if (store_manager_id == "") {
             showMessage("Could't fetch store manager info,Please try again..")
         }
         //////////////////////////
 
-        else  if (invoiceTrim.isEmpty()) {
+        /* else  if (invoiceTrim.isEmpty()) {
             showMessage("Please Enter Valid Invoice Number"); return
-        }
+        } */
 
-        else if (InvoiceSubmissionTracker.alreadySubmitted(storeIdTrim, invoiceTrim)) {
+        else if (invoiceTrim.isNotEmpty() && InvoiceSubmissionTracker.alreadySubmitted(storeIdTrim, invoiceTrim)) {
             showMessage("This invoice number is already used for this store. Please use a new invoice number.")
             return
         }
@@ -467,7 +499,7 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                 customer_id = cidx,
                 payment_type = paymentType,
                 sub_total = data.sub_total.toString(),
-                tax = getTaxString(data.tax as Any),
+                tax = getTaxString(data.tax),
                 tax_amount = data.tax_amount,
                 discount_amount = data.discount_amount.toString(),
                 subtotal_after_discount = data.sub_total_after_discount.toString(),
@@ -478,7 +510,15 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                 amount_tendered = amt_tndr,
                 sale_date_time = getSaleDateTime(),
                 tin_tpin_no = tinInput,
-                invoice_id  = invoiceTrim,
+                invoice_id  = "", // Backend will generate this
+                prc_no = if (invoiceTrim.isEmpty()) null else invoiceTrim,
+                trxn_code = selectedReceiptType?.code ?: "",
+                tax_details = null,
+                tax_summery = null,
+                discount_rate = 0,
+                total_after_discount = 0,
+                spot_discount_percentage = spotDiscountPercent,
+                spot_discount_amount = data.spot_discount_amount
             )
 
             Log.d("nm", Gson().toJson(pos_saledata))
@@ -649,6 +689,53 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
     fun removeThousandSeparator(input: String): String {
         return input.replace(Regex("[^\\d.]"), "")
     }
+    private fun setupReceiptTypeDropdown() {
+        binding.receiptTypeDropdown.setOnItemClickListener { parent, view, position, id ->
+            selectedReceiptType = receiptTypeList[position]
+            Log.d("ReceiptType", "Selected: ${selectedReceiptType?.name} (ID: ${selectedReceiptType?.id})")
+        }
+    }
+
+    private fun fetchReceiptTypes() {
+        pos_viewmodel.callGetReceiptTypesApi(this)
+    }
+
+    private fun populateReceiptTypeDropdown() {
+        val receiptTypeNames = receiptTypeList.map { it.name }
+
+        // Use a non-filtering adapter to ensure all items are always visible in the dropdown
+        val adapter = object : android.widget.ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            receiptTypeNames
+        ) {
+            override fun getFilter(): android.widget.Filter {
+                return object : android.widget.Filter() {
+                    override fun performFiltering(constraint: CharSequence?): FilterResults {
+                        val results = FilterResults()
+                        results.values = receiptTypeNames
+                        results.count = receiptTypeNames.size
+                        return results
+                    }
+                    override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                        notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+
+        binding.receiptTypeDropdown.setAdapter(adapter)
+
+        // Set default to "Normal" (code "N"), or fall back to the first item if "Normal" doesn't exist
+        val defaultType = receiptTypeList.find { it.code == "N" } ?: receiptTypeList.firstOrNull()
+        defaultType?.let {
+            binding.receiptTypeDropdown.setText(it.name, false)
+            selectedReceiptType = it
+        }
+    }
+
+
+
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()

@@ -54,13 +54,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
-import java.math.RoundingMode
-
 import kotlin.math.log
 import kotlin.math.roundToInt
 
@@ -78,7 +77,10 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
     var store_manager_id = "0"
     lateinit var localizationData: LocalizationData
     private var printerUtil: PrinterUtil? = null
+
+    // ✅ Both batch lists: returnbatchItemList for API, currentBatchList for live recalculation
     private var returnbatchItemList = mutableListOf<BatchReturnItem>()
+    private var currentBatchList = mutableListOf<BatchReturnItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,31 +111,23 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             // ✅ STEP 2: THEN load and display the sale (reasons are now available)
             if (!invoiceIdFromIntent.isNullOrEmpty()) {
                 binding.searchBar.setQuery(invoiceIdFromIntent, false)
-
-            // ✅ STEP 2: load and display the sale using unified ViewModel hub
-            if (!invoiceIdFromIntent.isNullOrEmpty()) {
-                binding.searchBar.setQuery(invoiceIdFromIntent, false)
-                
-                // Call unified API hub (it handles offline fallback automatically)
                 returnsale_viewmodel.callReturnSalesDetailsApi(
                     ReturnItemReq(invoice_id = invoiceIdFromIntent, store_id = storeid.toString()),
                     this@SearchReturnProductActivity
                 )
-            }
             }
 
             // ✅ STEP 3: Cleanup old data
             returnsale_viewmodel.cleanupOldDetailedSales()
         }
 
-
         binding.addcart.setOnClickListener {
             returnbatchItemList.clear()
+            currentBatchList.clear()
             if (binding.searchBar.query.toString().trim() == "") {
                 showMessage("Enter a valid Invoice ID")
             } else {
                 val invoiceId = binding.searchBar.query.toString().trim()
-
                 // ✅ Call unified API hub (handles both online/offline automatically)
                 returnsale_viewmodel.callReturnSalesDetailsApi(
                     ReturnItemReq(invoice_id = invoiceId, store_id = storeid.toString()),
@@ -165,9 +159,10 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 Log.d("INITIAL_TAX_DEBUG", "sub_total: ${data.sub_total}")
                 Log.d("INITIAL_TAX_DEBUG", "tax (String): '${data.tax}'")
                 Log.d("INITIAL_TAX_DEBUG", "tax_amount (String): '${data.tax_amount}'")
-                Log.d("INITIAL_TAX_DEBUG", "tax_amount (toDouble): ${data.tax_amount?.toDoubleOrNull() ?: 0.0}")
+                Log.d("INITIAL_TAX_DEBUG", "tax_amount (toDouble): ${data.tax_amount?.toDouble() ?: 0.0}")
                 Log.d("INITIAL_TAX_DEBUG", "grand_total: ${data.grand_total}")
                 Log.d("INITIAL_TAX_DEBUG", "total_refunded_amount: ${data.total_refunded_amount}")
+                Log.d("INITIAL_TAX_DEBUG", "spot_discount_percentage: ${data.spot_discount_percentage}")
                 Log.d("INITIAL_TAX_DEBUG", "==================================")
 
                 lifecycleScope.launch {
@@ -177,7 +172,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
                 // ✅ Normalize lists: If one is populated but not the other, sync them
                 Log.d("OFFLINE_DEBUG_TAG", "   - Data check: salesItems.size=${data.salesItems?.size}, sales_items.size=${data.sales_items?.size}")
-                
+
                 var finalData = data
                 if (data.salesItems.isNullOrEmpty() && !data.sales_items.isNullOrEmpty()) {
                     Log.d("OFFLINE_DEBUG_TAG", "   - ⚠️ Mapping sales_items (snake) -> salesItems (camel)")
@@ -190,7 +185,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                             quantity = d.quantity,
                             retail_price = d.retail_price,
                             tax_exclusive_price = d.tax_exclusive_price,
-                            batches = d.sales_returns?.map { sr -> 
+                            batches = d.sales_returns?.map { sr ->
                                 BatchReturnItem(
                                     batch = d.batch,
                                     quantity = d.quantity,
@@ -211,7 +206,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                             total_amount = d.total_amount,
                             tax_amount = d.retail_price - (d.tax_exclusive_price ?: d.retail_price),
                             tax = if (d.tax > 0) d.tax else if (d.tax_exclusive_price != null && d.tax_exclusive_price!! > 0) {
-                                // Derive it once during normalization so it's stored in the model
                                 (((d.retail_price - d.tax_exclusive_price!!) / d.tax_exclusive_price!!) * 100.0).roundToInt()
                             } else 0,
                             created_at = null, updated_at = null, sales_id = null, status = 0, whole_sale_price = 0.0
@@ -224,7 +218,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 displaySaleDetails(finalData)
             } else {
                 showMessage("No Invoice Found")
-
                 binding.positemRcv.isVisible = false
                 binding.addproductLayout.isVisible = true
                 binding.reasonLayout.isVisible = false
@@ -238,7 +231,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         returnsale_viewmodel.returnsalesubmit_liveData.observe(this) {
             if (it.status == 1) {
                 lifecycleScope.launch {
-                    val grandTotal = (returnItemData.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+                    val grandTotal = returnItemData.grand_total
                     returnsale_viewmodel.updateSaleRefundedAmount(
                         returnItemData.invoice_id ?: "",
                         grandTotal,
@@ -246,7 +239,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                     )
                     Log.d("OnlineReturn", "💾 Updated cache for ${returnItemData.invoice_id ?: ""} as refunded")
                 }
-
                 showSucessDialog(it.message, it)
             } else {
                 showMessage(it.message)
@@ -286,12 +278,13 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         }
     }
 
-    // ✅ NEW: Unified display method for both online and offline
+    // ✅ Unified display method for both online and offline
     private fun displaySaleDetails(data: ReturnItemData) {
         Log.d("OFFLINE_DEBUG_TAG", "========== displaySaleDetails START ==========")
         Log.d("OFFLINE_DEBUG_TAG", "invoice_id: ${data.invoice_id}")
         Log.d("OFFLINE_DEBUG_TAG", "refunded_amount: ${data.total_refunded_amount}, sub_total: ${data.sub_total}, grand_total: ${data.grand_total}")
         Log.d("OFFLINE_DEBUG_TAG", "reason_id: ${data.reason_id}")
+        Log.d("OFFLINE_DEBUG_TAG", "spot_discount_percentage: ${data.spot_discount_percentage}")
         Log.d("OFFLINE_DEBUG_TAG", "Item count: ${data.salesItems?.size ?: 0}")
         data.salesItems?.forEachIndexed { index, item ->
             Log.d("OFFLINE_DEBUG_TAG", "Item $index: ID=${item.id}, return_qty=${item.return_quantity}, name=${item.product_name}")
@@ -305,7 +298,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
                 var reasonName = "Not Given"
 
-                // First try to extract reason from API response nested inside sales_items
                 val firstReturnedItem = data.sales_items?.firstOrNull { !it.sales_returns.isNullOrEmpty() }
                 val apiReason = firstReturnedItem?.sales_returns?.firstOrNull()?.reason?.reason_name
 
@@ -319,20 +311,19 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                     Log.w("DISPLAY_SALE", "⚠️ reason_id is ${data.reason_id} and API reason missing, showing 'Not Given'")
                 }
 
-                // ✅ Update UI on main thread with reason name
                 withContext(Dispatchers.Main) {
                     returnItemData = data
                     returnItemList = data.salesItems?.toMutableList() ?: mutableListOf()
 
-                    // ✅ Pass reason name to adapter with named parameter
                     returnSalesItemAdapter = ReturnSalesItemAdapter(
                         returnitem = listOf(data),
                         context = this@SearchReturnProductActivity,
                         onReturnQuantityChangeListener = this@SearchReturnProductActivity,
-                        returnReasonName = reasonName,  // ✅ Pass the fetched reason name
+                        returnReasonName = reasonName,
                         onBatchChange = {
                             Log.d("rtn", it.toString())
                             returnbatchItemList = it.toMutableList()
+                            currentBatchList = it.toMutableList()
                         }
                     )
 
@@ -341,27 +332,31 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                     binding.addproductLayout.isVisible = false
                     binding.reasonLayout.isVisible = false
 
-                    // ✅ Show summary card
+                    // ✅ Show summary card with spot discount for already-returned invoices
                     binding.summaryCard.isVisible = true
-                    // Robustly parse totals to handle currency symbols/commas
-                    val subTotal = (data.sub_total ?: data.subtotal_after_discount ?: 0.0)
-                    val taxAmt = data.tax_amount?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
-                    val grandTotal = data.grand_total?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull() ?: 0.0
 
-                    Log.d("OFFLINE_DEBUG_TAG", "Calling updateSummaryCard with: sub=$subTotal, tax=$taxAmt, total=$grandTotal")
+                    val spotPct = data.spot_discount_percentage?.toDouble() ?: 0.0
+                    val subTotal = (data.sub_total ?: data.subtotal_after_discount ?: 0.0)
+                    val taxAmt = data.tax_amount
+                    val grandTotal = data.grand_total
+
+                    // ✅ Spot discount amount is calculated on the sub_total (pre-tax base)
+                    val spotAmt = subTotal * spotPct / 100
+
+                    Log.d("OFFLINE_DEBUG_TAG", "Calling updateSummaryCard with: sub=$subTotal, tax=$taxAmt, total=$grandTotal, spotDiscount=$spotAmt ($spotPct%)")
 
                     updateSummaryCard(
                         subtotal = if (subTotal > 0) subTotal else (grandTotal - taxAmt),
                         tax = taxAmt,
-                        total = grandTotal
+                        total = grandTotal,
+                        spotDiscountPercent = spotPct,
+                        spotDiscountAmount = spotAmt
                     )
 
-                    // ❌ Hide old payment card and bottom layouts
                     binding.paymentcard.isVisible = false
                     binding.relativeLayout.isVisible = false
                     binding.relativeLayout2.isVisible = false
 
-                    // ✅ Show toast with reason
                     showMessage("This invoice has already been returned. Reason: $reasonName")
                 }
             }
@@ -371,15 +366,17 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             returnItemData = data
             returnItemList = data.salesItems?.toMutableList() ?: mutableListOf()
 
-            // ✅ Pass default "Not Given" for normal returns (no reason yet)
             returnSalesItemAdapter = ReturnSalesItemAdapter(
                 returnitem = listOf(data),
                 context = this@SearchReturnProductActivity,
                 onReturnQuantityChangeListener = this,
-                returnReasonName = "Not Given",  // ✅ No reason yet for new returns
+                returnReasonName = "Not Given",
                 onBatchChange = {
                     Log.d("rtn", it.toString())
                     returnbatchItemList = it.toMutableList()
+                    // ✅ Keep currentBatchList in sync and recalculate with spot discount
+                    currentBatchList = it.toMutableList()
+                    recalculateTotalsFromBatches()
                 }
             )
 
@@ -388,23 +385,20 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             binding.addproductLayout.isVisible = false
             binding.reasonLayout.isVisible = true
 
-            // ❌ HIDE new summary card for normal returns
+            // ✅ Hide summary card for normal returns (bottom layout is used instead)
             binding.summaryCard.isVisible = false
 
-            // ✅ Show bottom layouts
             binding.relativeLayout.isVisible = true
             binding.relativeLayout2.isVisible = true
             binding.paymentcard.isVisible = false
 
+            // ✅ Show original invoice totals (spot discount applied in recalculateTotalsFromBatches when user picks items)
             val subtotalValue = data.sub_total ?: 0.0
-            val taxValue = data.tax_amount?.toDoubleOrNull() ?: 0.0
-            val grandValue = data.grand_total?.toDoubleOrNull() ?: 0.0
+            val taxValue = data.tax_amount?.toDouble() ?: 0.0
+            val grandValue = data.grand_total?.toDouble() ?: 0.0
 
-            val roundedSubtotal = BigDecimal.valueOf(subtotalValue)
-                .setScale(0, RoundingMode.HALF_UP)
-
-            val roundedTax = BigDecimal.valueOf(taxValue)
-                .setScale(0, RoundingMode.HALF_UP)
+            val roundedSubtotal = BigDecimal.valueOf(subtotalValue).setScale(0, RoundingMode.HALF_UP)
+            val roundedTax = BigDecimal.valueOf(taxValue).setScale(0, RoundingMode.HALF_UP)
 
             binding.subtotal.setText(roundedSubtotal.toPlainString())
 
@@ -415,9 +409,19 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             binding.alltotalAmount.setText(
                 NumberFormatter().formatPrice(grandValue.toString(), localizationData)
             )
+
+            // ✅ Show spot discount label in tax field area if applicable
+            val spotPct = data.spot_discount_percentage?.toDouble() ?: 0.0
+            if (spotPct > 0) {
+                binding.spotDiscountRow.isVisible = true
+                binding.spotDiscountPercentField.text = "(-) Spot Discount ${"%.2f".format(spotPct)}%"
+                val spotAmt = subtotalValue * spotPct / 100
+                binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(spotAmt.toString(), localizationData)
+            } else {
+                binding.spotDiscountRow.isVisible = false
+            }
         }
 
-        // ✅ Logging
         Log.d("VISIBILITY_DEBUG", "summaryCard.isVisible = ${binding.summaryCard.isVisible}")
         Log.d("VISIBILITY_DEBUG", "paymentcard.isVisible = ${binding.paymentcard.isVisible}")
         Log.d("VISIBILITY_DEBUG", "relativeLayout.isVisible = ${binding.relativeLayout.isVisible}")
@@ -425,57 +429,174 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
     }
 
     /**
-     * ✅ NEW: Updates the summary card with subtotal, tax, and total
+     * ✅ Updates the summary card (used for already-returned invoices).
+     * Shows subtotal, tax, spot discount amount, and grand total.
      */
-    private fun updateSummaryCard(subtotal: Double, tax: Double, total: Double, discount: Double = 0.0) {
-        Log.d("OFFLINE_DEBUG_TAG", "updateSummaryCard EXEC: sub=$subtotal, tax=$tax, total=$total")
-        // Round values
+    private fun updateSummaryCard(
+        subtotal: Double,
+        tax: Double,
+        total: Double,
+        spotDiscountPercent: Double = 0.0,
+        spotDiscountAmount: Double = 0.0
+    ) {
+        Log.d("OFFLINE_DEBUG_TAG", "updateSummaryCard EXEC: sub=$subtotal, tax=$tax, total=$total, spotDiscount=$spotDiscountAmount ($spotDiscountPercent%)")
+
         val roundedSubtotal = BigDecimal.valueOf(subtotal).setScale(0, RoundingMode.HALF_UP)
         val roundedTax = BigDecimal.valueOf(tax).setScale(0, RoundingMode.HALF_UP)
         val roundedTotal = BigDecimal.valueOf(total).setScale(0, RoundingMode.HALF_UP)
 
-        // Update summary card TextViews
-        binding.tvSubtotalValue.text = NumberFormatter().formatPrice(
-            roundedSubtotal.toPlainString(),
-            localizationData
-        )
+        binding.tvSubtotalValue.text = NumberFormatter().formatPrice(roundedSubtotal.toPlainString(), localizationData)
+        binding.tvTaxValue.text = NumberFormatter().formatPrice(roundedTax.toPlainString(), localizationData)
+        binding.tvTotalValue.text = NumberFormatter().formatPrice(roundedTotal.toPlainString(), localizationData)
 
-        binding.tvTaxValue.text = NumberFormatter().formatPrice(
-            roundedTax.toPlainString(),
-            localizationData
-        )
-
-        binding.tvTotalValue.text = NumberFormatter().formatPrice(
-            roundedTotal.toPlainString(),
-            localizationData
-        )
-
-        // Show/hide discount row
-        if (discount > 0.0) {
+        // ✅ Show spot discount row in summary card if applicable
+        if (spotDiscountPercent > 0 && spotDiscountAmount > 0) {
             binding.discountSummaryRow.isVisible = true
             binding.tvDiscountValue.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", discount),
+                String.format(Locale.US, "%.2f", spotDiscountAmount),
                 localizationData
             )
         } else {
             binding.discountSummaryRow.isVisible = false
         }
+
+        // ✅ spotDiscountRow is used by the bottom layout; hide it in summary-card mode
+        binding.spotDiscountRow.isVisible = false
     }
 
-    // ✅ UPDATED: Converts "16.5", "16,5", "16.50%", or "165" -> rounded integer like "18"
+    /**
+     * ✅ Live recalculation for normal return flow.
+     * Applies spot discount on tax-exclusive subtotal, then calculates tax on discounted base.
+     * Formula: grandTotal = (subtotal - spotDiscount) + tax_on_discounted_base
+     */
+    private fun recalculateTotalsFromBatches() {
+        Log.e("TAX_FIX_DEBUG", "🔥 recalculateTotalsFromBatches() CALLED")
+
+        if (!this::returnItemData.isInitialized) {
+            Log.e("TAX_FIX_DEBUG", "❌ returnItemData NOT initialized yet - exiting")
+            return
+        }
+
+        binding.relativeLayout.isVisible = true
+        binding.relativeLayout2.isVisible = true
+
+        Log.d("TAX_FIX_DEBUG", "========== recalculateTotalsFromBatches() START ==========")
+        Log.d("TAX_FIX_DEBUG", "currentBatchList.size: ${currentBatchList.size}")
+
+        // No batches selected → show original invoice totals
+        if (currentBatchList.isEmpty() || currentBatchList.all { it.batch_return_quantity == 0 }) {
+            Log.d("TAX_FIX_DEBUG", "No batches selected - showing original invoice totals")
+
+            val subtotalValue = returnItemData.sub_total ?: 0.0
+            val taxValue = returnItemData.tax_amount?.toDouble() ?: 0.0
+            val grandValue = returnItemData.grand_total?.toDouble() ?: 0.0
+
+            val roundedSubtotal = BigDecimal.valueOf(subtotalValue).setScale(0, RoundingMode.HALF_UP)
+            val roundedTax = BigDecimal.valueOf(taxValue).setScale(0, RoundingMode.HALF_UP)
+            val roundedGrandTotal = BigDecimal.valueOf(grandValue).setScale(0, RoundingMode.HALF_UP)
+
+            binding.subtotal.setText(roundedSubtotal.toPlainString())
+            binding.taxAmount.setText(roundedTax.toPlainString())
+            binding.alltotalAmount.setText(roundedGrandTotal.toPlainString())
+
+            binding.tvSubtotalValue.text = NumberFormatter().formatPrice(roundedSubtotal.toPlainString(), localizationData)
+            binding.tvTaxValue.text = NumberFormatter().formatPrice(roundedTax.toPlainString(), localizationData)
+            binding.tvTotalValue.text = NumberFormatter().formatPrice(roundedGrandTotal.toPlainString(), localizationData)
+
+            // ✅ Still show spot discount label if invoice has one
+            val spotPct = returnItemData.spot_discount_percentage?.toDouble() ?: 0.0
+            if (spotPct > 0) {
+                val spotAmt = subtotalValue * spotPct / 100
+                binding.spotDiscountPercentField.text = "(-) Spot Discount ${"%.2f".format(spotPct)}%"
+                binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(spotAmt.toString(), localizationData)
+                binding.spotDiscountRow.isVisible = true
+            } else {
+                binding.spotDiscountRow.isVisible = false
+            }
+
+            Log.d("TAX_FIX_DEBUG", "========== recalculateTotalsFromBatches() END (no batches) ==========")
+            return
+        }
+
+        // ✅ Calculate subtotal from selected batches (tax-exclusive price × qty)
+        var subtotal = 0.0
+        val taxPercentage = returnItemData.tax?.toString()?.toDoubleOrNull() ?: 0.0
+        Log.d("TAX_FIX_DEBUG", "Tax percentage: $taxPercentage%")
+
+        currentBatchList.forEachIndexed { index, batch ->
+            val qty = batch.batch_return_quantity
+            if (qty > 0) {
+                Log.d("TAX_FIX_DEBUG", "--- Batch $index ---")
+                Log.d("TAX_FIX_DEBUG", "  batch: ${batch.batch}")
+                Log.d("TAX_FIX_DEBUG", "  sales_item_id: ${batch.sales_item_id}")
+                Log.d("TAX_FIX_DEBUG", "  batch_return_quantity: $qty")
+                Log.d("TAX_FIX_DEBUG", "  retail_price: ${batch.retail_price}")
+
+                val retailPrice = batch.retail_price ?: 0.0
+                val taxExclusivePrice = if (taxPercentage > 0) {
+                    retailPrice / (1 + taxPercentage / 100.0)
+                } else {
+                    batch.tax_exclusive_price ?: retailPrice
+                }
+                val itemSubtotal = taxExclusivePrice * qty
+                subtotal += itemSubtotal
+
+                Log.d("TAX_FIX_DEBUG", "  taxExclusivePrice: $taxExclusivePrice")
+                Log.d("TAX_FIX_DEBUG", "  itemSubtotal: $itemSubtotal")
+                Log.d("TAX_FIX_DEBUG", "  ✅ INCLUDED")
+            }
+        }
+
+        Log.d("TAX_FIX_DEBUG", "FINAL subtotal (tax-exclusive): $subtotal")
+
+        // ✅ Apply spot discount on the tax-exclusive subtotal, then compute tax on discounted base
+        val spotDiscountPercent = returnItemData.spot_discount_percentage?.toDouble() ?: 0.0
+        val spotDiscountAmount = subtotal * spotDiscountPercent / 100
+        val discountedBase = subtotal - spotDiscountAmount
+        val taxAmount = discountedBase * (taxPercentage / 100.0)
+        val grandTotal = discountedBase + taxAmount
+
+        Log.d("TAX_FIX_DEBUG", "spotDiscountPercent: $spotDiscountPercent%")
+        Log.d("TAX_FIX_DEBUG", "spotDiscountAmount: $spotDiscountAmount")
+        Log.d("TAX_FIX_DEBUG", "discountedBase: $discountedBase")
+        Log.d("TAX_FIX_DEBUG", "FINAL taxAmount: $taxAmount")
+        Log.d("TAX_FIX_DEBUG", "GRAND TOTAL: $grandTotal")
+
+        val roundedSubtotal = BigDecimal.valueOf(subtotal).setScale(0, RoundingMode.HALF_UP)
+        val roundedTax = BigDecimal.valueOf(taxAmount).setScale(0, RoundingMode.HALF_UP)
+        val roundedGrandTotal = BigDecimal.valueOf(grandTotal).setScale(0, RoundingMode.HALF_UP)
+
+        binding.subtotal.setText(roundedSubtotal.toPlainString())
+        binding.taxAmount.setText(roundedTax.toPlainString())
+        binding.alltotalAmount.setText(roundedGrandTotal.toPlainString())
+
+        binding.tvSubtotalValue.text = NumberFormatter().formatPrice(roundedSubtotal.toPlainString(), localizationData)
+        binding.tvTaxValue.text = NumberFormatter().formatPrice(roundedTax.toPlainString(), localizationData)
+        binding.tvTotalValue.text = NumberFormatter().formatPrice(roundedGrandTotal.toPlainString(), localizationData)
+
+        // ✅ Show/hide spot discount row in bottom layout
+        if (spotDiscountPercent > 0 && spotDiscountAmount > 0) {
+            binding.spotDiscountPercentField.text = "(-) Spot Discount ${"%.2f".format(spotDiscountPercent)}%"
+            binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(spotDiscountAmount.toString(), localizationData)
+            binding.spotDiscountRow.isVisible = true
+        } else {
+            binding.spotDiscountRow.isVisible = false
+        }
+
+        Log.d("TAX_FIX_DEBUG", "========== recalculateTotalsFromBatches() END ==========")
+    }
+
+    // ✅ Converts "16.5", "16,5", "16.50%", or "165" -> rounded integer like "17"
     private fun formatTaxForDisplay(raw: Any?): String {
         val s0 = raw?.toString()?.trim().orEmpty()
         if (s0.isEmpty()) return "0"
 
-        // keep digits and one decimal separator; accept comma or dot
         val s1 = s0.replace(Regex("[^0-9.,]"), "").replace(',', '.')
         if (s1.isEmpty() || s1 == ".") return "0"
 
-        // already has decimal separator — format nicely
         if (s1.contains('.')) {
             return try {
                 val value = BigDecimal(s1)
-                // ✅ Round to nearest integer
                 val rounded = value.setScale(0, RoundingMode.HALF_UP)
                 rounded.toPlainString()
             } catch (_: Exception) {
@@ -483,13 +604,8 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             }
         }
 
-        // no decimal point -> legacy value (e.g., 165 should be 16.5)
         val n = s1.toLongOrNull() ?: return s1
-
-        // Heuristic: older code multiplied % by 10 (16.5 -> 165)
         val scaled = n / 10.0
-
-        // ✅ Round to nearest integer
         return BigDecimal.valueOf(scaled).setScale(0, RoundingMode.HALF_UP).toPlainString()
     }
 
@@ -516,18 +632,16 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         // 2️⃣ Items saved in local cart (user pressed pencil/save) → always send
         val cartLines = LocalReturnCartHelper.getCartItems(this)
         if (cartLines.isNotEmpty()) {
-
             cartLines.forEach { line ->
                 val (boxes, packs) = defectMap[line.id] ?: (0 to 0)
                 val pId = if ((line.product_id ?: 0) > 0) line.product_id!! else 0
                 Log.d("OFFLINE_DEBUG_TAG", "   - Queuing Item (Cart Mode): SI_ID=${line.id}, P_ID=$pId, Qty=${line.return_quantity}")
-
                 output.add(
                     ReturnedItem(
                         id = line.id,
-                        return_quantity = line.return_quantity,  // qty user confirmed
-                        defective_boxes = boxes,                // total boxes from all batches
-                        defective_bottles = packs,              // total packs from all batches
+                        return_quantity = line.return_quantity,
+                        defective_boxes = boxes,
+                        defective_bottles = packs,
                         product_id = pId,
                         distribution_pack_id = line.distribution_pack_id
                     )
@@ -538,7 +652,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
         // 3️⃣ No cart, but we have edits in batches → derive qty + defects from batches
         if (defectMap.isNotEmpty()) {
-            // sales_item_id -> total Qty from UI
             val qtyMap = returnbatchItemList
                 .groupBy { it.sales_item_id }
                 .mapValues { (_, batches) ->
@@ -551,7 +664,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 val firstBatch = returnbatchItemList.find { it.sales_item_id == salesItemId }
                 val pId = firstBatch?.product_id ?: 0
                 val dId = firstBatch?.distribution_pack_id ?: 0
-                
+
                 Log.d("OFFLINE_DEBUG_TAG", "   - Queuing Item (Batch Mode): SI_ID=$salesItemId, P_ID=$pId, D_ID=$dId, Qty=$userQty")
 
                 output.add(
@@ -566,7 +679,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 )
             }
 
-            // If we want to send only rows where user actually entered something:
             return output.filter {
                 (it.defective_boxes ?: 0) > 0 ||
                         (it.defective_bottles ?: 0) > 0 ||
@@ -618,7 +730,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 Log.d("ReturnSubmit", "📴 Offline - queuing for later sync")
                 lifecycleScope.launch {
                     val queueId = returnsale_viewmodel.queueReturnRequest(returnItemData.invoice_id ?: "", return_data)
-
                     if (queueId > 0) {
                         showOfflineSuccessDialog()
                     } else {
@@ -635,7 +746,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
     private fun showOfflineSuccessDialog() {
         lifecycleScope.launch {
-            val grandTotal = (returnItemData.grand_total?.replace(Regex("[^0-9.]"), "") ?: "0.0").toDoubleOrNull() ?: 0.0
+            val grandTotal = returnItemData.grand_total
 
             Log.d("OfflineReturn", "🔍 BEFORE SAVE: invoice=${returnItemData.invoice_id ?: ""}, reason=$reasonid")
 
@@ -650,22 +761,20 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
             Log.d("OfflineReturn", "💾 Called updateSaleRefundedAmount with reason=$reasonid")
 
             // ✅ STEP 2: Wait for DB write to complete
-            kotlinx.coroutines.delay(200)  // Increase delay
+            kotlinx.coroutines.delay(200)
 
             // ✅ STEP 3: Reload sale from cache to get updated data with reason_id
             val updatedSale = returnsale_viewmodel.getDetailedSaleFromLocalDB(returnItemData.invoice_id ?: "")
 
             if (updatedSale != null) {
                 Log.d("OfflineReturn", "🔄 AFTER RELOAD: reason_id=${updatedSale.reason_id}")
-
-                // ✅ Test: Try to get reason name immediately
                 val testReasonName = returnsale_viewmodel.getReasonNameById(updatedSale.reason_id)
                 Log.d("OfflineReturn", "🧪 TEST: Fetched reason name = '$testReasonName'")
 
                 // ✅ STEP 4: Update the in-memory data
                 returnItemData = updatedSale
 
-                // ✅ STEP 5: Display updated sale details
+                // ✅ STEP 5: Display updated sale details (will show summary card with spot discount)
                 displaySaleDetails(updatedSale)
             } else {
                 Log.e("OfflineReturn", "❌ Failed to reload sale from cache!")
@@ -675,9 +784,7 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         val dialog = Dialog(this)
         dialog.setContentView(R.layout.pos_sucess_dialog)
         dialog.setCancelable(false)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.setCanceledOnTouchOutside(false)
 
@@ -687,7 +794,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
         logoutMsg.text = "Return request saved offline.\nIt will be submitted when internet is available."
         logoutMsg.textSize = 16F
-
         print_receipt.isVisible = false
 
         confirm.setOnClickListener {
@@ -701,37 +807,23 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
     }
 
     private fun getReturnDateTime(): String {
-
         val zone = localizationData.timezone
-        lateinit var timezone: String
-
-        if (zone == "IST") {
-            timezone = "Asia/Kolkata"
-        } else if (zone == "CAT") {
-            timezone = "Africa/Lusaka"
-        } else {
-            timezone = "Africa/Lusaka"
+        val timezone = when (zone) {
+            "IST" -> "Asia/Kolkata"
+            "CAT" -> "Africa/Lusaka"
+            else -> "Africa/Lusaka"
         }
-
         val calendar = Calendar.getInstance()
-
         val zambiaTimeZone = TimeZone.getTimeZone(timezone)
         calendar.timeZone = zambiaTimeZone
-
         val currentDateTime = calendar.time
-
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         dateFormat.timeZone = zambiaTimeZone
-
-        val formattedDateTime = dateFormat.format(currentDateTime)
-
-        return formattedDateTime
-
+        return dateFormat.format(currentDateTime)
     }
 
     private fun setToolbarImage() {
         val organisation_data = OrganisationDetailsHelper(this).getOrganisationData()
-
         Glide.with(this).load(organisation_data.image_url + organisation_data.fabicon)
             .fitCenter()
             .placeholder(R.drawable.mlogo)
@@ -740,11 +832,8 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
     }
 
     private fun preparePositemRCV() {
-
         binding.positemRcv.apply {
-            layoutManager = LinearLayoutManager(
-                this@SearchReturnProductActivity, RecyclerView.VERTICAL, false
-            )
+            layoutManager = LinearLayoutManager(this@SearchReturnProductActivity, RecyclerView.VERTICAL, false)
         }
     }
 
@@ -755,7 +844,6 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         actionbar.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.svg_back_arrow_white)
     }
-
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
@@ -772,108 +860,21 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         Log.d("QUANTITY_CHANGE_DEBUG", "newQuantity: $newQuantity")
         returnItemList[position].return_quantity = newQuantity
         returnItemList[position].refund_amount = newQuantity * (returnItemList[position].retail_price ?: 0.0)
-
-        Log.d("QUANTITY_CHANGE_DEBUG", "Calling recalculateTotals()")
-        recalculateTotals()
+        Log.d("QUANTITY_CHANGE_DEBUG", "Calling recalculateTotalsFromBatches()")
+        // ✅ Delegate to the spot-discount-aware recalculation
+        recalculateTotalsFromBatches()
     }
 
-    // ✅ UPDATED: Now properly checks for items and shows correct totals
+    // ✅ Delegates to batch-aware recalculation (kept for interface compatibility)
     private fun recalculateTotals() {
-        var subtotal = 0.0
-        var taxAmount = 0.0
-
-        // ❌ DON'T show summary card here (only for already returned invoices)
-        // binding.summaryCard.isVisible = false  // Keep it hidden
-
-        // ✅ Keep showing bottom layouts
-        binding.relativeLayout.isVisible = true
-        binding.relativeLayout2.isVisible = true
-
-        Log.d("TAX_FIX_DEBUG", "========== recalculateTotals() START ==========")
-        Log.d("TAX_FIX_DEBUG", "returnItemList.size: ${returnItemList.size}")
-
-        // Check if any items have been selected for return
-        val hasReturnItems = returnItemList.any {
-            !it.readonlyMode && !it.isExpired && it.return_quantity > 0
-        }
-
-        if (hasReturnItems) {
-            // User has selected items - calculate based on selected items
-            returnItemList.forEachIndexed { index, item ->
-                Log.d("TAX_FIX_DEBUG", "--- Item $index ---")
-                Log.d("TAX_FIX_DEBUG", "  product_name: ${item.product_name}")
-                Log.d("TAX_FIX_DEBUG", "  retail_price: ${item.retail_price}")
-                Log.d("TAX_FIX_DEBUG", "  tax_exclusive_price: ${item.tax_exclusive_price}")
-                Log.d("TAX_FIX_DEBUG", "  return_quantity: ${item.return_quantity}")
-                Log.d("TAX_FIX_DEBUG", "  readonlyMode: ${item.readonlyMode}")
-                Log.d("TAX_FIX_DEBUG", "  isExpired: ${item.isExpired}")
-
-                if (!item.readonlyMode && !item.isExpired && item.return_quantity > 0) {
-                    val taxExclusivePrice = item.tax_exclusive_price ?: item.retail_price ?: 0.0
-                    val qty = item.return_quantity
-
-                    val itemSubtotal = taxExclusivePrice * qty
-                    subtotal += itemSubtotal
-
-                    val itemTax = ((item.retail_price ?: 0.0) - taxExclusivePrice) * qty
-                    taxAmount += itemTax
-
-                    Log.d("TAX_FIX_DEBUG", "  ✅ INCLUDED in calculation")
-                    Log.d("TAX_FIX_DEBUG", "  taxExclusivePrice: $taxExclusivePrice")
-                    Log.d("TAX_FIX_DEBUG", "  itemSubtotal: $itemSubtotal")
-                    Log.d("TAX_FIX_DEBUG", "  itemTax: $itemTax")
-                } else {
-                    Log.d("TAX_FIX_DEBUG", "  ❌ SKIPPED")
-                }
-            }
-
-            Log.d("TAX_FIX_DEBUG", "CALCULATED subtotal: $subtotal")
-            Log.d("TAX_FIX_DEBUG", "CALCULATED taxAmount: $taxAmount")
-
-            val roundedSubtotal = BigDecimal.valueOf(subtotal)
-                .setScale(0, RoundingMode.HALF_UP)
-
-            val roundedTax = BigDecimal.valueOf(taxAmount)
-                .setScale(0, RoundingMode.HALF_UP)
-
-            val grandTotal = roundedSubtotal.add(roundedTax)
-
-            binding.subtotal.setText(roundedSubtotal.toPlainString())
-            binding.taxAmount.setText(roundedTax.toPlainString())
-            binding.alltotalAmount.setText(grandTotal.toPlainString())
-
-        } else {
-            // No items selected - show original invoice totals
-            Log.d("TAX_FIX_DEBUG", "No items selected - showing original invoice totals")
-
-            val subtotalValue = returnItemData.sub_total ?: 0.0
-            val taxValue = returnItemData.tax_amount?.toDoubleOrNull() ?: 0.0
-            val grandValue = returnItemData.grand_total?.toDoubleOrNull() ?: 0.0
-
-            val roundedSubtotal = BigDecimal.valueOf(subtotalValue)
-                .setScale(0, RoundingMode.HALF_UP)
-
-            val roundedTax = BigDecimal.valueOf(taxValue)
-                .setScale(0, RoundingMode.HALF_UP)
-
-            binding.subtotal.setText(roundedSubtotal.toPlainString())
-            binding.taxAmount.setText(roundedTax.toPlainString())
-            binding.alltotalAmount.setText(
-                NumberFormatter().formatPrice(grandValue.toString(), localizationData)
-            )
-        }
-
-        Log.d("TAX_FIX_DEBUG", "========== recalculateTotals() END ==========")
+        recalculateTotalsFromBatches()
     }
 
     private fun showSucessDialog(msg: String, returnSaleRes: ReturnSaleRes) {
-
         val dialog = Dialog(this)
         dialog.setContentView(R.layout.pos_sucess_dialog)
         dialog.setCancelable(false)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.setCanceledOnTouchOutside(false)
 
@@ -887,27 +888,21 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
         confirm.setOnClickListener {
             dialog.dismiss()
-
             val intent = Intent(this@SearchReturnProductActivity, MPOSDashboardActivity::class.java)
             startActivity(intent)
             finish()
         }
 
         print_receipt.setOnClickListener {
-
             printerUtil?.printReturnReceiptData(returnSaleRes)
-
         }
         dialog.show()
-
     }
-
 
     fun dismissKeyboard(view: View) {
         val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
-
 
     override fun onBackPressed() {
         super.onBackPressed()
@@ -922,5 +917,4 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         super.onPause()
         printerUtil?.unregisterBatteryReceiver()
     }
-
 }

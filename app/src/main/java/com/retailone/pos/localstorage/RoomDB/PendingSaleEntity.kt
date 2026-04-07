@@ -28,6 +28,10 @@ data class PendingSaleEntity(
     val sale_date_time: String,
     val tin_tpin_no: String,
     val invoice_id: String,
+    val trxn_code: String? = null,
+    val prc_no: String? = null,
+    val spot_discount_percentage: Double? = 0.0,
+    val spot_discount_amount: String? = "0",
 
     // Sync status tracking
     val sync_status: String = "PENDING", // PENDING, SYNCING, SYNCED, FAILED

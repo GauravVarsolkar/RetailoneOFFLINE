@@ -6,15 +6,11 @@ object FunUtils {
 
     //Imp in ReturnsaleItemAdapter  product_id will replace with category_id
 
-    fun isLooseOil(catId: Int,desc:String): Boolean {
-       // return catId == 0
+    fun isLooseOil(catId: Int, desc: String): Boolean {
+        // Only return true if the "loose_oil" feature is enabled AND description contains "loose oil"
+        if (!FeatureManager.isEnabled("loose oile sale")) return false
 
-       if(desc.trim().contains("loose oil", ignoreCase = true)) {
-           return true
-       }else {
-           return  false
-           //return  true
-       }
+        return desc.trim().contains("loose oil", ignoreCase = true)
     }
 
     fun DtoInt(input: Double): Int {

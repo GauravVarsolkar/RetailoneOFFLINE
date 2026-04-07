@@ -9,8 +9,8 @@ data class ReturnItemData(
 //    val customer: Customer,
     val customer: Customer? = null,
 
-    val discount_amount: String?,
-    val grand_total: String?,
+    val discount_amount: Int,
+    val grand_total: Double,
     val id: Int,
     val invoice_id: String?,
     val payment_type: String?,
@@ -30,11 +30,13 @@ data class ReturnItemData(
     val sub_total: Double,
     val subtotal_after_discount: Double,
     val tax: String?,
-    val tax_amount: String?,
+    val tax_amount: Double,
     val updated_at: String?,
+    val spot_discount_amount: String,
+    val spot_discount_percentage: Float,
 
     // Add the snake_case version which carries tax_exclusive_price
-   @SerializedName("sales_items")
+    @SerializedName("sales_items")
    // @SerializedName("salesItems")
     val sales_items: List<SalesItemDetailed>? = null
 )

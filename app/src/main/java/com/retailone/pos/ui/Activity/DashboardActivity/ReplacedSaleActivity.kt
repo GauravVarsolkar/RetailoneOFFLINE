@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.retailone.pos.utils.FeatureManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -194,21 +195,39 @@ class ReplacedSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener
     private fun setupTabs(savedInstanceState: Bundle?) {
         val tabLayout: TabLayout = binding.topTabs
 
-        if (tabLayout.tabCount == 0) {
+        val canReturn = FeatureManager.isEnabled("sales return")
+        val canReplace = FeatureManager.isEnabled("sales replacement")
+
+        // ✅ Only add tabs for enabled modules
+        tabLayout.removeAllTabs()
+
+        if (canReturn) {
             tabLayout.addTab(tabLayout.newTab().setText("Return Product"))
+        }
+        if (canReplace) {
             tabLayout.addTab(tabLayout.newTab().setText("Replace Product"))
-        } else {
-            tabLayout.getTabAt(0)?.text = "Return Product"
-            tabLayout.getTabAt(1)?.text = "Replace Product"
         }
 
-        // Select 1 by default on this screen
-        val selected = savedInstanceState?.getInt(KEY_SELECTED_TAB) ?: 1
-        tabLayout.getTabAt(selected)?.select()
+        // ✅ Hide tab bar entirely if only one module is enabled
+        tabLayout.isVisible = canReturn && canReplace
+
+        // Select Replace tab by default if both exist, else select first
+        val defaultTab = if (canReturn && canReplace) 1 else 0
+        tabLayout.getTabAt(defaultTab)?.select()
 
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                if (tab.position == 0) {
+                // tab 0 = Return (only when both enabled), navigates to ReturnSaleActivity
+
+                val isReturnTab = when {
+
+                    canReturn && canReplace -> tab.position == 0
+
+                    else -> false  // only replace enabled — no switching allowed
+
+                }
+
+                if (isReturnTab) {
                     val intent = Intent(this@ReplacedSaleActivity, ReturnSaleActivity::class.java)
                     intent.putExtra("preFillInvoice", binding.searchBar.query?.toString()?.trim())
                     startActivity(intent)
@@ -217,7 +236,11 @@ class ReplacedSaleActivity : AppCompatActivity(), OnReturnQuantityChangeListener
             }
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {
-                if (tab?.position == 0) {
+                val isReturnTab = when {
+                    canReturn && canReplace -> tab?.position == 0
+                    else -> false
+                }
+                if (isReturnTab) {
                     val intent = Intent(this@ReplacedSaleActivity, ReturnSaleActivity::class.java)
                     intent.putExtra("preFillInvoice", binding.searchBar.query?.toString()?.trim())
                     startActivity(intent)

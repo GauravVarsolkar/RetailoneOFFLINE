@@ -49,6 +49,20 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
+    <Button
+        android:id="@+id/btnCopyReceipt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Copy Receipt"
+        android:textColor="@android:color/white"
+        android:background="@color/primary"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/appbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -58,7 +72,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/appbar">
+        app:layout_constraintTop_toBottomOf="@+id/btnCopyReceipt">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -185,7 +199,7 @@
                 app:cardBackgroundColor="@android:color/white"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/reason_layout">
+                app:layout_constraintTop_toBottomOf="@id/invoice_id_layout">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -339,6 +353,71 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- 📌 NEW: Select Receipt Type Dropdown (RIGHT BELOW RETURN REASON) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/receipt_type_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:paddingTop="2dp"
+                android:visibility="gone"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/white"
+                android:hint="Select Receipt Type"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/reason_layout">
+
+                <AutoCompleteTextView
+                    android:id="@+id/receipt_type_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_weight="1"
+                    android:background="#00000000"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:inputType="none"
+                    android:paddingVertical="6dp"
+                    android:singleLine="true"
+                    android:textSize="16dp"
+                    android:textStyle="normal" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Invoice ID input (below Select Receipt Type) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/invoice_id_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:paddingTop="2dp"
+                android:background="@drawable/shape_curve_grey_small"
+                android:backgroundTint="@color/white"
+                android:hint="Enter Invoice ID"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/receipt_type_layout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/invoice_id_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/avenirnextltpro_medium"
+                    android:inputType="text"
+                    android:singleLine="true"
+                    android:textSize="16sp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+
 
             <LinearLayout
                 android:id="@+id/addproduct_layout"
@@ -421,6 +500,35 @@
                             android:text="-"
                             android:textColor="@color/goodgrey"
                             android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/spotDiscountRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="4dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/spotDiscountPercentField"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_regular"
+                            android:text="(-) Spot Discount"
+                            android:textColor="@color/black"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/spotDiscountAmountValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/poppins_regular"
+                            android:text="-"
+                            android:textColor="@color/goodgrey"
+                            android:textSize="14sp" />
+
                     </LinearLayout>
 
                     <LinearLayout

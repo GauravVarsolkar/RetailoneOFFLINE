@@ -948,7 +948,9 @@ class SalesPaymentViewmodel:ViewModel() {
                 // ✅ NEW: Parse tax_amount from string for summary
                 total_tax_amount = saleTaxAmount,
                 total_total_amount = pendingSale.grand_total.toDoubleOrNull() ?: 0.0
-            )
+            ),
+            spot_discount_percentage = null,
+            spot_discount_amount = null
         )
     }
 

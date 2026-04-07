@@ -533,7 +533,7 @@ class PiChildAdapter(
                         ?: pack.good_returned_items?.get(row.status)
 
                 // Build dynamic fields list
-                val fieldList: List<InventoryField> = if (details != null) {
+                val baseFieldList: List<InventoryField> = if (details != null) {
                     details.toUiFields()
                 } else {
                     listOf(
@@ -545,6 +545,18 @@ class PiChildAdapter(
                 }
 
                 // Bind inner RecyclerView
+                val fieldList = baseFieldList.toMutableList()
+
+                // Calculate extra fields as requested
+                // UI 'No. of packs' is given by pack.no_of_packs (multipliers)
+                // UI 'Quantity' is given by row.qty (count)
+                val qFactor = row.qty
+                val pFactor = pack.no_of_packs.coerceAtLeast(1)
+                val totalResult = qFactor * pFactor
+
+                // Add requested fields below quantity (multiply by pack size)
+                // fieldList.add(InventoryField("", "$pFactor Packs"))
+                fieldList.add(InventoryField("No. of pieces", "= $totalResult"))
                 itemHolder.binding.rvDetails.apply {
                     if (layoutManager == null) {
                         layoutManager = LinearLayoutManager(

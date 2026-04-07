@@ -255,10 +255,10 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
-<!--
-                    android:checked="true"
-                    enable
--->
+                    <!--
+                                        android:checked="true"
+                                        enable
+                    -->
 
 
 
@@ -273,19 +273,19 @@
                         app:layout_constraintTop_toTopOf="@+id/new_cust_card_details"/>
 
 
-<!--                    <com.google.android.material.checkbox.MaterialCheckBox-->
-<!--                        android:id="@+id/cust_Checkbox"-->
-<!--                        android:layout_width="wrap_content"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:layout_marginEnd="16dp"-->
-<!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
-<!--                        android:text=""-->
-<!--                        android:textColor="@color/textlite"-->
-<!--                        android:textSize="18sp"-->
-<!--                        app:layout_constraintBottom_toBottomOf="@+id/new_cust_card_details"-->
-<!--                        app:layout_constraintEnd_toEndOf="parent"-->
-<!--                        app:layout_constraintTop_toTopOf="@+id/new_cust_card_details"-->
-<!--                         />-->
+                    <!--                    <com.google.android.material.checkbox.MaterialCheckBox-->
+                    <!--                        android:id="@+id/cust_Checkbox"-->
+                    <!--                        android:layout_width="wrap_content"-->
+                    <!--                        android:layout_height="wrap_content"-->
+                    <!--                        android:layout_marginEnd="16dp"-->
+                    <!--                        android:fontFamily="@font/avenirnextltpro_medium"-->
+                    <!--                        android:text=""-->
+                    <!--                        android:textColor="@color/textlite"-->
+                    <!--                        android:textSize="18sp"-->
+                    <!--                        app:layout_constraintBottom_toBottomOf="@+id/new_cust_card_details"-->
+                    <!--                        app:layout_constraintEnd_toEndOf="parent"-->
+                    <!--                        app:layout_constraintTop_toTopOf="@+id/new_cust_card_details"-->
+                    <!--                         />-->
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -343,6 +343,65 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
             </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/receipttypecard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/paymentmethod">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/receipttypedetails"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="16dp"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:text="Choose Receipt Type"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/receipt_type_layout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginBottom="16dp"
+                        app:hintEnabled="false"
+                        app:boxBackgroundColor="@android:color/white"
+                        app:boxStrokeWidth="0dp"
+                        app:boxStrokeWidthFocused="0dp"
+                        app:layout_constraintTop_toBottomOf="@+id/receipttypedetails">
+
+                        <AutoCompleteTextView
+                            android:id="@+id/receipt_type_dropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/avenirnextltpro_medium"
+                            android:inputType="none"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:gravity="center_vertical"
+                            android:paddingTop="16dp"
+                            android:paddingBottom="20dp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
 
 
@@ -355,7 +414,7 @@
                 android:layout_marginEnd="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/paymentmethod">
+                app:layout_constraintTop_toBottomOf="@+id/receipttypecard">
 
                 <LinearLayout
                     android:id="@+id/payment"
@@ -413,6 +472,43 @@
                             android:textColor="@color/goodgrey"
                             android:textSize="14sp" />
                     </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/spotDiscountRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="8dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/shape_curve_grey_small"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:visibility="gone"
+                        android:weightSum="1">
+
+                        <TextView
+                            android:id="@+id/spotDiscountPercentField"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_regular"
+                            android:gravity="left"
+                            android:text="Spot Discount"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="#000" />
+
+                        <TextView
+                            android:id="@+id/spotDiscountAmountValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/poppins_regular"
+                            android:gravity="right"
+                            android:text="-"
+                            android:textColor="@color/goodgrey"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
 
 
                     <!--
@@ -598,7 +694,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="8dp"
                         android:orientation="vertical"
-                         >
+                        >
 
                         <EditText
                             android:id="@+id/invoice_num"
@@ -607,7 +703,7 @@
 
                             android:fontFamily="@font/poppins_semibold"
                             android:gravity="left"
-                            android:hint="Enter Invoice Number"
+                            android:hint="Enter Purchase Code"
                             android:textAppearance="?android:attr/textAppearanceSmall"
                             android:textColor="#000" />
 
