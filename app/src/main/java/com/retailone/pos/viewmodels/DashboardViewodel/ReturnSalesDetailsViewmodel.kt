@@ -1288,6 +1288,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
     }
 
     fun callSaleReturnReasonApi(context: Context) {
+        Log.d("RETURN_REASON_DEBUG", "🚀 API CALL: salesreturnreasons started")
         loading.postValue(ProgressData(isProgress = true))
 
         ApiClient().getApiService(context).getReturnReasonAPI()
@@ -1295,17 +1296,34 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 override fun onResponse(
                     call: Call<SalesReturnReasonRes>, response: Response<SalesReturnReasonRes>
                 ) {
+                    val code = response.code()
+                    Log.d("RETURN_REASON_DEBUG", "📡 RESPONSE RECEIVED: Code $code")
+                    
                     if (response.isSuccessful && response.body() != null) {
-                        salesreturnreason_data.postValue(response.body())
+                        val body = response.body()!!
+                        Log.d("RETURN_REASON_DEBUG", "✅ SUCCESS: status=${body.status}, reasons_count=${body.data.size}")
+                        
+                        if (body.data.isEmpty()) {
+                            Log.w("RETURN_REASON_DEBUG", "⚠️ WARNING: Response status is 1 but data list is EMPTY")
+                        } else {
+                            body.data.forEachIndexed { index, reason ->
+                                Log.d("RETURN_REASON_DEBUG", "   [$index] ID: ${reason.id}, Name: ${reason.reason_name}")
+                            }
+                        }
+
+                        salesreturnreason_data.postValue(body)
 
                         // ✅ Save to local DB for offline use
                         viewModelScope.launch(Dispatchers.IO) {
-                            saveReturnReasonsToLocalDB(response.body()!!.data)
-                            Log.d("ReturnReasons", "💾 Saved ${response.body()!!.data.size} reasons to cache")
+                            saveReturnReasonsToLocalDB(body.data)
+                            Log.d("RETURN_REASON_DEBUG", "💾 Cached ${body.data.size} reasons to local database")
                         }
 
                         loading.postValue(ProgressData(isProgress = false))
                     } else {
+                        val errorBody = response.errorBody()?.string() ?: "No error body"
+                        Log.e("RETURN_REASON_DEBUG", "❌ API ERROR: Code $code, Error: $errorBody")
+                        
                         val showMsgVal = NetworkUtils.isInternetAvailable(context)
                         loading.postValue(
                             ProgressData(
@@ -1318,7 +1336,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 }
 
                 override fun onFailure(call: Call<SalesReturnReasonRes>, t: Throwable) {
-                    Log.d("rty", t.message.toString())
+                    Log.e("RETURN_REASON_DEBUG", "❌ FATAL FAILURE: ${t.message}", t)
                     // ✅ Suppress error message when offline
                     val showMsg = NetworkUtils.isInternetAvailable(context)
                             loading.postValue(

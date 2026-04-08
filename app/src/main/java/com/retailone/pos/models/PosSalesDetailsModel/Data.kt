@@ -1,5 +1,28 @@
 package com.retailone.pos.models.PosSalesDetailsModel
 
+import com.google.gson.annotations.JsonAdapter
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.reflect.TypeToken
+import java.lang.reflect.Type
+import com.google.gson.JsonDeserializationContext
+
+class VsdcReceiptListAdapter : JsonDeserializer<List<VsdcReceipt>> {
+    override fun deserialize(
+        json: JsonElement,
+        typeOfT: Type,
+        context: JsonDeserializationContext
+    ): List<VsdcReceipt> {
+        if (json.isJsonArray) {
+            return context.deserialize(json, object : TypeToken<List<VsdcReceipt>>() {}.type)
+        } else if (json.isJsonObject) {
+            val singleItem: VsdcReceipt = context.deserialize(json, VsdcReceipt::class.java)
+            return listOf(singleItem)
+        }
+        return emptyList()
+    }
+}
+
 data class Data(
     val amount_tendered: String,
     val discount_amount: String,
@@ -30,8 +53,11 @@ data class Data(
     val receipt_sign: String,
     val receipt_no: String,
     val rcptType: String,
+    @JsonAdapter(VsdcReceiptListAdapter::class)
     val vsdc_reciept: List<VsdcReceipt>?,
     val trxn_code: String,
     val tax_details: TaxDetails?,
     val tax_summery: List<TaxSummary>?,
+    val spot_discount_percentage: String? = null,
+    val spot_discount_amount: String? = null
 )

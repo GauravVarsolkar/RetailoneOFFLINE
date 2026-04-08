@@ -949,8 +949,8 @@ class SalesPaymentViewmodel:ViewModel() {
                 total_tax_amount = saleTaxAmount,
                 total_total_amount = pendingSale.grand_total.toDoubleOrNull() ?: 0.0
             ),
-            spot_discount_percentage = null,
-            spot_discount_amount = null
+            spot_discount_percentage = pendingSale.spot_discount_percentage?.toString(),
+            spot_discount_amount = pendingSale.spot_discount_amount?.toString()
         )
     }
 

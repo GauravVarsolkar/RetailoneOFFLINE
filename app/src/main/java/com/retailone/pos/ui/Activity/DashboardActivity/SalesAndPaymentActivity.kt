@@ -183,12 +183,13 @@ class SalesAndPaymentActivity : AppCompatActivity() {
                     // ✅ NEW: Merge API sales, offline sales, and cancelled sales
                     val mergedSales = mergeWithOfflineAndCancelledSales(invoiceRes, offlineSales, cancelledSales)
                     
-                    // ✅ Cache the merged response for offline use
+                    // ✅ Cache the RAW API response for offline use, NOT the merged one
+                    // This prevents offline temporary tags (OFF_xxx) from permanently burning into the cache
                     viewmodel.cacheInvoiceResponse(
                         storeid.toInt(),
                         fromdate.takeIf { it.isNotEmpty() } ?: getTodayStartDate(),
                         todate.takeIf { it.isNotEmpty() } ?: getTodayEndDate(),
-                        mergedSales,
+                        invoiceRes,
                         this@SalesAndPaymentActivity
                     )
                     
@@ -490,16 +491,16 @@ class SalesAndPaymentActivity : AppCompatActivity() {
         
         // Group 2: Offline pending sales. Map IDs to a unique negative range (-1, -2, -3...) 
         // to avoid collisions with API IDs and clearly flag them as offline to the ViewModel.
-        val apiInvoiceIdsOff = invoiceRes.data.sales.map { it.invoice_id }.toSet()
+        val apiInvoiceIdsOff = invoiceRes.data.sales.map { it.invoice_id.trim().lowercase() }.toSet()
         val offlineSalesToAdd = offlineSales
-            .filter { it.invoice_id !in apiInvoiceIdsOff }
+            .filter { it.invoice_id.trim().lowercase() !in apiInvoiceIdsOff }
             .map { it.copy(id = -it.id) }
         allSales.addAll(offlineSalesToAdd)
         
         // Group 3: Local cancellation requests. Map IDs to a different negative range (-1000001, -1000002...)
-        val apiInvoiceIdsCancel = invoiceRes.data.sales.map { it.invoice_id }.toSet()
+        val apiInvoiceIdsCancel = invoiceRes.data.sales.map { it.invoice_id.trim().lowercase() }.toSet()
         val cancelledSalesToAdd = cancelledSales
-            .filter { it.invoice_id !in apiInvoiceIdsCancel }
+            .filter { it.invoice_id.trim().lowercase() !in apiInvoiceIdsCancel }
             .map { it.copy(id = -it.id) }
         allSales.addAll(cancelledSalesToAdd)
         
@@ -549,8 +550,8 @@ class SalesAndPaymentActivity : AppCompatActivity() {
         allSales.addAll(mappedOffline)
         
         // Add API sales (avoid duplicates by checking invoice_id)
-        val offlineInvoiceIds = mappedOffline.map { it.invoice_id }.toSet()
-        val apiSalesNotInOffline = invoiceRes.data.sales.filter { it.invoice_id !in offlineInvoiceIds }
+        val offlineInvoiceIds = mappedOffline.map { it.invoice_id.trim().lowercase() }.toSet()
+        val apiSalesNotInOffline = invoiceRes.data.sales.filter { it.invoice_id.trim().lowercase() !in offlineInvoiceIds }
         allSales.addAll(apiSalesNotInOffline)
         
         // Calculate totals including offline sales

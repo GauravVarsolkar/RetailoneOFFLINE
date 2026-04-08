@@ -179,10 +179,11 @@ class GoodsReturntoWarehouseViewModel: ViewModel() {
     }
 
     fun callSaleReturnReasonApi( context: Context){
+        Log.d("RETURN_REASON_DEBUG", "🚀 API CALL (Stock Return): salesreturnreasons started")
         loading.postValue(ProgressData(isProgress = true))
 
         if (!com.retailone.pos.utils.NetworkUtils.isInternetAvailable(context)) {
-            Log.d("ReasonAPI", "Offline mode: Skipping return reasons API call")
+            Log.d("RETURN_REASON_DEBUG", "📴 OFFLINE: Skipping API call")
             loading.postValue(ProgressData(
                 isProgress = false,
                 isMessage = true,
@@ -194,9 +195,21 @@ class GoodsReturntoWarehouseViewModel: ViewModel() {
         ApiClient().getApiService(context).getReturnReasonAPI().enqueue(object :
             Callback<SalesReturnReasonRes> {
             override fun onResponse(call: Call<SalesReturnReasonRes>, response: Response<SalesReturnReasonRes>) {
+                val code = response.code()
+                Log.d("RETURN_REASON_DEBUG", "📡 RESPONSE RECEIVED: Code $code")
 
                 if(response.isSuccessful && response.body()!=null){
                     val body = response.body()!!
+                    Log.d("RETURN_REASON_DEBUG", "✅ SUCCESS: status=${body.status}, reasons_count=${body.data.size}")
+
+                    if (body.data.isEmpty()) {
+                        Log.w("RETURN_REASON_DEBUG", "⚠️ WARNING: Response status is 1 but data list is EMPTY")
+                    } else {
+                        body.data.forEachIndexed { index, reason ->
+                            Log.d("RETURN_REASON_DEBUG", "   [$index] ID: ${reason.id}, Name: ${reason.reason_name}")
+                        }
+                    }
+
                     salesreturnreason_data.postValue(body)
                     loading.postValue(ProgressData(isProgress = false,))
                     
@@ -211,17 +224,20 @@ class GoodsReturntoWarehouseViewModel: ViewModel() {
                                 )
                             }
                             returnReasonDao?.insertReasons(entities)
+                            Log.d("RETURN_REASON_DEBUG", "💾 Cached ${body.data.size} reasons to local database")
                         } catch (e: Exception) {
-                            Log.e("ReasonAPI", "Failed to cache return reasons: ${e.message}")
+                            Log.e("RETURN_REASON_DEBUG", "❌ CACHE ERROR: Failed to cache return reasons: ${e.message}")
                         }
                     }
                 }else{
+                    val errorBody = response.errorBody()?.string() ?: "No error body"
+                    Log.e("RETURN_REASON_DEBUG", "❌ API ERROR: Code $code, Error: $errorBody")
                     loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
                 }
             }
 
             override fun onFailure(call: Call<SalesReturnReasonRes>, t: Throwable) {
-                Log.d("rty",t.message.toString())
+                Log.e("RETURN_REASON_DEBUG", "❌ FATAL FAILURE: ${t.message}", t)
                 loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
             }
         })

@@ -39,6 +39,56 @@ class PosSaleRepository(private val context: Context) {
         private const val TAG = "PosSaleRepository"
     }
 
+    private suspend fun generateNextOfflineInvoiceId(storeId: String): String {
+        return try {
+            val db = PosDatabase.getDatabase(context)
+            val paymentDao = db.paymentInvoiceDao()
+            val pendingDao = db.pendingSaleDao()
+            
+            val knownIds = mutableListOf<String>()
+            
+            // Get from API cache
+            val latestCache = paymentDao.getLatestPaymentInvoice(storeId.toIntOrNull() ?: 0)
+            if (latestCache != null && latestCache.invoice_data_json.isNotEmpty()) {
+                val invoiceRes = gson.fromJson(latestCache.invoice_data_json, com.retailone.pos.models.SalesPaymentModel.InvoicePayment.InvoiceRes::class.java)
+                knownIds.addAll(invoiceRes.data.sales.map { it.invoice_id })
+            }
+            
+            // Get from offline pending sales
+            val pending = pendingDao.getPendingSales()
+            knownIds.addAll(pending.map { it.invoice_id })
+            
+            var maxNum = 0
+            var prefix = "OFF-"
+            var numFormatLength = 0
+            
+            val regex = Regex("^(.*?)(\\d+)$")
+            for (id in knownIds) {
+                val match = regex.find(id)
+                if (match != null) {
+                    val p = match.groupValues[1]
+                    val numStr = match.groupValues[2]
+                    val num = numStr.toIntOrNull() ?: 0
+                    // Exclude previous fallback OFF_ patterns
+                    if (!p.startsWith("OFF_") && !p.startsWith("OFF-") && num > maxNum) {
+                        maxNum = num
+                        prefix = p
+                        numFormatLength = numStr.length
+                    }
+                }
+            }
+            
+            if (maxNum > 0) {
+                val formatPattern = if (numFormatLength > 0) "%0${numFormatLength}d" else "%d"
+                "${prefix}${String.format(formatPattern, maxNum + 1)}"
+            } else {
+                "OFF-${System.currentTimeMillis()}"
+            }
+        } catch (e: Exception) {
+            "OFF-${System.currentTimeMillis()}"
+        }
+    }
+
     /**
      * Submit sale (offline-first):
      * - If ONLINE: Try API first, save to Room only if API fails
@@ -48,16 +98,16 @@ class PosSaleRepository(private val context: Context) {
         onSuccess: (PosSalesDetails) -> Unit,
         onError: (String) -> Unit
     ) {
-        // ✅ NEW: If invoice_id is empty, generate a unique local ID (e.g., OFFLINE_timestamp)
-        // to avoid "already exists locally" error in database duplicate check.
+        // ✅ NEW: If invoice_id is empty, auto-generate next sequential ID
         val finalSaleReq = if (saleReq.invoice_id.isEmpty()) {
-            val localInvoiceId = "OFF_${System.currentTimeMillis()}"
+            val localInvoiceId = generateNextOfflineInvoiceId(saleReq.store_id)
             saleReq.copy(invoice_id = localInvoiceId)
         } else {
             saleReq
         }
 
         // Check for duplicate invoice
+
         val existingSale = dao.getSaleByInvoice(finalSaleReq.invoice_id, finalSaleReq.store_id)
         if (existingSale != null) {
             onError("Invoice ${finalSaleReq.invoice_id} already exists locally")
@@ -360,7 +410,9 @@ class PosSaleRepository(private val context: Context) {
                 rcptType = "",
                 trxn_code = saleReq.trxn_code,
                 tax_details = saleReq.tax_details,
-                tax_summery = saleReq.tax_summery
+                tax_summery = saleReq.tax_summery,
+                spot_discount_percentage = saleReq.spot_discount_percentage?.toString(),
+                spot_discount_amount = saleReq.spot_discount_amount
             )
         )
     }
