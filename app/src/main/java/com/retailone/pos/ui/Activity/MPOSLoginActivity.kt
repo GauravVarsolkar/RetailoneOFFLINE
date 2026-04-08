@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.google.gson.Gson
 import com.retailone.pos.localstorage.RoomDB.PosDatabase
+import com.retailone.pos.localstorage.RoomDB.StoreSettingsEntity
 import com.retailone.pos.localstorage.RoomDB.UserEntity
 import com.retailone.pos.localstorage.SharedPreference.ProfileAttendanceHelper
 import com.retailone.pos.models.UserProfileModels.UserProfileResponse
@@ -141,7 +142,9 @@ class MPOSLoginActivity : AppCompatActivity() {
                         storeid,
                         store_manager_id.toString(),
                         loginResponse!!.cashup_date_time.toString(),
-                        it // userProfileResponse
+                        it, // userProfileResponse
+                        loginResponse!!.data.spot_discount?.is_spot_discount_enabled == 1,
+                        loginResponse!!.data.spot_discount?.max_spot_discount_limit ?: "0.00"
                     )
 
                     showMessage("Login Successful")
@@ -233,6 +236,13 @@ class MPOSLoginActivity : AppCompatActivity() {
                     loginSession.storeCashupDateTime(user.cashupDateTime)
                     loginSession.storeLoginSession(user.token, true)
 
+                    // ✅ RESTORE SPOT DISCOUNT FOR THIS STORE
+                    val settings = db.storeSettingsDao().getSettingsByStoreId(user.storeId)
+                    if (settings != null) {
+                        loginSession.storeSpotDiscount(settings.isSpotDiscountEnabled, settings.spotDiscountLimit)
+                        Log.d("OfflineLogin", "Restored spot discount: ${settings.isSpotDiscountEnabled}, limit: ${settings.spotDiscountLimit}")
+                    }
+
                     // Restore user profile in helper for other components
                     val profileHelper = ProfileAttendanceHelper(this@MPOSLoginActivity)
                     val gson = Gson()
@@ -259,9 +269,20 @@ class MPOSLoginActivity : AppCompatActivity() {
         storeId: String,
         storeManagerId: String,
         cashupTime: String,
-        profileResponse: UserProfileResponse
+        profileResponse: UserProfileResponse,
+        spotDiscountEnabled: Boolean,
+        spotDiscountLimit: String
     ) {
         val db = PosDatabase.getDatabase(this)
+        
+        // Save store specific settings
+        val storeSettings = StoreSettingsEntity(
+            storeId = storeId,
+            isSpotDiscountEnabled = spotDiscountEnabled,
+            spotDiscountLimit = spotDiscountLimit
+        )
+        db.storeSettingsDao().insertOrUpdate(storeSettings)
+        
         val userProfileJson = Gson().toJson(profileResponse)
         val userEntity = UserEntity(
             email = email,

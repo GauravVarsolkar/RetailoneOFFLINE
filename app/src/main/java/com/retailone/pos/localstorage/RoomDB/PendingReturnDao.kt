@@ -52,4 +52,7 @@ interface PendingReturnDao {
 
     @Query("SELECT * FROM pending_returns WHERE invoice_id = :invoiceId LIMIT 1")
     suspend fun getPendingReturnByInvoice(invoiceId: String): PendingReturnEntity?
+
+    @Query("UPDATE pending_returns SET invoice_id = :newInvoiceId WHERE invoice_id = :oldInvoiceId")
+    suspend fun updateInvoiceId(oldInvoiceId: String, newInvoiceId: String)
 }

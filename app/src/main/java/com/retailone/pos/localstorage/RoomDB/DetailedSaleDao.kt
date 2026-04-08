@@ -37,4 +37,7 @@ interface DetailedSaleDao {
     // Check if detailed sale exists
     @Query("SELECT EXISTS(SELECT 1 FROM detailed_sales WHERE invoice_id = :invoiceId)")
     suspend fun detailedSaleExists(invoiceId: String): Boolean
+
+    @Query("UPDATE detailed_sales SET invoice_id = :newInvoiceId WHERE invoice_id = :oldInvoiceId")
+    suspend fun updateInvoiceId(oldInvoiceId: String, newInvoiceId: String)
 }

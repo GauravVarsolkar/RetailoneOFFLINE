@@ -38,7 +38,15 @@ data class ReturnItemData(
     // Add the snake_case version which carries tax_exclusive_price
     @SerializedName("sales_items")
    // @SerializedName("salesItems")
-    val sales_items: List<SalesItemDetailed>? = null
+    val sales_items: List<SalesItemDetailed>? = null,
+
+    val trxn_code: String? = null,
+    val prc_no: String? = null,
+    val receipt_type: String? = null,
+    @SerializedName("tax_details")
+    val tax_details: String? = null,
+    @SerializedName("tax_summery")
+    val tax_summery: String? = null
 )
 
 // Minimal “detailed” item only for reading tax_exclusive_price

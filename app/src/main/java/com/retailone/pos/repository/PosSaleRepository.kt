@@ -98,6 +98,8 @@ class PosSaleRepository(private val context: Context) {
                         // ✅ API success - ALSO save locally as SYNCED for offline records
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                             saveSaleLocally(syncedSaleReq, syncStatus = "SYNCED")
+                            // Check if we need to sync any already-recorded offline actions (unlikely in immediate flow but good for safety)
+                            synchronizeOfflineActions(saleReq.invoice_id, serverInvoiceId)
                         }
                         onSuccess(serverPayload)
                     } else {
@@ -427,6 +429,11 @@ class PosSaleRepository(private val context: Context) {
                 // Success - mark as synced and update invoice ID to the explicit one from server
                 val serverInvoiceId = response.body()!!.data?.invoice_id ?: sale.invoice_id
                 dao.markAsSyncedWithInvoiceId(sale.id, serverInvoiceId, System.currentTimeMillis())
+                
+                // ✅ CRITICAL NEW STEP: Sync dependent tables (returns, replaces, details cache)
+                // so they use the REAL server ID instead of the temporary "OFF_..." ID
+                synchronizeOfflineActions(sale.invoice_id, serverInvoiceId)
+                
                 Log.d(TAG, "Sale ${sale.invoice_id} synced successfully. New ID: $serverInvoiceId")
                 true
             } else {
@@ -588,5 +595,31 @@ class PosSaleRepository(private val context: Context) {
     }
 
 
+
+    /**
+     * ✅ NEW: Synchronizes all dependent local actions (returns, replaces, details)
+     * when an offline sale finally gets its real server-generated invoice ID.
+     */
+    private suspend fun synchronizeOfflineActions(oldInvoiceId: String, newInvoiceId: String) {
+        if (oldInvoiceId == newInvoiceId || oldInvoiceId.isEmpty()) return
+        
+        Log.d(TAG, "🔄 [SYNC HUB] Synchronizing offline actions for $oldInvoiceId -> $newInvoiceId")
+        
+        try {
+            // 1. Update Detailed Sale Cache
+            val detailedRepo = DetailedSaleRepository(context)
+            detailedRepo.updateInvoiceId(oldInvoiceId, newInvoiceId)
+            
+            // 2. Update Pending Returns
+            database.pendingReturnDao().updateInvoiceId(oldInvoiceId, newInvoiceId)
+            
+            // 3. Update Pending Replaces
+            database.pendingReplaceDao().updateInvoiceId(oldInvoiceId, newInvoiceId)
+            
+            Log.d(TAG, "✅ [SYNC HUB] All dependent actions synchronized to $newInvoiceId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ [SYNC HUB] Optimization failed: ${e.message}")
+        }
+    }
 
 }

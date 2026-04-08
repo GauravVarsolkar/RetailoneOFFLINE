@@ -748,7 +748,11 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
             tax_amount = entity.tax_amount.toDoubleOrNull() ?: 0.0,
             updated_at = entity.sale_date_time,
             spot_discount_amount = "0",
-            spot_discount_percentage = 0f
+            spot_discount_percentage = 0f,
+            trxn_code = entity.trxn_code,
+            prc_no = entity.prc_no,
+            tax_details = null,
+            tax_summery = null
         )
     }
 

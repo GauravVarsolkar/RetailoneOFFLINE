@@ -134,11 +134,11 @@ class PointOfSaleActivity : AppCompatActivity(), OnDeleteItemClickListener,
             val limitStr = loginSession.getSpotDiscountLimit().first()
             maxSpotDiscountLimit = limitStr.toDoubleOrNull() ?: 0.0
 
-            if (isSpotDiscountEnabled) {
-                binding.spotDiscountCard.isVisible = true
-            }
+            binding.spotDiscountCard.isVisible = isSpotDiscountEnabled
+
+            // Setup UI listeners AFTER limit is loaded so maxSpotDiscountLimit is correct
+            setupSpotDiscountUI()
         }
-        setupSpotDiscountUI()
 
 
 
@@ -688,7 +688,6 @@ class PointOfSaleActivity : AppCompatActivity(), OnDeleteItemClickListener,
                 binding.spotDiscountInputLayout.isVisible = false
                 binding.spotDiscountInput.setText("")
                 appliedSpotDiscountPercent = 0.0
-                binding.spotDiscountCard.isVisible = false
             }
         }
 
@@ -770,8 +769,8 @@ class PointOfSaleActivity : AppCompatActivity(), OnDeleteItemClickListener,
         if (!NetworkUtils.isInternetAvailable(this)) {
             Log.d("POS_OFFLINE", "Calculating cart totals offline")
 
-            // ✅ No context needed anymore
-            val offlineResult = OfflineCartCalculator.calculateCartTotals(posItemList)
+            // ✅ Pass appliedSpotDiscountPercent to offline calculator
+            val offlineResult = OfflineCartCalculator.calculateCartTotals(posItemList, appliedSpotDiscountPercent)
 
             val gson = Gson()
             val json = gson.toJson(offlineResult)

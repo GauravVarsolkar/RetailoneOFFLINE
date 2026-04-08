@@ -20,7 +20,7 @@ object OfflineCartCalculator {
             .toDouble()
     }
 
-    fun calculateCartTotals(cartItems: List<StoreProData>): PosAddToCartRes {
+    fun calculateCartTotals(cartItems: List<StoreProData>, spotDiscountPercent: Double = 0.0): PosAddToCartRes {
 
         var grandSubTotal = 0.0
         var grandTax = 0.0
@@ -30,85 +30,38 @@ object OfflineCartCalculator {
         var maxTaxRate = 0
 
         cartItems.forEach { item ->
-
             val batchCartItems = mutableListOf<BatchCartItem>()
             val priceIncTaxItems = mutableListOf<PriceIncTaxItem>()
             var productSubTotal = 0.0
             var productTax = 0.0
             var productDiscount = 0.0
-
-            // Track per-product tax rate (use first batch's tax as representative for the product)
             var productTaxRate = 0
-
-            Log.d(TAG, "========================================")
-            Log.d(TAG, "Product: ${item.product_name}")
 
             item.batch.forEach { batch ->
                 val qty = batch.batch_cart_quantity.toInt()
                 val priceInclusiveTax = batch.price
                 val batchDiscount = batch.discount
-
-                // ✅ Get tax rate from each batch (from API), default to 0 if null/empty
                 val taxRate = batch.tax?.toIntOrNull() ?: 0
 
-                // Track the max tax rate for this product
-                if (taxRate > productTaxRate) {
-                    productTaxRate = taxRate
-                }
-
-                if (taxRate > maxTaxRate) {
-                    maxTaxRate = taxRate
-                }
-
-                Log.d(TAG, "  Batch ${batch.batch_no}: Tax Rate = $taxRate%")
+                if (taxRate > productTaxRate) productTaxRate = taxRate
+                if (taxRate > maxTaxRate) maxTaxRate = taxRate
 
                 if (qty > 0) {
-
-                    // ✅ STEP 1: Calculate unit price (tax exclusive)
-                    // We round to 0 decimals to match the online screenshot (RF 8,475.00)
                     val unitPriceExclTax = if (taxRate == 0) {
                         BigDecimal.valueOf(priceInclusiveTax).setScale(0, RoundingMode.HALF_UP).toDouble()
                     } else {
                         val taxMultiplier = 1.0 + (taxRate / 100.0)
                         BigDecimal.valueOf(priceInclusiveTax / taxMultiplier).setScale(0, RoundingMode.HALF_UP).toDouble()
                     }
-
-                    // ✅ STEP 2: Subtotal = unit_price × qty
                     val itemSubtotal = unitPriceExclTax * qty
-
-                    // ✅ STEP 3: Tax based on ORIGINAL price (Before Discount)
-                    // Difference between inclusive price and exclusive subtotal
-                    // Matches online mode (RF 10,000 - RF 8,475 = RF 1,525)
                     val taxAmount = ((priceInclusiveTax * qty) - itemSubtotal)
 
-                    // ✅ STEP 4: Accumulate totals
                     productSubTotal += itemSubtotal
                     productTax += taxAmount
                     productDiscount += batchDiscount
 
-                    Log.d(TAG, "  Batch ${batch.batch_no}:")
-                    Log.d(TAG, "    Qty: $qty")
-                    Log.d(TAG, "    Price (inc tax): $priceInclusiveTax")
-                    Log.d(TAG, "    Unit Price (ex tax): $unitPriceExclTax")
-                    Log.d(TAG, "    Subtotal: $itemSubtotal")
-                    Log.d(TAG, "    Tax: $taxAmount")
-                    Log.d(TAG, "    Discount: $batchDiscount")
-
-                    batchCartItems.add(
-                        BatchCartItem(
-                            batchno = batch.batch_no,
-                            retail_price = priceInclusiveTax,
-                            quantity = qty,
-                            discount = batchDiscount
-                        )
-                    )
-
-                    priceIncTaxItems.add(
-                        PriceIncTaxItem(
-                            unit_price = unitPriceExclTax,
-                            batch_no = batch.batch_no
-                        )
-                    )
+                    batchCartItems.add(BatchCartItem(batchno = batch.batch_no, retail_price = priceInclusiveTax, quantity = qty, discount = batchDiscount))
+                    priceIncTaxItems.add(PriceIncTaxItem(unit_price = unitPriceExclTax, batch_no = batch.batch_no))
                 }
             }
 
@@ -128,8 +81,6 @@ object OfflineCartCalculator {
                     status = 1
                 )
 
-                // ✅ Product Total = (SubTotal + Tax) - Discount
-                // For a 10k product with 1k discount, this results in exactly (8475 + 1525) - 1000 = 9000
                 val productTotalWithTax = (productSubTotal + productTax) - productDiscount
 
                 cartResDataList.add(
@@ -149,47 +100,36 @@ object OfflineCartCalculator {
                         price_inclusive_tax = priceIncTaxItems
                     )
                 )
-
-                Log.d(TAG, "Product Summary:")
-                Log.d(TAG, "  Tax Rate: $productTaxRate%")
-                Log.d(TAG, "  Subtotal (after discount): $productSubTotal")
-                Log.d(TAG, "  Tax: $productTax")
-                Log.d(TAG, "  Total with tax: $productTotalWithTax")
             }
         }
 
-        // ✅ Final totals (already calculated correctly, no additional rounding needed)
-        val subTotalRounded = BigDecimal.valueOf(grandSubTotal)
-            .setScale(0, RoundingMode.HALF_UP)
-            .toDouble()
+        val subTotalRounded = BigDecimal.valueOf(grandSubTotal).setScale(0, RoundingMode.HALF_UP).toDouble()
+        val taxRounded = BigDecimal.valueOf(grandTax).setScale(0, RoundingMode.HALF_UP).toDouble()
+        
+        // Grand Total before spot discount
+        val totalBeforeSpot = (subTotalRounded + taxRounded) - grandDiscount
+        
+        // Apply spot discount percentage on the total (tax inclusive total matching portal logic)
+        val spotDiscountAmount = if (spotDiscountPercent > 0) {
+            BigDecimal.valueOf(totalBeforeSpot * (spotDiscountPercent / 100.0))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toDouble()
+        } else 0.0
 
-        val taxRounded = BigDecimal.valueOf(grandTax)
-            .setScale(0, RoundingMode.HALF_UP)
-            .toDouble()
-
-        val grandTotal = (subTotalRounded + taxRounded) - grandDiscount
-
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "FINAL TOTALS:")
-        Log.d(TAG, "  Subtotal: $subTotalRounded")
-        Log.d(TAG, "  Tax: $taxRounded")
-        Log.d(TAG, "  Discount: $grandDiscount")
-        Log.d(TAG, "  Grand Total: $grandTotal")
-        Log.d(TAG, "  Max Tax Rate: $maxTaxRate%")
-        Log.d(TAG, "========================================")
+        val finalGrandTotal = totalBeforeSpot - spotDiscountAmount
 
         return PosAddToCartRes(
             data = cartResDataList,
             discount_amount = grandDiscount,
-            grand_total = grandTotal.toString(),
+            grand_total = finalGrandTotal.toString(),
             message = "Offline calculation",
             status = 1,
             sub_total = subTotalRounded,
             sub_total_after_discount = subTotalRounded - grandDiscount,
             tax = "@${maxTaxRate}%",
             tax_amount = taxRounded.toString(),
-            spot_discount_percentage = "0",
-            spot_discount_amount = "0"
+            spot_discount_percentage = spotDiscountPercent.toString(),
+            spot_discount_amount = spotDiscountAmount.toString()
         )
     }
 }

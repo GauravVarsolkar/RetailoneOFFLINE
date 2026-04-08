@@ -33,4 +33,7 @@ interface PendingReplaceDao {
 
     @Query("SELECT * FROM pending_replaces WHERE invoice_id = :invoiceId AND sync_status IN ('PENDING', 'FAILED') LIMIT 1")
     suspend fun getPendingReplaceByInvoice(invoiceId: String): PendingReplaceEntity?
+
+    @Query("UPDATE pending_replaces SET invoice_id = :newInvoiceId WHERE invoice_id = :oldInvoiceId")
+    suspend fun updateInvoiceId(oldInvoiceId: String, newInvoiceId: String)
 }

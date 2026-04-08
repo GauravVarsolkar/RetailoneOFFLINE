@@ -92,11 +92,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:paddingBottom="80dp"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toTopOf="parent">
 
-                        <!-- POS Card -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/poscard"
                             android:layout_width="match_parent"
@@ -108,7 +105,7 @@
 
                             <androidx.constraintlayout.widget.ConstraintLayout
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                android:layout_height="match_parent"
                                 android:paddingVertical="16dp"
                                 android:background="@color/card1">
 
@@ -132,18 +129,21 @@
                                     android:layout_height="wrap_content"
                                     android:fontFamily="@font/avenirnextltpro_medium"
                                     android:text="Point Of sale"
-                                    android:textSize="16sp"
+                                    android:textSize="16dp"
                                     android:textColor="@color/icon_tint1"
                                     app:layout_constraintBottom_toBottomOf="parent"
                                     app:layout_constraintEnd_toEndOf="parent"
                                     app:layout_constraintStart_toEndOf="@+id/img1"
                                     app:layout_constraintTop_toTopOf="parent" />
 
+
                             </androidx.constraintlayout.widget.ConstraintLayout>
+
 
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Row 2: Stock & Material -->
+
+
                         <LinearLayout
                             android:id="@+id/row2linear"
                             android:layout_width="match_parent"
@@ -152,7 +152,7 @@
 
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/stockcard"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginEnd="4dp"
@@ -163,7 +163,7 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
                                     android:background="@color/card2">
 
@@ -186,20 +186,23 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Stock Requisition"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint2"
+
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintTop_toBottomOf="@+id/img2" />
 
+
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                             </com.google.android.material.card.MaterialCardView>
 
+
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/materialrcv_card"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
                                 android:layout_marginEnd="8dp"
@@ -210,7 +213,7 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
                                     android:background="@color/card3">
 
@@ -233,8 +236,9 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Material Receiving"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint3"
+
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
@@ -242,11 +246,12 @@
 
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+
                             </com.google.android.material.card.MaterialCardView>
+
 
                         </LinearLayout>
 
-                        <!-- Product Inventory Card -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/pdt_inventory_card"
                             android:layout_width="match_parent"
@@ -258,7 +263,7 @@
 
                             <androidx.constraintlayout.widget.ConstraintLayout
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                android:layout_height="match_parent"
                                 android:paddingVertical="16dp"
                                 android:background="@color/card4">
 
@@ -281,18 +286,20 @@
                                     android:layout_height="wrap_content"
                                     android:fontFamily="@font/avenirnextltpro_medium"
                                     android:text="Product Inventory"
-                                    android:textSize="16sp"
+                                    android:textSize="16dp"
                                     android:textColor="@color/icon_tint4"
+
                                     app:layout_constraintBottom_toBottomOf="parent"
                                     app:layout_constraintEnd_toEndOf="parent"
                                     app:layout_constraintStart_toEndOf="@+id/img4"
                                     app:layout_constraintTop_toTopOf="parent" />
 
+
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
                         </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Row 4: Cashup & Sales Payment -->
+
                         <LinearLayout
                             android:id="@+id/row4linear"
                             android:layout_width="match_parent"
@@ -301,7 +308,7 @@
 
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/cashupcard"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginEnd="4dp"
@@ -312,7 +319,7 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
                                     android:background="@color/card5">
 
@@ -335,20 +342,23 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Cash up"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint5"
+
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintTop_toBottomOf="@+id/img5" />
 
+
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                             </com.google.android.material.card.MaterialCardView>
 
+
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/sales_payment_card"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
                                 android:layout_marginEnd="8dp"
@@ -359,9 +369,10 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
-                                    android:background="@color/card6">
+                                    android:background="@color/card6"
+                                    >
 
                                     <ImageView
                                         android:id="@+id/img6"
@@ -382,8 +393,9 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Sales &amp; payment"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint6"
+
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
@@ -391,11 +403,12 @@
 
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+
                             </com.google.android.material.card.MaterialCardView>
+
 
                         </LinearLayout>
 
-                        <!-- Row 5: Expense & Profile -->
                         <LinearLayout
                             android:id="@+id/row5linear"
                             android:layout_width="match_parent"
@@ -404,7 +417,7 @@
 
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/expensecard"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginEnd="4dp"
@@ -415,7 +428,7 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
                                     android:background="@color/card7">
 
@@ -438,20 +451,22 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Expense Register"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint7"
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintTop_toBottomOf="@+id/img7" />
 
+
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                             </com.google.android.material.card.MaterialCardView>
 
+
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/profile_card"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
                                 android:layout_marginEnd="8dp"
@@ -462,7 +477,7 @@
 
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
+                                    android:layout_height="match_parent"
                                     android:paddingVertical="5dp"
                                     android:background="@color/card8">
 
@@ -485,8 +500,9 @@
                                         android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Profile &amp; Attendance"
-                                        android:textSize="16sp"
+                                        android:textSize="16dp"
                                         android:textColor="@color/icon_tint8"
+
                                         app:layout_constraintBottom_toBottomOf="parent"
                                         app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
@@ -494,22 +510,20 @@
 
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+
                             </com.google.android.material.card.MaterialCardView>
 
-                        </LinearLayout>
 
-                        <!-- Row 6: Return Product & Goods Return to Warehouse -->
-                        <!-- ✅ FIX: both cards now use layout_width="0dp" + layout_weight="1" -->
+                        </LinearLayout>
                         <LinearLayout
                             android:id="@+id/row6linear"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
 
-                            <!-- Return Product Card -->
                             <com.google.android.material.card.MaterialCardView
                                 android:id="@+id/returncard"
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginEnd="4dp"
@@ -518,92 +532,83 @@
                                 app:strokeColor="@android:color/transparent"
                                 app:strokeWidth="0dp">
 
+
                                 <androidx.constraintlayout.widget.ConstraintLayout
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:paddingVertical="5dp"
+
                                     android:background="@color/card7">
 
                                     <ImageView
                                         android:id="@+id/img9"
-                                        android:layout_width="70dp"
-                                        android:layout_height="70dp"
-                                        android:layout_marginTop="8dp"
+                                        android:layout_width="120dp"
+                                        android:layout_height="120dp"
+                                        android:layout_marginStart="20dp"
                                         android:src="@drawable/svg_return"
-                                        app:layout_constraintEnd_toEndOf="parent"
                                         app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintTop_toTopOf="parent"
-                                        app:tint="@color/icon_tint7" />
+                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:tint="@color/icon_tint1" />
 
                                     <TextView
                                         android:id="@+id/txt9"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="8dp"
-                                        android:layout_marginBottom="8dp"
                                         android:fontFamily="@font/avenirnextltpro_medium"
                                         android:text="Return Product"
                                         android:textSize="16sp"
                                         android:textColor="@color/icon_tint7"
-                                        app:layout_constraintBottom_toBottomOf="parent"
+                                        app:layout_constraintStart_toEndOf="@id/img9"
                                         app:layout_constraintEnd_toEndOf="parent"
-                                        app:layout_constraintStart_toStartOf="parent"
-                                        app:layout_constraintTop_toBottomOf="@+id/img9" />
-
-                                </androidx.constraintlayout.widget.ConstraintLayout>
-
-                            </com.google.android.material.card.MaterialCardView>
-
-                            <!-- Goods Return to Warehouse Card -->
-                            <!-- ✅ FIX: added missing ImageView (img10) matching other cards' pattern -->
-                            <com.google.android.material.card.MaterialCardView
-                                android:id="@+id/goodsRWcard"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="4dp"
-                                android:layout_marginEnd="8dp"
-                                android:layout_marginTop="8dp"
-                                android:layout_weight="1"
-                                app:strokeColor="@android:color/transparent"
-                                app:strokeWidth="0dp">
-
-                                <androidx.constraintlayout.widget.ConstraintLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:paddingVertical="5dp"
-                                    android:background="@color/card6">
-
-                                    <ImageView
-                                        android:id="@+id/img10"
-                                        android:layout_width="70dp"
-                                        android:layout_height="70dp"
-                                        android:layout_marginTop="8dp"
-                                        android:src="@drawable/icon_stock"
-                                        app:layout_constraintEnd_toEndOf="parent"
-                                        app:layout_constraintStart_toStartOf="parent"
                                         app:layout_constraintTop_toTopOf="parent"
-                                        app:tint="@color/icon_tint6" />
-
-                                    <TextView
-                                        android:id="@+id/txt10"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="8dp"
-                                        android:layout_marginBottom="8dp"
-                                        android:fontFamily="@font/avenirnextltpro_medium"
-                                        android:text="Goods Return to Warehouse"
-                                        android:textSize="16sp"
-                                        android:textColor="@color/icon_tint6"
-                                        app:layout_constraintBottom_toBottomOf="parent"
-                                        app:layout_constraintEnd_toEndOf="parent"
-                                        app:layout_constraintStart_toStartOf="parent"
-                                        app:layout_constraintTop_toBottomOf="@+id/img10" />
+                                        app:layout_constraintBottom_toBottomOf="parent" />
 
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+
                             </com.google.android.material.card.MaterialCardView>
+
+
 
                         </LinearLayout>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/goodsRWcard"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:layout_marginHorizontal="8dp"
+                            android:layout_marginTop="8dp"
+                            app:strokeColor="@android:color/transparent"
+                            app:strokeWidth="0dp">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:paddingVertical="16dp"
+
+                                android:background="@color/card6">
+
+
+
+                                <TextView
+                                    android:id="@+id/txt10"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/avenirnextltpro_medium"
+                                    android:text="Goods Return to Warehouse"
+                                    android:textSize="16dp"
+                                    android:textColor="@color/icon_tint6"
+                                    app:layout_constraintBottom_toBottomOf="parent"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toStartOf="parent"
+                                    app:layout_constraintTop_toTopOf="parent" />
+
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                        </com.google.android.material.card.MaterialCardView>
+
 
                     </LinearLayout> <!-- ✅ FIX: properly closes @+id/linear -->
 

@@ -241,4 +241,34 @@ class DetailedSaleRepository(private val context: Context) {
             null
         }
     }
+
+    /**
+     * Replaces the invoice_id in both the table and the nested JSON blob.
+     * This is critical when an offline sale is successfully synced and gets a real server invoice_id.
+     */
+    suspend fun updateInvoiceId(oldInvoiceId: String, newInvoiceId: String) {
+        try {
+            Log.d(TAG, "🔄 [DetailedSale PATCH] Updating Invoice ID: $oldInvoiceId -> $newInvoiceId")
+            
+            val entity = dao.getDetailedSaleByInvoiceId(oldInvoiceId)
+            if (entity != null) {
+                // 1. Update the JSON blob content
+                val currentData = gson.fromJson(entity.detailed_data_json, ReturnItemData::class.java)
+                val updatedData = currentData.copy(invoice_id = newInvoiceId)
+                
+                // 2. Delete old entity (since PK changes) and insert new one
+                dao.deleteDetailedSale(entity)
+                
+                val newEntity = entity.copy(
+                    invoice_id = newInvoiceId,
+                    detailed_data_json = gson.toJson(updatedData)
+                )
+                dao.insertDetailedSale(newEntity)
+                
+                Log.d(TAG, "✅ [DetailedSale PATCH] Successfully updated invoice_id to $newInvoiceId")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ [DetailedSale PATCH] Failed to update invoice_id: ${e.message}")
+        }
+    }
 }
