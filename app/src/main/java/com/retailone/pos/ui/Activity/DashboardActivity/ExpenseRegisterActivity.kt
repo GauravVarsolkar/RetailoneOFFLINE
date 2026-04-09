@@ -45,6 +45,7 @@ import com.retailone.pos.models.ExpenseRegisterModel.ExpenseHistory.ExpenseHisto
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseSubmit.ExpenseSubmitReq
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseVendor.ExpenseVendorData
 import com.retailone.pos.models.LocalizationModel.LocalizationData
+import com.retailone.pos.utils.NetworkUtils
 import com.retailone.pos.viewmodels.DashboardViewodel.ExpenseRegisterViewmodel
 import com.retailone.pos.viewmodels.DashboardViewodel.PettycashDetailsViewmodel
 import kotlinx.coroutines.flow.first
@@ -137,19 +138,26 @@ class ExpenseRegisterActivity : AppCompatActivity() {
             // Check if the user is logged in
             val isLoggedIn = loginSession.getLoginStatus().first()
             val token = loginSession.getToken().first()
-            //Log.d("token",token.toString() + " " +isLoggedIn.toString())
-            val storeid = loginSession.getStoreID().first().toInt()
-        }
+            storeid = loginSession.getStoreID().first().toString()
+            store_manager_id = loginSession.getStoreManagerID().first().toString()
 
-        lifecycleScope.launch {
-            storeid = LoginSession.getInstance(this@ExpenseRegisterActivity).getStoreID().first()
-                .toString()
-            store_manager_id =
-                LoginSession.getInstance(this@ExpenseRegisterActivity).getStoreManagerID().first()
-                    .toString()
+            // ✅ Load history immediately (handles offline viewing via cache)
+            viewmodel.callExpenseHistoryApi(ExpenseHistoryReq(storeid), this@ExpenseRegisterActivity)
 
-            pettycash_viewmodel.callPettycashDataApi(storeid, this@ExpenseRegisterActivity)
-
+            // ✅ ENFORCE ONLINE-ONLY SUBMISSION & OFFLINE VIEW-ONLY
+            if (!NetworkUtils.isInternetAvailable(this@ExpenseRegisterActivity)) {
+                // Disable entry tab, force history view
+                setupViewHistory()
+                binding.expenceEntry.alpha = 0.5f
+                binding.expenceEntry.isClickable = false
+                binding.saveBtn.isVisible = false
+                
+                showMessage("Offline Mode: Expense View Only")
+            } else {
+                binding.expenceEntry.alpha = 1.0f
+                binding.expenceEntry.isClickable = true
+                binding.saveBtn.isVisible = true
+            }
         }
 
 

@@ -752,7 +752,27 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
             trxn_code = entity.trxn_code,
             prc_no = entity.prc_no,
             tax_details = null,
-            tax_summery = null
+            tax_summery = null,
+            sales_items = salesItems.map { si ->
+                com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
+                    id = si.id,
+                    sales_id = si.sales_id,
+                    product_id = si.product_id,
+                    on_hold = 0,
+                    distribution_pack_id = si.distribution_pack_id,
+                    distribution_pack_name = si.distribution_pack_name,
+                    batch = null,
+                    quantity = si.quantity,
+                    store_stock = 0,
+                    retail_price = si.retail_price,
+                    discount = si.discount ?: 0.0,
+                    tax_exclusive_price = si.tax_exclusive_price,
+                    total_amount = si.total_amount,
+                    product = si.product,
+                    distribution_pack = si.distribution_pack,
+                    sales_returns = null
+                )
+            }
         )
     }
 

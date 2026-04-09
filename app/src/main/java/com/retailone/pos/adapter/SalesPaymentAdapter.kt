@@ -30,7 +30,8 @@ class SalesPaymentAdapter(private val salesList: List<Sale>, val context: Contex
     override fun onBindViewHolder(holder: SalesPaymentViewHolder, position: Int) {
 
         val item = salesList[position]
-        val formattedPrice = NumberFormatter().formatPrice(item.grand_total.toString(),localizationData)
+        val roundedTotal = java.math.BigDecimal.valueOf(item.grand_total).setScale(0, java.math.RoundingMode.HALF_UP)
+        val formattedPrice = NumberFormatter().formatPrice(roundedTotal.toPlainString(),localizationData)
         // holder.binding.txt1.text = attendance_item.month
         holder.binding.txt1.text = ((item?.invoice_id?:"").toString())
         // Set red color if price is negative

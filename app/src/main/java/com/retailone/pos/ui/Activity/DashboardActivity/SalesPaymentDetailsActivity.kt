@@ -152,7 +152,8 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
                 spotDiscountPercentText.isVisible = true
                 spotDiscountAmountText.isVisible = true
                 spotDiscountPercentText.text = "Spot Discount: $discountPercent%"
-                spotDiscountAmountText.text = "Spot Discount Amount: " + NumberFormatter().formatPrice(salesdata.spot_discount_amount.toString(), localizationData)
+                val roundedSpotAmt = BigDecimal.valueOf(spotAmount).setScale(0, RoundingMode.HALF_UP)
+                spotDiscountAmountText.text = "Spot Discount Amount: " + NumberFormatter().formatPrice(roundedSpotAmt.toPlainString(), localizationData)
             } else {
                 spotDiscountPercentText.isVisible = false
                 spotDiscountAmountText.isVisible = false
@@ -202,8 +203,8 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
             } else {
                 binding.discountSummaryRow.isVisible = false
             }
-            tvTotalValue.text    = NumberFormatter().formatPrice(totalValue.toString(), localizationData)
-
+            val roundedTotal = BigDecimal.valueOf(totalValue).setScale(0, RoundingMode.HALF_UP)
+            tvTotalValue.text    = NumberFormatter().formatPrice(roundedTotal.toPlainString(), localizationData)
         }
 
         salesDetailsAdapter = SalesDetailsAdapter(this,salesdata)

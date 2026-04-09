@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseCategory.ExpenseCategoryRes
+import com.retailone.pos.models.ExpenseRegisterModel.ExpenseHistory.ExpenseHistoryRes
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseVendor.ExpenseVendorRes
 import com.retailone.pos.models.PettycashReportModel.PettycashReportRes
 
@@ -37,5 +38,14 @@ class ExpenseCacheHelper(context: Context) {
     fun getPettyCash(): PettycashReportRes? {
         val json = sharedPreferences.getString("petty_cash", null) ?: return null
         return gson.fromJson(json, PettycashReportRes::class.java)
+    }
+
+    fun saveHistory(data: ExpenseHistoryRes) {
+        sharedPreferences.edit().putString("history", gson.toJson(data)).apply()
+    }
+
+    fun getHistory(): ExpenseHistoryRes? {
+        val json = sharedPreferences.getString("history", null) ?: return null
+        return gson.fromJson(json, ExpenseHistoryRes::class.java)
     }
 }

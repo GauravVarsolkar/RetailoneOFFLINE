@@ -36,17 +36,16 @@ class ExpenseRepository(private val context: Context) {
         onError: (String) -> Unit
     ) {
         if (NetworkUtils.isInternetAvailable(context)) {
-            // ✅ ONLINE: Try API first
+            // ✅ ONLINE: Try API
             submitToApiWithFallback(expenseReq, onSuccess, onError)
         } else {
-            // ✅ OFFLINE: Save locally
-            saveExpenseLocally(expenseReq)
-            onSuccess(createOfflineSuccessResponse(expenseReq))
+            // ❌ OFFLINE: Submission not allowed as per requirement
+            onError("Expense registration is only available in Online mode.")
         }
     }
 
     /**
-     * Try API, if it fails save locally
+     * Try API, if it fails save locally for history (if successful on server)
      */
     private suspend fun submitToApiWithFallback(
         expenseReq: ExpenseSubmitReq,
@@ -57,19 +56,23 @@ class ExpenseRepository(private val context: Context) {
             val response = apiService.getExpenseSubmitAPI(expenseReq).execute()
 
             if (response.isSuccessful && response.body() != null) {
-                // ✅ API success - save locally as SYNCED for history
+                // ✅ API success
+                val body = response.body()!!
+                
+                // Save locally as SYNCED for offline history view
                 saveExpenseLocally(expenseReq, syncStatus = "SYNCED")
-                onSuccess(response.body()!!)
+                
+                // ✅ FIXED: Use success message as requested
+                onSuccess(body.copy(message = "Expense Saved Successfully"))
             } else {
-                // ❌ API failed (internal error), save locally as PENDING
-                saveExpenseLocally(expenseReq)
-                onSuccess(createOfflineSuccessResponse(expenseReq))
+                // ❌ API failed (internal error)
+                val errorMsg = response.errorBody()?.string() ?: "Failed to save expense on server"
+                onError(errorMsg)
             }
         } catch (e: Exception) {
-            // ❌ Network error, save locally as PENDING
+            // ❌ Network error
             Log.e(TAG, "submitToApiWithFallback error: ${e.message}")
-            saveExpenseLocally(expenseReq)
-            onSuccess(createOfflineSuccessResponse(expenseReq))
+            onError("Connection error: ${e.message}")
         }
     }
 

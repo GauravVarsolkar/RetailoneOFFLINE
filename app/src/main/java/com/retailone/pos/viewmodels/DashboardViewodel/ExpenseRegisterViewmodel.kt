@@ -86,6 +86,17 @@ class ExpenseRegisterViewmodel : ViewModel() {
 
 
     fun callExpenseHistoryApi(expenseHistoryReq: ExpenseHistoryReq,context: Context) {
+        init(context)
+        
+        // Load from cache immediately if offline
+        if (!NetworkUtils.isInternetAvailable(context)) {
+            val cached = cacheHelper.getHistory()
+            if (cached != null) {
+                expensehistory_data.postValue(cached)
+                return
+            }
+        }
+
         loading.postValue(ProgressData(isProgress = true))
         ApiClient().getApiService(context).getExpenceHistoryAPI(expenseHistoryReq)
             .enqueue(object : Callback<ExpenseHistoryRes> {
@@ -94,15 +105,30 @@ class ExpenseRegisterViewmodel : ViewModel() {
                     response: Response<ExpenseHistoryRes>
                 ) {
                     if (response.isSuccessful && response.body() != null) {
-                        expensehistory_data.postValue(response.body())
+                        val body = response.body()!!
+                        expensehistory_data.postValue(body)
+                        cacheHelper.saveHistory(body) // Cache history
                         loading.postValue(ProgressData(isProgress = false))
                     } else {
-                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        // Fallback to cache
+                        val cached = cacheHelper.getHistory()
+                        if (cached != null) {
+                            expensehistory_data.postValue(cached)
+                            loading.postValue(ProgressData(isProgress = false))
+                        } else {
+                            loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch history, Try again" ))
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<ExpenseHistoryRes>, t: Throwable) {
-                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                    val cached = cacheHelper.getHistory()
+                    if (cached != null) {
+                        expensehistory_data.postValue(cached)
+                        loading.postValue(ProgressData(isProgress = false))
+                    } else {
+                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+                    }
                 }
             })
     }
