@@ -646,6 +646,20 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 )
             }
 
+            // ✅ FIX: Use the actual tax-inclusive retail_price from batch items,
+            // NOT posItem.whole_sale_price which is the tax-exclusive subtotal (price_without_discount).
+            val actualRetailPrice = if (posItem.batch.isNotEmpty()) {
+                posItem.batch.first().retail_price
+            } else {
+                posItem.whole_sale_price.toDoubleOrNull() ?: 0.0
+            }
+            val taxRate = posItem.tax ?: 0.0
+            val actualTaxExclusivePrice = if (taxRate > 0) {
+                actualRetailPrice / (1.0 + (taxRate / 100.0))
+            } else {
+                actualRetailPrice
+            }
+
             ReturnSalesItemRef(
                 created_at = entity.sale_date_time,
                 distribution_pack = DistributionPack(id = posItem.distribution_pack_id.toIntOrNull() ?: 0, no_of_packs = 1, product_description = ""),
@@ -657,8 +671,8 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                 product_name = posItem.product_name,
                 quantity = posItem.batch.sumOf { it.quantity }.toDouble(),
                 batches = itemBatches,
-                retail_price = posItem.whole_sale_price.toDoubleOrNull() ?: 0.0,
-                tax_exclusive_price = (posItem.whole_sale_price.toDoubleOrNull() ?: 0.0) / (1.0 + (posItem.tax ?: 0.0) / 100.0),
+                retail_price = actualRetailPrice,
+                tax_exclusive_price = actualTaxExclusivePrice,
                 sales_id = entity.invoice_id,
                 status = 1,
                 total_amount = posItem.total_amount.toDoubleOrNull() ?: 0.0,
@@ -754,6 +768,8 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
             tax_details = null,
             tax_summery = null,
             sales_items = salesItems.map { si ->
+                // ✅ FIX: Use the first batch's name so the adapter can match by batch name
+                val firstBatchName = si.batches?.firstOrNull()?.batch
                 com.retailone.pos.models.ReturnSalesItemModel.SalesItemDetailed(
                     id = si.id,
                     sales_id = si.sales_id,
@@ -761,7 +777,7 @@ class ReturnSalesDetailsViewmodel : ViewModel() {
                     on_hold = 0,
                     distribution_pack_id = si.distribution_pack_id,
                     distribution_pack_name = si.distribution_pack_name,
-                    batch = null,
+                    batch = firstBatchName,
                     quantity = si.quantity,
                     store_stock = 0,
                     retail_price = si.retail_price,

@@ -902,17 +902,22 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         val subTotal = d.sub_total.toString()
         val taxDisplay = formatTaxForDisplay(d.tax)
 
+        // ✅ FIX: Round grand_total to 0 decimal places for display (same as active replace flow)
+        val grandTotalRounded = BigDecimal.valueOf(d.grand_total)
+            .setScale(0, RoundingMode.HALF_UP)
+            .toDouble()
+
         binding.subtotal.setText(subTotal)
         binding.taxfield.setText("(+) Tax @$taxDisplay")
         binding.taxAmount.setText(d.tax_amount.toString())
-        binding.alltotalAmount.setText(d.grand_total.toString())
+        binding.alltotalAmount.setText(String.format(Locale.US, "%.2f", grandTotalRounded))
 
         binding.tvSubtotalValue.text =
             NumberFormatter().formatPrice(d.sub_total.toString(), localizationData)
         binding.tvTaxValue.text =
             NumberFormatter().formatPrice(d.tax_amount.toString(), localizationData)
         binding.tvTotalValue.text =
-            NumberFormatter().formatPrice(d.grand_total.toString(), localizationData)
+            NumberFormatter().formatPrice(String.format(Locale.US, "%.2f", grandTotalRounded), localizationData)
 
         // 🔻 No selection here: hide discount row
         val discountAmt = d.spot_discount_amount?.toDoubleOrNull() ?: 0.0
