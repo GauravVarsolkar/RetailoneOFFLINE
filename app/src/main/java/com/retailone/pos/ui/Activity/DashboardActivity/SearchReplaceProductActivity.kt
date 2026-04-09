@@ -738,8 +738,9 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         // 🔻 Discount row in summary card
         if (discountTotal > 0.0) {
             binding.discountSummaryRow.isVisible = true
+            val roundedDiscount = BigDecimal.valueOf(discountTotal).setScale(0, RoundingMode.HALF_UP)
             binding.tvDiscountValue.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", discountTotal),
+                roundedDiscount.toPlainString(),
                 localizationData
             )
         } else {
@@ -751,14 +752,15 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         // 🔻 Discount row in bottom payment card (after Tax)
         if (discountTotal > 0.0) {
             binding.delChargeLayout.isVisible = true
+            val roundedDiscount = BigDecimal.valueOf(discountTotal).setScale(0, RoundingMode.HALF_UP)
             binding.discountvalue.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", discountTotal),
+                roundedDiscount.toPlainString(),
                 localizationData
             )
         } else {
             binding.delChargeLayout.isVisible = false
             binding.discountvalue.text =
-                NumberFormatter().formatPrice("0.00", localizationData)
+                NumberFormatter().formatPrice("0", localizationData)
         }
 
         // Final total in summary card
@@ -916,8 +918,9 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
         val discountAmt = d.spot_discount_amount?.toDoubleOrNull() ?: 0.0
         if (discountAmt > 0.0) {
             binding.discountSummaryRow.visibility = View.VISIBLE
+            val roundedDiscount = BigDecimal.valueOf(discountAmt).setScale(0, RoundingMode.HALF_UP)
             binding.tvDiscountValue.text =
-                NumberFormatter().formatPrice(discountAmt.toString(), localizationData)
+                NumberFormatter().formatPrice(roundedDiscount.toPlainString(), localizationData)
         } else {
             binding.discountSummaryRow.visibility = View.GONE
         }

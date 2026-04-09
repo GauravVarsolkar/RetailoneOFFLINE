@@ -416,7 +416,8 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
                 binding.spotDiscountRow.isVisible = true
                 binding.spotDiscountPercentField.text = "(-) Spot Discount ${"%.2f".format(spotPct)}%"
                 val spotAmt = subtotalValue * spotPct / 100
-                binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(spotAmt.toString(), localizationData)
+                val roundedSpotAmt = BigDecimal.valueOf(spotAmt).setScale(0, RoundingMode.HALF_UP)
+                binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(roundedSpotAmt.toPlainString(), localizationData)
             } else {
                 binding.spotDiscountRow.isVisible = false
             }
@@ -452,8 +453,9 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
         // ✅ Show spot discount row in summary card if applicable
         if (spotDiscountPercent > 0 && spotDiscountAmount > 0) {
             binding.discountSummaryRow.isVisible = true
+            val roundedDiscount = BigDecimal.valueOf(spotDiscountAmount).setScale(0, RoundingMode.HALF_UP)
             binding.tvDiscountValue.text = NumberFormatter().formatPrice(
-                String.format(Locale.US, "%.2f", spotDiscountAmount),
+                roundedDiscount.toPlainString(),
                 localizationData
             )
         } else {
@@ -576,8 +578,9 @@ class SearchReturnProductActivity : AppCompatActivity(), OnReturnQuantityChangeL
 
         // ✅ Show/hide spot discount row in bottom layout
         if (spotDiscountPercent > 0 && spotDiscountAmount > 0) {
+            val roundedSpotDiscount = BigDecimal.valueOf(spotDiscountAmount).setScale(0, RoundingMode.HALF_UP)
             binding.spotDiscountPercentField.text = "(-) Spot Discount ${"%.2f".format(spotDiscountPercent)}%"
-            binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(spotDiscountAmount.toString(), localizationData)
+            binding.spotDiscountAmountValue.text = NumberFormatter().formatPrice(roundedSpotDiscount.toPlainString(), localizationData)
             binding.spotDiscountRow.isVisible = true
         } else {
             binding.spotDiscountRow.isVisible = false

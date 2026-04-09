@@ -30,11 +30,13 @@ class StockReturnViewModel : ViewModel() {
 
     private var stockReturnDao: com.retailone.pos.localstorage.RoomDB.StockReturnDao? = null
     private var pendingGoodsReturnDao: com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnDao? = null
+    private var pendingDispatchDao: com.retailone.pos.localstorage.RoomDB.PendingDispatchDao? = null
 
     fun initRepository(context: Context) {
         val database = com.retailone.pos.localstorage.RoomDB.PosDatabase.getDatabase(context)
         stockReturnDao = database.stockReturnDao()
         pendingGoodsReturnDao = database.pendingGoodsReturnDao()
+        pendingDispatchDao = database.pendingDispatchDao()
     }
 
     // ✅ MERGE: Offline pending data + Cached server data
@@ -96,10 +98,20 @@ class StockReturnViewModel : ViewModel() {
             )
         }
 
-        // 4. Combine both lists
-        // Note: when syncing, server IDs will replace these temporary IDs
-        val combinedList = (pendingReturns + cachedResponse.data)
-            .distinctBy { it.id } // simple deduplication
+        // 4. Get pending dispatches to override status for server-side approved returns
+        val pendingDispatches = pendingDispatchDao?.getAllPendingDispatches() ?: emptyList()
+        val dispatchMap = pendingDispatches.associateBy { it.return_id }
+
+        // 5. Combine both lists and apply status overrides
+        val combinedList = (pendingReturns + cachedResponse.data).map { item ->
+            val pendingDispatch = dispatchMap[item.id]
+            if (pendingDispatch != null) {
+                // Override status to "Dispatched" (4)
+                item.copy(status = 4)
+            } else {
+                item
+            }
+        }.distinctBy { it.id } // simple deduplication
             .sortedByDescending { it.id }
         
         return StockReturnResponse(data = combinedList)

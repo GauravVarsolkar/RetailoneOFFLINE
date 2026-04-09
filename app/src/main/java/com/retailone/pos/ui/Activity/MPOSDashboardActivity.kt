@@ -82,6 +82,7 @@ class MPOSDashboardActivity : AppCompatActivity() {
     private lateinit var pendingReplaceRepository: PendingReplaceRepository
     private lateinit var pendingCancelRepository: PendingCancelSaleRepository
     private lateinit var pendingGoodsReturnRepository: com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnRepository
+    private lateinit var pendingDispatchRepository: com.retailone.pos.localstorage.RoomDB.PendingDispatchRepository
     private lateinit var expenseRepository: com.retailone.pos.repository.ExpenseRepository
     private var isSyncing = false
 
@@ -133,6 +134,7 @@ class MPOSDashboardActivity : AppCompatActivity() {
         val db = PosDatabase.getDatabase(this)
         pendingReplaceRepository = PendingReplaceRepository(db.pendingReplaceDao())
         pendingGoodsReturnRepository = com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnRepository(db.pendingGoodsReturnDao())
+        pendingDispatchRepository = com.retailone.pos.localstorage.RoomDB.PendingDispatchRepository(db.pendingDispatchDao())
 
         setupSyncButton()
         observePendingSalesCount()
@@ -316,7 +318,8 @@ class MPOSDashboardActivity : AppCompatActivity() {
                     pendingReplaceRepository.getPendingCountFlow(),
                     pendingCancelRepository.getPendingCancelCountFlow(),
                     pendingGoodsReturnRepository.getPendingCountFlow(),
-                    expenseRepository.getPendingExpensesCountFlow()
+                    expenseRepository.getPendingExpensesCountFlow(),
+                    pendingDispatchRepository.getPendingCountFlow()
                 )
             ) { counts ->
                 counts.sum()
@@ -456,9 +459,12 @@ class MPOSDashboardActivity : AppCompatActivity() {
                 // ✅ 6. Sync Expenses
                 val expenseSuccess = expenseRepository.syncAllPendingExpenses()
                 
+                // ✅ 7. Sync Dispatches
+                val dispatchSuccess = pendingDispatchRepository.syncAllPendingDispatches(this@MPOSDashboardActivity)
+                
                 delay(1500)
 
-                if (saleSuccess && returnSuccess && replaceSuccess && cancelSuccess && goodsSuccess && expenseSuccess) {
+                if (saleSuccess && returnSuccess && replaceSuccess && cancelSuccess && goodsSuccess && expenseSuccess && dispatchSuccess) {
                     transitionToSuccess()
                 } else {
                     // Failed - revert to idle

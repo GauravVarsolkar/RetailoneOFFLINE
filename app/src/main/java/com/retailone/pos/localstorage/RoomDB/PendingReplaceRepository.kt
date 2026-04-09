@@ -98,6 +98,13 @@ class PendingReplaceRepository(private val pendingReplaceDao: PendingReplaceDao)
                 if (patchedRequest != null) {
                     replaceRequest = patchedRequest
                     Log.d("OFFLINE_SYNC_DEBUG", "🛠️ [REPLACE PATCHED] Applied real server ID: ${replaceRequest.sales_id}")
+                } else {
+                    // 🚩 CRITICAL: If recovery failed and we have no valid sales_id, we MUST NOT proceed
+                    // Using sales_id=0 or an offline temp ID will cause server errors and data corruption.
+                    Log.w("OFFLINE_SYNC_DEBUG", "⏳ [REPLACE WAIT] Could not recover server IDs for ${entity.invoice_id}. Sale might not be synced yet or server is lagging. Skipping.")
+                    updateSyncStatus(entity.id, "FAILED", "Sale details not found on server")
+                    allSuccessful = false
+                    return@forEach // Skip to next entity
                 }
 
                 val response = ApiClient().getApiService(context)

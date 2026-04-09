@@ -225,6 +225,12 @@ class PendingReturnRepository(private val context: Context) {
                 if (patchedRequest != null) {
                     returnRequest = patchedRequest
                     Log.d("OFFLINE_SYNC_DEBUG", "🛠️ [PATCHED] Applied real server ID: ${returnRequest.sales_id}")
+                } else {
+                    // 🚩 CRITICAL: If recovery failed and we have no valid sales_id, we MUST NOT proceed
+                    Log.w("OFFLINE_SYNC_DEBUG", "⏳ [RETURN WAIT] Could not recover server IDs for ${entity.invoice_id}. Skipping.")
+                    updateSyncStatus(entity.id, "FAILED", "Sale details not found on server")
+                    allSuccessful = false
+                    return@forEach // Skip to next entity
                 }
 
                 // 🔍 DEBUG: Log the full request JSON

@@ -436,6 +436,13 @@ class PosSaleRepository(private val context: Context) {
      */
     suspend fun syncSale(sale: PendingSaleEntity): Boolean {
         try {
+            // ✅ DOUBLE-CHECK: Verify if sale hasn't already been processed by another worker
+            val currentSale = dao.getSaleById(sale.id)
+            if (currentSale == null || currentSale.sync_status == "SYNCED" || currentSale.sync_status == "SYNCING") {
+                Log.d(TAG, "Sale ${sale.invoice_id} already processed or missing, skipping.")
+                return true
+            }
+
             // Mark as syncing
             dao.updateSyncStatus(sale.id, "SYNCING", System.currentTimeMillis())
 

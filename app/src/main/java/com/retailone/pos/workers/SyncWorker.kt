@@ -43,9 +43,13 @@ class SyncWorker(
             val expenseRepository = ExpenseRepository(applicationContext)
             val expenseSyncResult = expenseRepository.syncAllPendingExpenses()
 
-            Log.d("SyncWorker", "📊 Sync results: sales=$saleSyncResult, cancels=$cancelSyncResult, returns=$returnSyncResult, replaces=$replaceSyncResult, expenses=$expenseSyncResult")
+            // ✅ NEW: Sync pending dispatches
+            val dispatchRepository = com.retailone.pos.localstorage.RoomDB.PendingDispatchRepository(db.pendingDispatchDao())
+            val dispatchSyncResult = dispatchRepository.syncAllPendingDispatches(applicationContext)
 
-            return@withContext if (saleSyncResult && cancelSyncResult && returnSyncResult && replaceSyncResult && expenseSyncResult) {
+            Log.d("SyncWorker", "📊 Sync results: sales=$saleSyncResult, cancels=$cancelSyncResult, returns=$returnSyncResult, replaces=$replaceSyncResult, expenses=$expenseSyncResult, dispatches=$dispatchSyncResult")
+
+            return@withContext if (saleSyncResult && cancelSyncResult && returnSyncResult && replaceSyncResult && expenseSyncResult && dispatchSyncResult) {
                 Log.d("SyncWorker", "✅ All syncs completed successfully")
 
                 // ⚡ Schedule another network-triggered sync for next time
@@ -141,8 +145,13 @@ class SyncWorker(
                 .setConstraints(constraints)
                 .build()
 
-            WorkManager.getInstance(context).enqueue(syncRequest)
-            Log.d("SyncWorker", "🔵 Manual sync requested")
+            // Use Unique Work to prevent multiple workers from running at the same time and duplicating sales
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "ManualSyncWork",
+                ExistingWorkPolicy.KEEP,
+                syncRequest
+            )
+            Log.d("SyncWorker", "🔵 Manual sync requested (Unique)")
         }
     }
 }
