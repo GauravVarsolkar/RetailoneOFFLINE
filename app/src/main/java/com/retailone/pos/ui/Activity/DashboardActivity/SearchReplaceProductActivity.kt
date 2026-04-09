@@ -913,9 +913,14 @@ class SearchReplaceProductActivity : AppCompatActivity(), OnReturnQuantityChange
             NumberFormatter().formatPrice(d.grand_total.toString(), localizationData)
 
         // 🔻 No selection here: hide discount row
-        binding.discountSummaryRow.visibility = View.GONE
-        binding.tvDiscountValue.text =
-            NumberFormatter().formatPrice("0.00", localizationData)
+        val discountAmt = d.spot_discount_amount?.toDoubleOrNull() ?: 0.0
+        if (discountAmt > 0.0) {
+            binding.discountSummaryRow.visibility = View.VISIBLE
+            binding.tvDiscountValue.text =
+                NumberFormatter().formatPrice(discountAmt.toString(), localizationData)
+        } else {
+            binding.discountSummaryRow.visibility = View.GONE
+        }
     }
 
 

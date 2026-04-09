@@ -194,6 +194,13 @@ class SalesPaymentDetailsActivity : AppCompatActivity() {
                 roundedTaxStr,
                 localizationData
             )
+            val discountAmt = salesdata.spot_discount_amount?.toDoubleOrNull() ?: 0.0
+            if (discountAmt > 0.0) {
+                binding.discountSummaryRow.isVisible = true
+                binding.tvDiscountValue.text = NumberFormatter().formatPrice(discountAmt.toString(), localizationData)
+            } else {
+                binding.discountSummaryRow.isVisible = false
+            }
             tvTotalValue.text    = NumberFormatter().formatPrice(totalValue.toString(), localizationData)
 
         }

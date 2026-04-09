@@ -380,6 +380,34 @@
                             android:textSize="15sp" />
                     </LinearLayout>
 
+                    <!-- Discount -->
+                    <LinearLayout
+                        android:id="@+id/discountSummaryRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone"
+                        android:layout_marginTop="6dp">
+
+                        <TextView
+                            android:id="@+id/tvDiscountLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="(-) Discounts"
+                            android:textColor="@color/goodgrey"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tvDiscountValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RWF 0.00"
+                            android:textColor="@color/goodgrey"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
                     <!-- Divider -->
                     <View
                         android:layout_width="match_parent"
