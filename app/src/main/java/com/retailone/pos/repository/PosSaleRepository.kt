@@ -4,16 +4,13 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
 import com.retailone.pos.localstorage.RoomDB.PendingSaleDao
 import com.retailone.pos.localstorage.RoomDB.PendingSaleEntity
 import com.retailone.pos.localstorage.RoomDB.PosDatabase
 import com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSaleReq
 import com.retailone.pos.models.PointofsaleModel.toPatchedJson
 import com.retailone.pos.models.PosSalesDetailsModel.PosSalesDetails
-import com.retailone.pos.localstorage.RoomDB.toStoreProData
 import com.retailone.pos.network.ApiClient
-import com.retailone.pos.localstorage.RoomDB.Converters
 import com.retailone.pos.utils.NetworkUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -26,6 +23,7 @@ import com.retailone.pos.models.ReturnSalesItemModel.SalesItem
 import com.retailone.pos.models.ReturnSalesItemModel.BatchReturnItem
 import com.retailone.pos.models.ReturnSalesItemModel.Product
 import com.retailone.pos.models.ReturnSalesItemModel.DistributionPack
+import com.retailone.pos.localstorage.SharedPreference.SharedPrefHelper
 
 
 class PosSaleRepository(private val context: Context) {
@@ -34,6 +32,7 @@ class PosSaleRepository(private val context: Context) {
     private val dao: PendingSaleDao = database.pendingSaleDao()
     private val gson = Gson()
     private val apiService = ApiClient().getApiService(context)
+    private val sharedPrefHelper = SharedPrefHelper(context)
 
     companion object {
         private const val TAG = "PosSaleRepository"
@@ -41,36 +40,46 @@ class PosSaleRepository(private val context: Context) {
 
     private suspend fun generateNextOfflineInvoiceId(storeId: String): String {
         return try {
-            val db = PosDatabase.getDatabase(context)
-            val paymentDao = db.paymentInvoiceDao()
-            val pendingDao = db.pendingSaleDao()
+            val paymentDao = database.paymentInvoiceDao()
+            val pendingDao = database.pendingSaleDao()
             
-            val knownIds = mutableListOf<String>()
+            val knownIds = mutableSetOf<String>()
             
-            // Get from API cache
+            // 1. Get from SharedPreferences (Persistent across days/restarts)
+            val spfId = sharedPrefHelper.getLastInvoiceId()
+            Log.d("INVOICE_TRACKER", "Reading last saved invoice ID from SharedPreferences: ${spfId ?: "NONE"}")
+            if (!spfId.isNullOrEmpty()) {
+                knownIds.add(spfId)
+            }
+            
+
+            // 3. Get from API cache (Current day's sales)
             val latestCache = paymentDao.getLatestPaymentInvoice(storeId.toIntOrNull() ?: 0)
             if (latestCache != null && latestCache.invoice_data_json.isNotEmpty()) {
                 val invoiceRes = gson.fromJson(latestCache.invoice_data_json, com.retailone.pos.models.SalesPaymentModel.InvoicePayment.InvoiceRes::class.java)
                 knownIds.addAll(invoiceRes.data.sales.map { it.invoice_id })
             }
             
-            // Get from offline pending sales
+            // 4. Get from current pending/failed sales in Room
             val pending = pendingDao.getPendingSales()
             knownIds.addAll(pending.map { it.invoice_id })
             
-            var maxNum = 0
-            var prefix = "OFF-"
+            var maxNum = 0L
+            var prefix = "INV"
             var numFormatLength = 0
             
             val regex = Regex("^(.*?)(\\d+)$")
+            
             for (id in knownIds) {
+                if (id.startsWith("OFF_") || id.startsWith("OFF-")) continue
+                
                 val match = regex.find(id)
                 if (match != null) {
                     val p = match.groupValues[1]
                     val numStr = match.groupValues[2]
-                    val num = numStr.toIntOrNull() ?: 0
-                    // Exclude previous fallback OFF_ patterns
-                    if (!p.startsWith("OFF_") && !p.startsWith("OFF-") && num > maxNum) {
+                    val num = numStr.toLongOrNull() ?: 0L
+                    
+                    if (num >= maxNum) {
                         maxNum = num
                         prefix = p
                         numFormatLength = numStr.length
@@ -79,12 +88,20 @@ class PosSaleRepository(private val context: Context) {
             }
             
             if (maxNum > 0) {
+                val nextNum = maxNum + 1
                 val formatPattern = if (numFormatLength > 0) "%0${numFormatLength}d" else "%d"
-                "${prefix}${String.format(formatPattern, maxNum + 1)}"
+                val nextId = "${prefix}${String.format(formatPattern, nextNum)}"
+                
+                Log.d(TAG, "Generated next offline ID: $nextId based on max observed: $maxNum (prefix: $prefix)")
+                nextId
             } else {
-                "OFF-${System.currentTimeMillis()}"
+                // Return a generic ID but don't save it to SharedPreferences
+                val fallback = "OFF-${System.currentTimeMillis()}"
+                Log.w(TAG, "Could not find base ID, falling back to $fallback")
+                fallback
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error generating offline ID: ${e.message}")
             "OFF-${System.currentTimeMillis()}"
         }
     }
@@ -98,37 +115,35 @@ class PosSaleRepository(private val context: Context) {
         onSuccess: (PosSalesDetails) -> Unit,
         onError: (String) -> Unit
     ) {
-        // ✅ NEW: If invoice_id is empty, auto-generate next sequential ID
-        val finalSaleReq = if (saleReq.invoice_id.isEmpty()) {
-            val localInvoiceId = generateNextOfflineInvoiceId(saleReq.store_id)
-            saleReq.copy(invoice_id = localInvoiceId)
+        // Generate the offline fallback ID just in case
+        val offlineInvoiceId = if (saleReq.invoice_id.isEmpty()) {
+            generateNextOfflineInvoiceId(saleReq.store_id)
         } else {
-            saleReq
-        }
-
-        // Check for duplicate invoice
-
-        val existingSale = dao.getSaleByInvoice(finalSaleReq.invoice_id, finalSaleReq.store_id)
-        if (existingSale != null) {
-            onError("Invoice ${finalSaleReq.invoice_id} already exists locally")
-            return
+            saleReq.invoice_id
         }
 
         if (NetworkUtils.isInternetAvailable(context)) {
-            // ✅ ONLINE: Try API first
-            submitToApiWithFallback(finalSaleReq, onSuccess, onError)
+            // ✅ ONLINE: Try API first with ORIGINAL request (so backend can auto-generate ID)
+            submitToApiWithFallback(saleReq, offlineInvoiceId, onSuccess, onError)
         } else {
-            // ✅ OFFLINE: Save locally
+            // ✅ OFFLINE: Save locally with offline ID
+            val finalSaleReq = saleReq.copy(invoice_id = offlineInvoiceId)
+            
+            // Check for duplicate invoice locally
+            val existingSale = dao.getSaleByInvoice(finalSaleReq.invoice_id, finalSaleReq.store_id)
+            if (existingSale != null) {
+                onError("Invoice ${finalSaleReq.invoice_id} already exists locally")
+                return
+            }
+            
             saveSaleLocally(finalSaleReq)
             onSuccess(createOfflineSuccessResponse(finalSaleReq))
         }
     }
 
-    /**
-     * Try API, if it fails save locally
-     */
     private suspend fun submitToApiWithFallback(
         saleReq: PosSaleReq,
+        offlineInvoiceId: String,
         onSuccess: (PosSalesDetails) -> Unit,
         onError: (String) -> Unit
     ) {
@@ -140,7 +155,12 @@ class PosSaleRepository(private val context: Context) {
                     if (response.isSuccessful && response.body() != null) {
                         // ✅ API success
                         val serverPayload = response.body()!!
-                        val serverInvoiceId = serverPayload.data?.invoice_id ?: saleReq.invoice_id
+                        val serverInvoiceId = serverPayload.data?.invoice_id ?: offlineInvoiceId
+
+                        // Save the last invoice ID to SharedPreferences for offline use
+                        if (!serverInvoiceId.startsWith("OFF_") && !serverInvoiceId.startsWith("OFF-")) {
+                            sharedPrefHelper.setLastInvoiceId(serverInvoiceId)
+                        }
 
                         // Copy with the real server invoice ID to prevent duplicates if also returned by API list
                         val syncedSaleReq = saleReq.copy(invoice_id = serverInvoiceId)
@@ -149,31 +169,34 @@ class PosSaleRepository(private val context: Context) {
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                             saveSaleLocally(syncedSaleReq, syncStatus = "SYNCED")
                             // Check if we need to sync any already-recorded offline actions (unlikely in immediate flow but good for safety)
-                            synchronizeOfflineActions(saleReq.invoice_id, serverInvoiceId)
+                            synchronizeOfflineActions(offlineInvoiceId, serverInvoiceId)
                         }
                         onSuccess(serverPayload)
                     } else {
-                        // ❌ API failed, save locally
+                        // ❌ API failed, save locally with fallback ID
+                        val offlineSaleReq = saleReq.copy(invoice_id = offlineInvoiceId)
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                            saveSaleLocally(saleReq)
+                            saveSaleLocally(offlineSaleReq)
                         }
-                        onSuccess(createOfflineSuccessResponse(saleReq))
+                        onSuccess(createOfflineSuccessResponse(offlineSaleReq))
                     }
                 }
 
                 override fun onFailure(call: Call<PosSalesDetails>, t: Throwable) {
-                    // ❌ Network error, save locally
+                    // ❌ Network error, save locally with fallback ID
+                    val offlineSaleReq = saleReq.copy(invoice_id = offlineInvoiceId)
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                        saveSaleLocally(saleReq)
+                        saveSaleLocally(offlineSaleReq)
                     }
-                    onSuccess(createOfflineSuccessResponse(saleReq))
+                    onSuccess(createOfflineSuccessResponse(offlineSaleReq))
                 }
             })
 
         } catch (e: Exception) {
             Log.e(TAG, "submitToApiWithFallback error: ${e.message}")
-            saveSaleLocally(saleReq)
-            onSuccess(createOfflineSuccessResponse(saleReq))
+            val offlineSaleReq = saleReq.copy(invoice_id = offlineInvoiceId)
+            saveSaleLocally(offlineSaleReq)
+            onSuccess(createOfflineSuccessResponse(offlineSaleReq))
         }
     }
 
@@ -219,7 +242,13 @@ class PosSaleRepository(private val context: Context) {
             val saleId = dao.insertPendingSale(entity)
             Log.d("PosSaleRepository", "Sale saved locally with ID: $saleId, Invoice: ${saleReq.invoice_id}")
 
-            // ✅ NEW: Deduct inventory from local database immediately
+            // ✅ Save this invoice ID as the last known ID to SharedPreferences for better offline ID generation
+            if (!saleReq.invoice_id.startsWith("OFF_") && !saleReq.invoice_id.startsWith("OFF-")) {
+                Log.d("INVOICE_TRACKER", "Updating SharedPreferences with new local sale invoice ID: ${saleReq.invoice_id}")
+                sharedPrefHelper.setLastInvoiceId(saleReq.invoice_id)
+            }
+
+            // ✅ Deduct inventory from local database immediately
             deductInventoryAfterSale(saleReq)
 
         } catch (e: Exception) {
@@ -228,7 +257,7 @@ class PosSaleRepository(private val context: Context) {
     }
 
     /**
-     * ✅ UPDATED METHOD: Deduct inventory after offline sale
+     * Deduct inventory after offline sale
      */
     private suspend fun deductInventoryAfterSale(saleReq: PosSaleReq) {
         try {
@@ -243,14 +272,7 @@ class PosSaleRepository(private val context: Context) {
                 val productEntity = database.storeProductDao().getProductByKey(key)
 
                 if (productEntity != null) {
-                    Log.d("STOCK_DEDUCTION", "BEFORE: stock_quantity=${productEntity.stock_quantity}")
-
                     val currentBatches = com.retailone.pos.localstorage.RoomDB.Converters().fromBatchJson(productEntity.batchJson)
-
-                    Log.d("STOCK_DEDUCTION", "Current batches in DB:")
-                    currentBatches.forEach { batch ->
-                        Log.d("STOCK_DEDUCTION", "  Batch ${batch.batch_no}: qty=${batch.quantity}")
-                    }
 
                     // Update each batch
                     val updatedBatches = currentBatches.map { dbBatch ->
@@ -260,13 +282,11 @@ class PosSaleRepository(private val context: Context) {
                             val qtySold = soldBatch.quantity.toDouble()
                             val newQty = (dbBatch.quantity - qtySold).coerceAtLeast(0.0)
 
-                            Log.d("STOCK_DEDUCTION", "  Batch ${dbBatch.batch_no}: ${dbBatch.quantity} - $qtySold = $newQty")
-
                             com.retailone.pos.models.CommonModel.StroreProduct.PosSaleBatch(
                                 batch_no = dbBatch.batch_no,
                                 quantity = newQty,
                                 price = dbBatch.price,
-                                tax = dbBatch.tax, // FIX: Preserve tax rate for subsequent offline sales
+                                tax = dbBatch.tax, 
                                 batch_cart_quantity = 0.0,
                                 batch_total_du_amount = dbBatch.batch_total_du_amount ?: "",
                                 dispense_status = dbBatch.dispense_status,
@@ -280,8 +300,6 @@ class PosSaleRepository(private val context: Context) {
                     // Calculate new total stock
                     val newStockQty = updatedBatches.sumOf { it.quantity }
 
-                    Log.d("STOCK_DEDUCTION", "AFTER: new stock_quantity=$newStockQty")
-
                     // Update StoreProductEntity
                     val updatedEntity = productEntity.copy(
                         stock_quantity = newStockQty,
@@ -291,67 +309,31 @@ class PosSaleRepository(private val context: Context) {
 
                     database.storeProductDao().insertProduct(updatedEntity)
 
-                    // Verify the update
-                    val verifyEntity = database.storeProductDao().getProductByKey(key)
-                    Log.d("STOCK_DEDUCTION", "VERIFIED: stock in DB now = ${verifyEntity?.stock_quantity}")
-
                     // ✅ 2. Update ProductInventoryEntity (Product Inventory screen)
                     updateProductInventoryStock(saleReq.store_id, saleItem, newStockQty)
 
-                } else {
-                    Log.e("STOCK_DEDUCTION", "❌ Product not found in DB: key=$key")
                 }
             }
-
             Log.d("STOCK_DEDUCTION", "========== STOCK DEDUCTION COMPLETE ==========")
-
         } catch (e: Exception) {
-            Log.e("STOCK_DEDUCTION", "❌ Error: ${e.message}", e)
-            e.printStackTrace()
+            Log.e("STOCK_DEDUCTION", "Error: ${e.message}")
         }
     }
 
-    /**
-     * ✅ NEW METHOD: Update Product Inventory table stock quantity
-     */
-    private suspend fun updateProductInventoryStock(
-        storeId: String,
-        saleItem: com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem,
-        newStockQty: Double
-    ) {
+    private suspend fun updateProductInventoryStock(storeId: String, saleItem: com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem, newStockQty: Double) {
         try {
             val inventoryDao = database.productInventoryDao()
-
-            // Calculate total quantity sold
             val totalQtySold = saleItem.batch.sumOf { it.quantity.toDouble() }
-
-            // Find matching inventory items (there might be multiple with different composite keys)
-            val allInventoryItems = inventoryDao.getInventoryByStoreSync(storeId.toInt())
-
-            val matchingItems = allInventoryItems.filter {
-                it.product_id == saleItem.product_id.toString() &&
-                        it.distribution_pack_id == saleItem.distribution_pack_id.toString()
-            }
-
-            matchingItems.forEach { inventoryItem ->
-                val updatedQty = (inventoryItem.stock_quantity - totalQtySold).coerceAtLeast(0.0)
-
-                inventoryDao.updateStockQuantity(inventoryItem.compositeKey, updatedQty)
-
-                Log.d("STOCK_DEDUCTION", "✅ Updated Product Inventory: ${inventoryItem.compositeKey}, new qty=$updatedQty")
-            }
-
+            val items = inventoryDao.getInventoryByStoreSync(storeId.toInt())
+            items.filter { it.product_id == saleItem.product_id.toString() && it.distribution_pack_id == saleItem.distribution_pack_id.toString() }
+                .forEach { item ->
+                    val updated = (item.stock_quantity - totalQtySold).coerceAtLeast(0.0)
+                    inventoryDao.updateStockQuantity(item.compositeKey, updated)
+                }
         } catch (e: Exception) {
-            Log.e("STOCK_DEDUCTION", "❌ Error updating product inventory: ${e.message}", e)
+            Log.e("STOCK_DEDUCTION", "Error: ${e.message}")
         }
     }
-
-
-
-
-
-
-
 
     /**
      * Create a success response for offline sales
@@ -391,13 +373,13 @@ class PosSaleRepository(private val context: Context) {
                 sub_total = saleReq.sub_total,
                 subtotal_after_discount = saleReq.subtotal_after_discount,
                 tax = saleReq.tax.toIntOrNull() ?: 0,
-                tax_amount = saleReq.tax_amount,
                 discount = 0,
+                tax_amount = saleReq.tax_amount,
                 customer_name = saleReq.customer_name,
                 customer_mob_no = saleReq.customer_mob_no,
                 vat_no = "",
-                tpin_no = saleReq.tin_tpin_no,
-                buyers_tpin = saleReq.tin_tpin_no,
+                tpin_no = saleReq.tin_tpin_no ?: "",
+                buyers_tpin = saleReq.tin_tpin_no ?: "",
                 tax_ex = "",
                 ej_no = "",
                 ej_activation_date = "",
@@ -436,17 +418,13 @@ class PosSaleRepository(private val context: Context) {
      */
     suspend fun syncSale(sale: PendingSaleEntity): Boolean {
         try {
-            // ✅ DOUBLE-CHECK: Verify if sale hasn't already been processed by another worker
             val currentSale = dao.getSaleById(sale.id)
             if (currentSale == null || currentSale.sync_status == "SYNCED" || currentSale.sync_status == "SYNCING") {
-                Log.d(TAG, "Sale ${sale.invoice_id} already processed or missing, skipping.")
                 return true
             }
 
-            // Mark as syncing
             dao.updateSyncStatus(sale.id, "SYNCING", System.currentTimeMillis())
 
-            // Convert back to PosSaleReq
             val salesItems = gson.fromJson(
                 sale.sales_items_json,
                 Array<com.retailone.pos.models.PointofsaleModel.PosSaleModel.PosSalesItem>::class.java
@@ -480,204 +458,61 @@ class PosSaleRepository(private val context: Context) {
                 spot_discount_amount = sale.spot_discount_amount ?: "0"
             )
 
-            // Submit to API (synchronous for worker)
             val body = saleReq.toPatchedJson()
             val response = apiService.posSale(body).execute()
 
             return if (response.isSuccessful && response.body() != null) {
-                // Success - mark as synced and update invoice ID to the explicit one from server
                 val serverInvoiceId = response.body()!!.data?.invoice_id ?: sale.invoice_id
                 dao.markAsSyncedWithInvoiceId(sale.id, serverInvoiceId, System.currentTimeMillis())
                 
-                // ✅ CRITICAL NEW STEP: Sync dependent tables (returns, replaces, details cache)
-                // so they use the REAL server ID instead of the temporary "OFF_..." ID
-                synchronizeOfflineActions(sale.invoice_id, serverInvoiceId)
+                if (!serverInvoiceId.startsWith("OFF_") && !serverInvoiceId.startsWith("OFF-")) {
+                    Log.d("INVOICE_TRACKER", "Updating SharedPreferences with server-confirmed invoice ID: $serverInvoiceId")
+                    sharedPrefHelper.setLastInvoiceId(serverInvoiceId)
+                }
                 
-                Log.d(TAG, "Sale ${sale.invoice_id} synced successfully. New ID: $serverInvoiceId")
+                synchronizeOfflineActions(sale.invoice_id, serverInvoiceId)
                 true
             } else {
-                // Failed - mark as failed with error
                 val errorMsg = response.errorBody()?.string() ?: "Unknown error"
-                dao.updateSyncStatusWithError(
-                    sale.id,
-                    "FAILED",
-                    System.currentTimeMillis(),
-                    errorMsg
-                )
-                Log.e(TAG, "Sale ${sale.invoice_id} sync failed: $errorMsg")
+                dao.updateSyncStatusWithError(sale.id, "FAILED", System.currentTimeMillis(), errorMsg)
                 false
             }
 
         } catch (e: Exception) {
-            dao.updateSyncStatusWithError(
-                sale.id,
-                "FAILED",
-                System.currentTimeMillis(),
-                e.message ?: "Unknown error"
-            )
-            Log.e(TAG, "Sale ${sale.invoice_id} sync error: ${e.message}")
+            dao.updateSyncStatusWithError(sale.id, "FAILED", System.currentTimeMillis(), e.message ?: "Unknown error")
             return false
         }
     }
 
     /**
      * Sync all offline sales to server
-     * Called by WorkManager in background
      */
     suspend fun syncOfflineSales(): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Get all pending sales (not synced yet)
             val offlineSales = dao.getPendingSales()
-
-            if (offlineSales.isEmpty()) {
-                Log.d(TAG, "No offline sales to sync")
-                return@withContext true
-            }
-
-            Log.d(TAG, "Found ${offlineSales.size} offline sales to sync")
-            var successCount = 0
+            if (offlineSales.isEmpty()) return@withContext true
             var failCount = 0
-
-            // Try to sync each sale
             for (pendingSale in offlineSales) {
-                val syncResult = syncSale(pendingSale)
-                if (syncResult) {
-                    successCount++
-                } else {
-                    failCount++
-                }
+                if (!syncSale(pendingSale)) failCount++
             }
-
-            Log.d(TAG, "Sync completed: $successCount success, $failCount failed")
             return@withContext failCount == 0
-
         } catch (e: Exception) {
-            Log.e(TAG, "Sync error: ${e.message}")
             return@withContext false
         }
     }
 
     /**
-     * Convert PosSalesItem to SalesItem format (used in return screen)
-     */
-    private fun convertToSalesItemFormat(saleReq: PosSaleReq): List<SalesItem> {
-        // Get tax rate from main request (all items have same tax)
-        val taxRateStr = saleReq.tax.replace("%", "").replace("@", "").trim()
-        val taxRate = taxRateStr.toDoubleOrNull() ?: 0.0
-
-        return saleReq.sales_items.map { posItem ->
-
-            // Convert batches from PosSaleBatch to BatchReturnItem
-            val batches = posItem.batch.map { posBatch ->
-                // Calculate tax-exclusive price (reverse engineer from retail price)
-                val taxMultiplier = 1.0 + (taxRate / 100.0)
-                val taxExclusivePrice = if (taxRate > 0) {
-                    posBatch.retail_price / taxMultiplier
-                } else {
-                    posBatch.retail_price
-                }
-
-                BatchReturnItem(
-                    batch = posBatch.batchno,
-                    quantity = posBatch.quantity.toDouble(),
-                    retail_price = posBatch.retail_price,
-                    tax_exclusive_price = taxExclusivePrice,
-                    subtotal = posBatch.quantity * taxExclusivePrice,
-                    sales_item_id = 0,
-                    return_quantity = 0,
-                    return_reason = null,
-                    batch_return_quantity = 0,
-                    batch_refund_amount = 0.0,
-                    remark = null,
-                    defective_boxes = 0,
-                    defective_bottles = 0
-                )
-            }
-
-            // Calculate total quantity from batches
-            val totalQuantity = posItem.batch.sumOf { it.quantity.toDouble() }
-
-            // Get retail price from first batch (all batches should have same price)
-            val retailPrice = posItem.batch.firstOrNull()?.retail_price ?: 0.0
-
-            // Calculate tax-exclusive price for the item
-            val taxMultiplier = 1.0 + (taxRate / 100.0)
-            val taxExclusivePrice = if (taxRate > 0) {
-                retailPrice / taxMultiplier
-            } else {
-                retailPrice
-            }
-
-            // Get description from distribution_pack
-            val distPackDescription = posItem.distribution_pack_name  // Already available!
-            val noOfPacks = 1  // Default value since not available in PosSalesItem
-
-            // NEW: include per-item taxes if available from API
-            val itemTax = (posItem.tax ?: 0.0)
-            val itemTaxAmount = (posItem.tax_amount ?: 0.0)
-            val saleItemTax = itemTax.toInt()
-            val saleItemTaxAmount = itemTaxAmount
-            // ✅ Create SalesItem matching your exact structure
-            SalesItem(
-                created_at = saleReq.sale_date_time,
-                distribution_pack = DistributionPack(
-                    id = posItem.distribution_pack_id.toInt(),
-                    no_of_packs = noOfPacks,
-                    product_description = distPackDescription
-                ),
-                distribution_pack_id = posItem.distribution_pack_id.toInt(),
-                distribution_pack_name = distPackDescription,
-                id = 0,
-                product = Product(
-                    id = posItem.product_id.toInt(),
-                    product_name = posItem.product_name  // ✅ Not nullable, no ?: needed
-                ),
-                product_id = posItem.product_id.toInt(),
-                product_name = posItem.product_name,  // ✅ Not nullable
-                quantity = totalQuantity,
-                batches = batches,
-                retail_price = retailPrice,
-                tax_exclusive_price = taxExclusivePrice,
-                sales_id = "0",
-                status = 1,
-                total_amount = posItem.total_amount.toDoubleOrNull() ?: 0.0,  // ✅ String to Double
-                updated_at = saleReq.sale_date_time,
-                tax = saleItemTax,
-                tax_amount = saleItemTaxAmount,
-                whole_sale_price = posItem.whole_sale_price.toDoubleOrNull() ?: 0.0,  // ✅ String to Double
-                return_quantity = 0,
-                refund_amount = 0.0,
-                readonlyMode = false,
-                isExpired = false
-            )
-        }
-    }
-
-
-
-    /**
-     * ✅ NEW: Synchronizes all dependent local actions (returns, replaces, details)
-     * when an offline sale finally gets its real server-generated invoice ID.
+     * Synchronizes all dependent local actions (returns, replaces, details)
      */
     private suspend fun synchronizeOfflineActions(oldInvoiceId: String, newInvoiceId: String) {
         if (oldInvoiceId == newInvoiceId || oldInvoiceId.isEmpty()) return
-        
-        Log.d(TAG, "🔄 [SYNC HUB] Synchronizing offline actions for $oldInvoiceId -> $newInvoiceId")
-        
         try {
-            // 1. Update Detailed Sale Cache
             val detailedRepo = DetailedSaleRepository(context)
             detailedRepo.updateInvoiceId(oldInvoiceId, newInvoiceId)
-            
-            // 2. Update Pending Returns
             database.pendingReturnDao().updateInvoiceId(oldInvoiceId, newInvoiceId)
-            
-            // 3. Update Pending Replaces
             database.pendingReplaceDao().updateInvoiceId(oldInvoiceId, newInvoiceId)
-            
-            Log.d(TAG, "✅ [SYNC HUB] All dependent actions synchronized to $newInvoiceId")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ [SYNC HUB] Optimization failed: ${e.message}")
+            Log.e(TAG, "Optimization failed: ${e.message}")
         }
     }
 

@@ -137,6 +137,20 @@ class SharedPrefHelper(context: Context) {
         }
     }
 
+    companion object {
+        private const val KEY_LAST_INVOICE_ID = "last_invoice_id"
+    }
+
+    fun setLastInvoiceId(invoiceId: String) {
+        if (!invoiceId.startsWith("OFF_") && !invoiceId.startsWith("OFF-")) {
+            sharedPreferences.edit().putString(KEY_LAST_INVOICE_ID, invoiceId).apply()
+        }
+    }
+
+    fun getLastInvoiceId(): String? {
+        return sharedPreferences.getString(KEY_LAST_INVOICE_ID, null)
+    }
+
     // Get the quantity of a specific product based on product_id and distribution_pack_id
     fun getQuantity(product_id: String, distribution_pack_id: Int): String {
         val existingList = getSearchResultsList()

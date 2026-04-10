@@ -7,7 +7,6 @@ import com.retailone.pos.repository.PendingCancelSaleRepository
 import com.retailone.pos.repository.PosSaleRepository
 import com.retailone.pos.repository.PendingReturnRepository
 import com.retailone.pos.localstorage.RoomDB.PendingReplaceRepository
-import com.retailone.pos.repository.ExpenseRepository
 import com.retailone.pos.localstorage.RoomDB.PosDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,17 +38,13 @@ class SyncWorker(
             val replaceRepository = PendingReplaceRepository(db.pendingReplaceDao())
             val replaceSyncResult = replaceRepository.syncAllPendingReplaces(applicationContext)
 
-            // ✅ NEW: Sync pending expenses
-            val expenseRepository = ExpenseRepository(applicationContext)
-            val expenseSyncResult = expenseRepository.syncAllPendingExpenses()
-
             // ✅ NEW: Sync pending dispatches
             val dispatchRepository = com.retailone.pos.localstorage.RoomDB.PendingDispatchRepository(db.pendingDispatchDao())
             val dispatchSyncResult = dispatchRepository.syncAllPendingDispatches(applicationContext)
 
-            Log.d("SyncWorker", "📊 Sync results: sales=$saleSyncResult, cancels=$cancelSyncResult, returns=$returnSyncResult, replaces=$replaceSyncResult, expenses=$expenseSyncResult, dispatches=$dispatchSyncResult")
+            Log.d("SyncWorker", "📊 Sync results: sales=$saleSyncResult, cancels=$cancelSyncResult, returns=$returnSyncResult, replaces=$replaceSyncResult, dispatches=$dispatchSyncResult")
 
-            return@withContext if (saleSyncResult && cancelSyncResult && returnSyncResult && replaceSyncResult && expenseSyncResult && dispatchSyncResult) {
+            return@withContext if (saleSyncResult && cancelSyncResult && returnSyncResult && replaceSyncResult && dispatchSyncResult) {
                 Log.d("SyncWorker", "✅ All syncs completed successfully")
 
                 // ⚡ Schedule another network-triggered sync for next time

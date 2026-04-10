@@ -11,32 +11,22 @@ import com.retailone.pos.models.ExpenseRegisterModel.ExpenseImage.ExpenceImageRe
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseSubmit.ExpenseSubmitReq
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseSubmit.ExpenseSubmitRes
 import com.retailone.pos.models.ExpenseRegisterModel.ExpenseVendor.ExpenseVendorRes
-import com.retailone.pos.models.LocalizationModel.LocalizationRes
-import com.retailone.pos.models.ProductInventoryModel.InventoryUpdateReqModel.InventoryUpdateRequest
-import com.retailone.pos.models.ProductInventoryModel.InventoryUpdateResModel.InventoryUpdateResponse
 import com.retailone.pos.models.ProgressModel.ProgressData
 import com.retailone.pos.network.ApiClient
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-import androidx.lifecycle.viewModelScope
 import com.retailone.pos.localstorage.SharedPreference.ExpenseCacheHelper
-import com.retailone.pos.repository.ExpenseRepository
 import com.retailone.pos.utils.NetworkUtils
-import kotlinx.coroutines.launch
 
 class ExpenseRegisterViewmodel : ViewModel() {
 
-    private lateinit var repository: ExpenseRepository
     private lateinit var cacheHelper: ExpenseCacheHelper
 
     private fun init(context: Context) {
-        if (!::repository.isInitialized) {
-            repository = ExpenseRepository(context)
+        if (!::cacheHelper.isInitialized) {
             cacheHelper = ExpenseCacheHelper(context)
         }
     }
@@ -67,21 +57,24 @@ class ExpenseRegisterViewmodel : ViewModel() {
 
 
     fun callExpenseSubmitApi(expenseSubmitReq: ExpenseSubmitReq, context: Context){
-        init(context)
         loading.postValue(ProgressData(isProgress = true))
 
-        viewModelScope.launch {
-            repository.submitExpense(
-                expenseSubmitReq,
-                onSuccess = {
-                    expensesubmit_data.postValue(it)
+        ApiClient().getApiService(context).getExpenseSubmitAPI(expenseSubmitReq).enqueue(object :
+            Callback<ExpenseSubmitRes> {
+            override fun onResponse(call: Call<ExpenseSubmitRes>, response: Response<ExpenseSubmitRes>) {
+
+                if(response.isSuccessful && response.body()!=null){
+                    expensesubmit_data.postValue(response.body())
                     loading.postValue(ProgressData(isProgress = false))
-                },
-                onError = {
-                    loading.postValue(ProgressData(isProgress = false, isMessage = true, message = it))
+                }else{
+                    loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to save expense, Try again" ))
                 }
-            )
-        }
+            }
+
+            override fun onFailure(call: Call<ExpenseSubmitRes>, t: Throwable) {
+                loading.postValue(ProgressData(isProgress = false,isMessage = true, message = "Something Went Wrong"))
+            }
+        })
     }
 
 
@@ -116,7 +109,7 @@ class ExpenseRegisterViewmodel : ViewModel() {
                             expensehistory_data.postValue(cached)
                             loading.postValue(ProgressData(isProgress = false))
                         } else {
-                            loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch history, Try again" ))
+                            loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
                         }
                     }
                 }
@@ -242,7 +235,7 @@ class ExpenseRegisterViewmodel : ViewModel() {
                         invoiceupload_data.postValue(response.body())
                         loading.postValue(ProgressData(isProgress = false))
                     } else {
-                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to fetch data, Try again" ))
+                        loading.postValue(ProgressData(isProgress = false,isMessage = true, message ="Failed to upload invoice, Try again" ))
                     }
                 }
 
@@ -252,7 +245,7 @@ class ExpenseRegisterViewmodel : ViewModel() {
             })
 
     }
-
-
-
 }
+
+
+

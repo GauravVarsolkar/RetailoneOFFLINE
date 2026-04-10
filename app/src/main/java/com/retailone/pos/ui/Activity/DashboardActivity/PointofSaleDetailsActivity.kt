@@ -214,7 +214,7 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                     val _mobile_no = binding.mobileInput.text.toString()
                     val _tin_tpin_no = binding.tinInput.text.toString()
 
-                    if (isEligibleNewCustomer(total_amountx, cidx)) {
+                    if (isEligibleNewCustomer(total_amountx, cidx) && com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this)) {
                         pos_viewmodel.callAddNewCustApi(
                             AddNewCustReq(
                                 customer_name = _customer_name,
@@ -223,7 +223,8 @@ class PointofSaleDetailsActivity : AppCompatActivity() {
                             ), this
                         )
                     } else if (total_amountx < SALE_LIMIT && cidx == 0 &&
-                        _customer_name.trim().isNotEmpty() && _tin_tpin_no.trim().isNotEmpty()
+                        _customer_name.trim().isNotEmpty() && _tin_tpin_no.trim().isNotEmpty() &&
+                        com.retailone.pos.utils.NetworkUtils.isInternetAvailable(this)
                     ) {
                         pos_viewmodel.callAddNewCustApi(
                             AddNewCustReq(

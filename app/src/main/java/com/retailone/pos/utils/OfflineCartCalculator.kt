@@ -93,7 +93,7 @@ object OfflineCartCalculator {
                         batch = batchCartItems,
                         stock_id = item.store_id,
                         total = productTotalWithTax,
-                        tax_amount = productTax.toInt().toString(),
+                        tax_amount = round2(productTax).toString(),
                         tax = productTaxRate,
                         taxrate = productTaxRate.toString(),
                         discount = productDiscount.toInt(),

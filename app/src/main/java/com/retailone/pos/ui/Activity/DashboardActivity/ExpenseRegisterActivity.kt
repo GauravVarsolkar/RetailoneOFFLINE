@@ -141,8 +141,9 @@ class ExpenseRegisterActivity : AppCompatActivity() {
             storeid = loginSession.getStoreID().first().toString()
             store_manager_id = loginSession.getStoreManagerID().first().toString()
 
-            // ✅ Load history immediately (handles offline viewing via cache)
+            // ✅ Load history and petty cash immediately (handles offline viewing via cache)
             viewmodel.callExpenseHistoryApi(ExpenseHistoryReq(storeid), this@ExpenseRegisterActivity)
+            pettycash_viewmodel.callPettycashDataApi(storeid, this@ExpenseRegisterActivity)
 
             // ✅ ENFORCE ONLINE-ONLY SUBMISSION & OFFLINE VIEW-ONLY
             if (!NetworkUtils.isInternetAvailable(this@ExpenseRegisterActivity)) {

@@ -83,7 +83,6 @@ class MPOSDashboardActivity : AppCompatActivity() {
     private lateinit var pendingCancelRepository: PendingCancelSaleRepository
     private lateinit var pendingGoodsReturnRepository: com.retailone.pos.localstorage.RoomDB.PendingGoodsReturnRepository
     private lateinit var pendingDispatchRepository: com.retailone.pos.localstorage.RoomDB.PendingDispatchRepository
-    private lateinit var expenseRepository: com.retailone.pos.repository.ExpenseRepository
     private var isSyncing = false
 
     var storemanager_id = ""
@@ -129,7 +128,6 @@ class MPOSDashboardActivity : AppCompatActivity() {
         posSaleRepository = PosSaleRepository(this)
         pendingReturnRepository = PendingReturnRepository(this)
         pendingCancelRepository = PendingCancelSaleRepository(this)
-        expenseRepository = com.retailone.pos.repository.ExpenseRepository(this)
         
         val db = PosDatabase.getDatabase(this)
         pendingReplaceRepository = PendingReplaceRepository(db.pendingReplaceDao())
@@ -318,7 +316,6 @@ class MPOSDashboardActivity : AppCompatActivity() {
                     pendingReplaceRepository.getPendingCountFlow(),
                     pendingCancelRepository.getPendingCancelCountFlow(),
                     pendingGoodsReturnRepository.getPendingCountFlow(),
-                    expenseRepository.getPendingExpensesCountFlow(),
                     pendingDispatchRepository.getPendingCountFlow()
                 )
             ) { counts ->
@@ -456,15 +453,13 @@ class MPOSDashboardActivity : AppCompatActivity() {
                 // ✅ 5. Sync Warehouse Goods Returns
                 val goodsSuccess = pendingGoodsReturnRepository.syncAllPendingReturns(this@MPOSDashboardActivity)
 
-                // ✅ 6. Sync Expenses
-                val expenseSuccess = expenseRepository.syncAllPendingExpenses()
                 
                 // ✅ 7. Sync Dispatches
                 val dispatchSuccess = pendingDispatchRepository.syncAllPendingDispatches(this@MPOSDashboardActivity)
                 
                 delay(1500)
 
-                if (saleSuccess && returnSuccess && replaceSuccess && cancelSuccess && goodsSuccess && expenseSuccess && dispatchSuccess) {
+                if (saleSuccess && returnSuccess && replaceSuccess && cancelSuccess && goodsSuccess && dispatchSuccess) {
                     transitionToSuccess()
                 } else {
                     // Failed - revert to idle
